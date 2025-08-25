@@ -32,8 +32,8 @@ Every covariate is generated independently from the standard normal distribution
 The tumor cell subtype proportions of each sample is generated independent from the Dirichlet distribution. 
 
 The survival times are generated based on the population survival function using rate parameter $\theta=\exp(\xi_0+\mathbf X_0\boldsymbol\xi)$, using the Weibull distributed survival functions with 
-mean parameters $\boldsymbol\mu_{l}= \exp(\beta_{0l} + \mathbf X_{l} \boldsymbol \beta_l)$, and using the Dirichlet distributed cell type proportions with concentration parameters $\boldsymbol\alpha_{l}= \exp(\zeta_{0l} + \mathbf X_{l} \boldsymbol \zeta_l)$,  $l\in `\{1,...,L\}`$. 
-We use latent indicator variables for Bayesian variable selection, i.e. $\boldsymbol \gamma_l = 1`\{\boldsymbol \beta_l\ne 0\}`$ and $\boldsymbol \eta_l = 1`\{\boldsymbol \zeta_l\ne 0\}`$. 
+mean parameters $\boldsymbol\mu_{l}= \exp(\beta_{0l} + \mathbf X_{l} \boldsymbol \beta_l)$, and using the Dirichlet distributed cell type proportions with concentration parameters $\boldsymbol\alpha_{l}= \exp(\zeta_{0l} + \mathbf X_{l} \boldsymbol \zeta_l)$,  $l\in \\{1,...,L\\}$. 
+We use latent indicator variables for Bayesian variable selection, i.e. $\boldsymbol \gamma_l = 1\\{\boldsymbol \beta_l\ne 0\\}$ and $\boldsymbol \eta_l = 1\\{\boldsymbol \zeta_l\ne 0\\}$. 
 Censoring is generated through an exponential distribution with censoring rate $20\%$. 
 The Kaplan–Meier survival curve is as follows.
 
