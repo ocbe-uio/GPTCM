@@ -264,7 +264,8 @@ simData <- function(n = 200, p = 10, L = 3,
     names(x0) <- c("", paste0("x0", 1:NCOL(x0)))
     # xi <- runif(p + 1, -2, 2)
     # xi <- c(1, 0.5, -1, -1.5, 0.5, -1) # too small censoring rate
-    xi <- c(-1.8, 0.6, -1, -1.2, 1, -1.5)
+    #xi <- c(-1.8, 0.6, -1, -1.2, 1, -1.5)
+    xi <- c(0, -0.8, -2, -2, 1, 1) # no intercept
     for (l in 1:L) {
       XX[, , l] <- x0[, -1]
     }
