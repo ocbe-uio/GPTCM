@@ -10,7 +10,7 @@ status](https://www.r-pkg.org/badges/version/GPTCM)](https://cran.r-project.org/
 
 
 
-This is an R package **GPTCM** implementing Bayesian hierarchical modeling for a generalized promotion time cure model (GPTCM) ([Zhao \& Kızılaslan, 2024](https://doi.org/10.48550/arXiv.2408.17188); Zhao et al., 2025) for the identification of cell-type-specific tumor driver genes and survival prognosis. 
+This is an R package **GPTCM** implementing Bayesian hierarchical modeling for a generalized promotion time cure model (GPTCM) ([Zhao \& Kızılaslan, 2024](https://doi.org/10.48550/arXiv.2408.17188); [Zhao et al., 2025](https://doi.org/10.48550/arXiv.2408.17188)) for the identification of cell-type-specific tumor driver genes and survival prognosis. 
 
 ## Installation
 
@@ -21,7 +21,7 @@ Install the latest development version from [GitHub](https://github.com/ocbe-uio
 remotes::install_github("ocbe-uio/GPTCM")
 ```
 
-## Simulation study
+## A simulation study
 
 We provide insights about the parameter estimation of the proposed GPTCM by using Monte Carlo simulations. 
 We consider sample sizes of $n=200$. 
@@ -35,7 +35,8 @@ The survival times are generated based on the population survival function using
 mean parameters $\boldsymbol\mu_{l}= \exp(\beta_{0l} + \mathbf X_{l} \boldsymbol \beta_l)$, and using the Dirichlet distributed cell type proportions with concentration parameters $\boldsymbol\alpha_{l}= \exp(\zeta_{0l} + \mathbf X_{l} \boldsymbol \zeta_l)$,  $l\in \\{1,...,L\\}$. 
 We use latent indicator variables for Bayesian variable selection, i.e. $\boldsymbol \gamma_l = 1\\{\boldsymbol \beta_l\ne 0\\}$ and $\boldsymbol \eta_l = 1\\{\boldsymbol \zeta_l\ne 0\\}$. 
 Censoring is generated through an exponential distribution with censoring rate $20\%$. 
-The Kaplan–Meier survival curve is as follows.
+The Kaplan–Meier survival curve is as follows. 
+See more details in [Zhao et al. (2025)](https://doi.org/10.48550/arXiv.2408.17188). 
 
 ```{r}
 rm(list=ls())
@@ -75,7 +76,38 @@ ggsurv
 
 <img src="man/figures/cran_km.png" width="70%" />
 
-After running our proposed GPTCM with Bernoulli-beta prior (GPTCM-Ber2), we compare its the survival prediction performance with other approaches (i.e. Kaplan-Meier method without covariates, classic Cox model with two clinical covariates, Cox model with cell-type proportions data as covariates, Cox model with both clinical and cell-type proportion covariates, Cox model with clinical and aggregated (mean) cell-type-specific covariates, Cox model with clinical and aggregated (median) cell-type-specific covariates, mixture cure model with clinical and aggregated (mean) cell-type-specific covariates, mixture cure model with clinical and aggregated (median) cell-type-specific covariates). 
+We fit one of the proposed GPTCM, GPTCM with the Bernoulli-beta prior (GPTCM-Ber2):
+
+$$
+\begin{aligned}
+&&\lhd\ Population\ survival\ function \\ 
+    S_{pop}(t) &= e^{ -\theta\\{1 - \sum_{l=1}^L \mathtt p_l S_l(t)\\} } \\
+    S_l(t) &= e^{-\left(t/\lambda_l\right)^\kappa} \\ 
+    \lambda_l &= \frac{\boldsymbol\mu_l}{\Gamma(1+1/\kappa)}\\
+&&\lhd\ Cure\ fraction \\ 
+    \log\theta &= \xi_0 + \mathbf X_0\boldsymbol\xi \\
+&&\lhd\ Noncure\ fraction \\ 
+    \log\boldsymbol\mu_l &= \beta_{0l} + \mathbf X_l\boldsymbol\beta_l \\
+\text{Spike-and-slab prior:}&& \\
+  \beta_{jl} | \gamma_{jl}, \tau_l^2 &\sim \gamma_{jl}\mathcal N(0, \tau_l^2) + (1-\gamma_{jl})\delta_0(\beta_{jl})\\
+\text{Bernoulli-beta:}&& \\
+  \gamma_{jl}|\pi_{jl} &\sim \mathcal Bernoulli (\pi_{jl}) \\
+  \pi_{jl} &\sim \mathcal Beta(a_\pi, b_\pi)\\
+&&\lhd\ Measurement\ error\\ 
+  \tilde{\mathbf p} &= \mathbf p + \text{Dirichlet error}\\
+  f(\tilde{\mathbf p}|\boldsymbol\alpha) &= \frac{1}{\text{B} (\boldsymbol\alpha)}\prod_{l=1}^L\tilde{\mathtt p}_l^{\alpha_l-1} \\
+  \log\alpha_l &= \zeta_{0l} + \mathbf X_l\boldsymbol\zeta_l \\
+  \zeta_{0l} | w_0^2 &\sim \mathcal N(0, w_0^2) \\
+\text{Spike-and-slab prior:}&& \\
+  \zeta_{jl} | \eta_{jl}, w_l^2 &\sim \eta_{jl}\mathcal N(0, w_l^2) + (1-\eta_{jl})\delta_0(\zeta_{jl}) \\
+\text{Bernoulli-beta:}&& \\
+  \eta_{jl}|\rho_{jl} &\sim \mathcal Bernoulli (\rho_{jl}) \\
+  \rho_{jl} &\sim \mathcal Beta(a_\rho, b_\rho)
+\end{aligned}
+$$
+
+
+After fitting GPTCM-Ber2, we compare its the survival prediction performance with other approaches (i.e. Kaplan-Meier method without covariates, classic Cox model with two clinical covariates (Cox.clin), Cox model with mean aggregate covariates (Cox.X.mean), Cox model with median aggregate covariatess (Cox.X.median), Cox model with clinical and mean aggregate covariates (Cox.clin.X.mean), and frequentist semiparametric promotion time cure model with clinical variables (PTCM.clin)). 
 The follow figure shows the prediction performance of time-dependent Brier scores. 
 It is clear that our GPTCM has much better survival prognosis than other approaches. 
 
@@ -93,10 +125,12 @@ plotBrier(dat, datMCMC = fit,
 
 <img src="man/figures/cran_brier.png" width="70%" />
 
-The following figure shows the posterior distributions of cell-type-specific effects associated with cell-type-specific progression with the black dimonds indicating true effects, and marginal posterior inclusion probabilities (mPIP) of Bayesian variable selection. 
+The following figure shows the posterior distributions of cell-type-specific effects associated with cell-type-specific progression with the black dimonds indicating true effects, and marginal posterior inclusion probabilities (mPIP) of Bayesian variable selection (BVS). 
 
 ```{r}
+# show cel-type-specific effects
 plotCoeff(dat, datMCMC = fit, estimator = "beta", bandwidth = 0.01)
+# show BVS
 plotCoeff(dat, datMCMC = fit, estimator = "gamma")
 ```
 
@@ -107,7 +141,9 @@ plotCoeff(dat, datMCMC = fit, estimator = "gamma")
 The following figure shows the posterior distributions of cell-type-specific effects associated with cell-type-specific proportions, and mPIP of Bayesian variable selection. 
 
 ```{r}
+# show cel-type-specific effects
 plotCoeff(dat, datMCMC = fit, estimator = "zeta", bandwidth = 0.01)
+# show BVS
 plotCoeff(dat, datMCMC = fit, estimator = "eta")
 ```
 
@@ -122,8 +158,8 @@ a surviving fraction. Journal of the American Statistical Association, 94(447):9
 Yakovlev AY, Tsodikov AD, Asselain B (1996). Stochastic Models of Tumor Latency and Their
 Biostatistical Applications. World Scientific, Singapore.
 
-Zhao Z, Kızılaslan F. (2024). A note on promotion time cure models with a new biological consideration. arXiv,
+Zhao Z, Kızılaslan F (2024). A note on promotion time cure models with a new biological consideration. arXiv,
 DOI https://doi.org/10.48550/arXiv.2408.17188.
 
 
-Zhao Z et al. (2025). Generalized promotion time cure model: A new modeling framework for identification of cell-type-specific genes and survival prediction. arXiv: xxx.
+Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis. arXiv: xxx.

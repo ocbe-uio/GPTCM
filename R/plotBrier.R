@@ -253,10 +253,10 @@ plotBrier <- function(dat, datMCMC,
     "Cox.clin.X.mean" = pred.fitCox.clin.X.mean,
     "PTCM.clin" = predPTCM.prob,
     # "GPTCM-BetaBin" = pred.prob2,
-    "GPTCM-MRF" = pred.prob
+    "GPTCM" = pred.prob
   )
   if (!is.null(datMCMC2)) {
-    list.models <- c(list.models, list("GPTCM-BetaBin" = pred.prob2))
+    list.models <- c(list.models, list("GPTCM2" = pred.prob2))
   }
   g <- riskRegression::Score(
     list.models,
