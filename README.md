@@ -10,7 +10,7 @@ status](https://www.r-pkg.org/badges/version/GPTCM)](https://cran.r-project.org/
 
 
 
-This is an R package **GPTCM** implementing Bayesian hierarchical modeling for a generalized promotion time cure model (GPTCM) ([Zhao \& Kızılaslan, 2024](https://doi.org/10.48550/arXiv.2408.17188); [Zhao et al., 2025](https://doi.org/10.48550/arXiv.2408.17188)) for the identification of cell-type-specific tumor driver genes and survival prognosis. 
+This is an R package **GPTCM** implementing Bayesian hierarchical modeling for a generalized promotion time cure model (GPTCM) ([Zhao \& Kızılaslan, 2024](https://doi.org/10.48550/arXiv.2408.17188); Zhao et al., 2025) for the identification of cell-type-specific tumor driver genes and survival prognosis. 
 
 ## Installation
 
@@ -36,7 +36,7 @@ mean parameters $\boldsymbol\mu_{l}= \exp(\beta_{0l} + \mathbf X_{l} \boldsymbol
 We use latent indicator variables for Bayesian variable selection, i.e. $\boldsymbol \gamma_l = 1\\{\boldsymbol \beta_l\ne 0\\}$ and $\boldsymbol \eta_l = 1\\{\boldsymbol \zeta_l\ne 0\\}$. 
 Censoring is generated through an exponential distribution with censoring rate $20\%$. 
 The Kaplan–Meier survival curve is as follows. 
-See more details in [Zhao et al. (2025)](https://doi.org/10.48550/arXiv.2408.17188). 
+See more details in Zhao et al. (2025). 
 
 ```{r}
 rm(list=ls())
@@ -76,6 +76,7 @@ ggsurv
 
 <img src="man/figures/cran_km.png" width="70%" />
 
+<!-- 
 We fit one of the proposed GPTCM, GPTCM with the Bernoulli-beta prior (GPTCM-Ber2):
 
 $$
@@ -105,7 +106,7 @@ $$
   \rho_{jl} &\sim \mathcal Beta(a_\rho, b_\rho)
 \end{aligned}
 $$
-
+-->
 
 After fitting GPTCM-Ber2, we compare its the survival prediction performance with other approaches (i.e. Kaplan-Meier method without covariates, classic Cox model with two clinical covariates (Cox.clin), Cox model with mean aggregate covariates (Cox.X.mean), Cox model with median aggregate covariatess (Cox.X.median), Cox model with clinical and mean aggregate covariates (Cox.clin.X.mean), and frequentist semiparametric promotion time cure model with clinical variables (PTCM.clin)). 
 The follow figure shows the prediction performance of time-dependent Brier scores. 
