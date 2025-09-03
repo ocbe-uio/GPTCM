@@ -10,7 +10,7 @@ status](https://www.r-pkg.org/badges/version/GPTCM)](https://cran.r-project.org/
 
 
 
-This is an R package **GPTCM** implementing Bayesian hierarchical modeling for a generalized promotion time cure model (GPTCM) ([Zhao \& Kızılaslan, 2024](https://doi.org/10.48550/arXiv.2408.17188); Zhao et al., 2025) for the identification of cell-type-specific tumor driver genes and survival prognosis. 
+This is an R package **GPTCM** implementing Bayesian hierarchical modeling for a generalized promotion time cure model (GPTCM) ([Zhao \& Kızılaslan, 2024](https://doi.org/10.48550/arXiv.2408.17188); [Zhao et al., 2025](https://doi.org/10.48550/arXiv.2509.01001)) for the identification of cell-type-specific tumor driver genes and survival prognosis. 
 
 ## Installation
 
@@ -36,7 +36,7 @@ mean parameters $\boldsymbol\mu_{l}= \exp(\beta_{0l} + \mathbf X_{l} \boldsymbol
 We use latent indicator variables for Bayesian variable selection, i.e. $\boldsymbol \gamma_l = 1\\{\boldsymbol \beta_l\ne 0\\}$ and $\boldsymbol \eta_l = 1\\{\boldsymbol \zeta_l\ne 0\\}$. 
 Censoring is generated through an exponential distribution with censoring rate $20\%$. 
 The Kaplan–Meier survival curve is as follows. 
-See more details in Zhao et al. (2025). 
+See more details in [Zhao et al. (2025)](https://doi.org/10.48550/arXiv.2509.01001). 
 
 ```{r}
 rm(list=ls())
@@ -130,7 +130,7 @@ The following figure shows the posterior distributions of cell-type-specific eff
 
 ```{r}
 # show cel-type-specific effects
-plotCoeff(dat, datMCMC = fit, estimator = "beta", bandwidth = 0.01)
+plotCoeff(dat, datMCMC = fit, estimator = "beta", bandwidth = 0.02)
 # show BVS
 plotCoeff(dat, datMCMC = fit, estimator = "gamma")
 ```
@@ -159,8 +159,7 @@ a surviving fraction. Journal of the American Statistical Association, 94(447):9
 Yakovlev AY, Tsodikov AD, Asselain B (1996). Stochastic Models of Tumor Latency and Their
 Biostatistical Applications. World Scientific, Singapore.
 
-Zhao Z, Kızılaslan F (2024). A note on promotion time cure models with a new biological consideration. arXiv,
-DOI https://doi.org/10.48550/arXiv.2408.17188.
+Zhao Z, Kızılaslan F (2024). A note on promotion time cure models with a new biological consideration. [arXiv:2408.17188](https://doi.org/10.48550/arXiv.2408.17188).
 
 
-Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis. arXiv: xxx.
+Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis. [arXiv:2509.01001](https://doi.org/10.48550/arXiv.2509.01001).
