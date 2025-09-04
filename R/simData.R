@@ -1,23 +1,36 @@
 #' @title Simulate data
 #'
 #' @description
-#' Simulate survival data. (This requires external function 'metropolis_sampler')
+#' Simulate survival data.
 #'
 #' @name simData
 #'
 #' @importFrom stats rbinom rnorm runif rexp rgamma
 #'
-#' @param n TBA
-#' @param p TBA
-#' @param L TBA
-#' @param effects either NULL or 0 for default or 0 cell-type-specific effects
-#' @param Sigma TBA
+#' @param n number of subjects
+#' @param p number of covariates in each cluster
+#' @param L number of clusters
+#' @param Sigma NULL (for a default covariance matrix) or "independent" 
+#' (i.e. Sigma=diag(p*L)) or a self-defined matrix
 #' @param kappas value of the Weibull's shape parameter
 #' @param proportion.model One of \code{c("alr", "cloglog", "log", "dirichlet")}
-#' @param phi TBA
 #' @param model one of \code{c("GPTCM", "Cox")}
 #'
-#' @return An object of ...
+#' @return An object of a list with 14 components
+#' \itemize{
+#' \item "\code{survObj}" - a list including events and times
+#' \item "\code{accepted}" - a vector with acceptance rates to generate each time-to-event data point by Metropolis-Hastings algorithm.
+#' \item "\code{proportion.model}" - value to indicate the model type for simulating proportions data.
+#' \item "\code{proportion}" - a matrix with simulated proportions data.
+#' \item "\code{kappas}" - value of the Weibull's shape parameter.
+#' \item "\code{x0}" - a matrix with the data of clinical variables
+#' \item "\code{X}" - an array with cluster-specific covariates
+#' \item "\code{xi}" - effects of clinical variables
+#' \item "\code{beta0}" - intercepts related to cluster-specific-survival.
+#' \item "\code{betas}" - effects related to cluster-specific-survival.
+#' \item "\code{zetas}" - effects related to cluster-specific-proportions.
+#' \item "\code{mrfG}" - a graph corresponding to the precision matrix of cluster-specific covariates
+#' }
 #'
 #'
 #' @examples
@@ -26,10 +39,8 @@
 #'
 #' @export
 simData <- function(n = 200, p = 10, L = 3,
-                    effects = NULL,
-                    Sigma = 0, kappas = 2,
+                    Sigma = NULL, kappas = 2,
                     proportion.model = "dirichlet",
-                    phi = 10,
                     model = "GPTCM") {
   ## predefined functions
   Expo <- function(times, surv) {
@@ -74,14 +85,9 @@ simData <- function(n = 200, p = 10, L = 3,
     }
   }
 
-  if (!is.null(effects)) {
-    betas[] <- 0
-    zetas[] <- 0
-  }
-
   ## covariates
   # means <- rep(0, p)
-  if (Sigma[1] == 0) {
+  if (is.null(Sigma)) {
     rho0 <- 0.1 # correlation for each gene between cell types
     rho1 <- 0.13 # correlation for in 1st cell type
     rho2 <- 0.14 # correlation for in 2nd cell type
@@ -114,6 +120,14 @@ simData <- function(n = 200, p = 10, L = 3,
       Sigma[off.diag2[[1]][j], off.diag2[[2]][j]] <-
         Sigma[off.diag2[[2]][j], off.diag2[[1]][j]] <- rho0
     }
+  } else if (Sigma == "independent") {
+    Sigma <- diag(p * L)
+  } else if (is.matrix(Sigma)) {
+    if ((NROW(Sigma) != NCOL(Sigma)) || (NROW(Sigma) != p * L)) {
+      stop("Argument 'Sigma' is not valid!")
+    }
+  } else {
+    stop("Argument 'Sigma' is not valid!")
   }
   # Matrix::image(Sigma, sub = "", xlab = "X1     X2     X3", ylab = "")
   # pdf("X_cov.pdf", height = 3, width = 3)
@@ -126,11 +140,11 @@ simData <- function(n = 200, p = 10, L = 3,
   # dev.off()
 
 
-  X <- scale(MASS::mvrnorm(n, rep(0, p * L), Sigma))
-  x1 <- X[, 1:p]
-  x2 <- X[, p + 1:p]
-  x3 <- X[, 2 * p + 1:p]
-  XX <- array(X, dim = c(n, p, L))
+  X00 <- scale(MASS::mvrnorm(n, rep(0, p * L), Sigma))
+  x1 <- X00[, 1:p]
+  x2 <- X00[, p + 1:p]
+  x3 <- X00[, 2 * p + 1:p]
+  X <- array(X00, dim = c(n, p, L))
 
   x01 <- rbinom(n, 1, 0.5)
   x02 <- rnorm(n)
@@ -203,15 +217,18 @@ simData <- function(n = 200, p = 10, L = 3,
 
   ## the following is via logit/alr-link function
   if (proportion.model == "alr") {
+    stop("The specification 'proportion.model == 'alr'' is under development!")
+    
     proportion <- tmp <- matrix(nrow = n, ncol = L)
     for (l in 1:(L - 1)) {
-      tmp[, l] <- exp(cbind(1, XX[, , l]) %*% zetas[, l])
+      tmp[, l] <- exp(cbind(1, X[, , l]) %*% zetas[, l])
     }
     proportion[, L] <- 1 / (1 + rowSums(tmp[, -L]))
     for (l in 1:(L - 1)) {
       proportion[, l] <- tmp[, l] / (1 + rowSums(tmp[, -L]))
     }
-
+    
+    phi <- NA
     alphas <- proportion * phi
     for (i in 1:n) {
       proportion[i, ] <- sapply(1:L, function(l) rgamma(1, alphas[i, l]))
@@ -267,7 +284,7 @@ simData <- function(n = 200, p = 10, L = 3,
     #xi <- c(-1.8, 0.6, -1, -1.2, 1, -1.5)
     xi <- c(0, -0.8, -2, -2, 1, 1) # no intercept
     for (l in 1:L) {
-      XX[, , l] <- x0[, -1]
+      X[, , l] <- x0[, -1]
     }
     proportion <- matrix(1 / L, nrow = n, ncol = L)
     betas[] <- 0
@@ -319,10 +336,10 @@ simData <- function(n = 200, p = 10, L = 3,
     survObj = survObj, accepted = accepted,
     proportion.model = proportion.model,
     proportion = proportion,
-    thetas = thetas,
-    kappas = kappas, mu = mu0,
+    #thetas = thetas,
+    kappas = kappas, #mu = mu0,
     x0 = x0, # x1 = x1, x2 = x2, x3 = x3,
-    XX = XX,
+    X = X,
     xi = xi, beta0 = beta0, # zeta0=zeta0,
     betas = betas, # cbind(beta1, beta2, beta3),
     zetas = zetas,

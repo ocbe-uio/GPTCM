@@ -5,13 +5,13 @@
 #'
 #' @name target
 #'
-#' @param x TBA
-#' @param theta TBA
-#' @param proportion TBA
-#' @param mu TBA
-#' @param kappas TBA
+#' @param x value generated from the proposal distribution
+#' @param theta cure rate parameter (log scale)
+#' @param proportion proportions data
+#' @param mu mean survival time
+#' @param kappas Weibull's true shape parameter
 #'
-#' @return An object of ...
+#' @return value of the targeted (improper) probability density function
 #'
 #'
 #' @examples

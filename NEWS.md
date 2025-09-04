@@ -1,3 +1,7 @@
+# GPTCM 1.0.2
+
+* Improve help files
+
 # GPTCM 1.0.1
 
 * In `simData()`, suppress intercept when simulating data based on the Cox model

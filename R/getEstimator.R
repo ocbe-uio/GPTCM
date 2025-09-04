@@ -45,8 +45,8 @@ getEstimator <- function(object, estimator = "gamma", Pmax = 0,
   }
 
   if ((estimator %in% c("gamma", "beta")) && object$input$BVS) {
-    # estimate <- matrix(colMeans(object$output$mcmc$gammas[-c(1:burnin), ]), ncol = L)
-    estimate <- object$output$mcmc$post$gammas
+    # estimate <- matrix(colMeans(object$output$gammas[-c(1:burnin), ]), ncol = L)
+    estimate <- object$output$post$gammas
     estimate <- rbind(1, estimate)
     gammas <- estimate
     if (Pmax > 0) {
@@ -56,8 +56,8 @@ getEstimator <- function(object, estimator = "gamma", Pmax = 0,
   }
 
   if (estimator == "beta") {
-    # estimate <- matrix(colMeans(object$output$mcmc$betas[-c(1:burnin), ]), ncol = L)
-    estimate <- object$output$mcmc$post$betas
+    # estimate <- matrix(colMeans(object$output$betas[-c(1:burnin), ]), ncol = L)
+    estimate <- object$output$post$betas
 
     if (type %in% c("marginal", "conditional")) {
       if ((type == "conditional") && object$input$BVS) {
@@ -70,7 +70,7 @@ getEstimator <- function(object, estimator = "gamma", Pmax = 0,
   }
 
   if ((estimator %in% c("eta", "zeta")) && object$input$BVS) {
-    estimate <- object$output$mcmc$post$etas
+    estimate <- object$output$post$etas
     estimate <- rbind(1, estimate)
     etas <- estimate
     if (Pmax > 0) {
@@ -80,7 +80,7 @@ getEstimator <- function(object, estimator = "gamma", Pmax = 0,
   }
 
   if (estimator == "zeta") {
-    estimate <- object$output$mcmc$post$zetas
+    estimate <- object$output$post$zetas
 
     if (type %in% c("marginal", "conditional")) {
       if ((type == "conditional") && object$input$BVS) {
@@ -93,18 +93,18 @@ getEstimator <- function(object, estimator = "gamma", Pmax = 0,
   }
 
   if (estimator == "xi") {
-    estimate <- as.vector(object$output$mcmc$post$xi)
+    estimate <- as.vector(object$output$post$xi)
   }
 
   if (estimator == "elpd") {
-    estimate <- loo::loo(object$output$mcmc$loglikelihood[
+    estimate <- loo::loo(object$output$loglikelihood[
       1 + (object$input$burnin:object$input$nIter) / object$input$thin,
     ])
     estimate
   }
 
   if (estimator == "logP") {
-    estimate <- rowSums(object$output$mcmc$loglikelihood)
+    estimate <- rowSums(object$output$loglikelihood)
   }
 
   return(estimate)

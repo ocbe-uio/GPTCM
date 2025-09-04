@@ -7,18 +7,18 @@
 target(x, theta, proportion, mu, kappas)
 }
 \arguments{
-\item{x}{TBA}
+\item{x}{value generated from the proposal distribution}
 
-\item{theta}{TBA}
+\item{theta}{cure rate parameter (log scale)}
 
-\item{proportion}{TBA}
+\item{proportion}{proportions data}
 
-\item{mu}{TBA}
+\item{mu}{mean survival time}
 
-\item{kappas}{TBA}
+\item{kappas}{Weibull's true shape parameter}
 }
 \value{
-An object of ...
+value of the targeted (improper) probability density function
 }
 \description{
 Predefined target density for S_pop in GTPCM

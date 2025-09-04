@@ -7,7 +7,7 @@
 #'
 #' @param object the results of a \code{GPTCM} fit
 #' @param dat the dataset used in \code{GPTCM()}
-#' @param newdata pptional new data at which to do predictions. If missing, the
+#' @param newdata optional new data at which to do predictions. If missing, the
 #' prediction will be based on the training data
 #' @param type the type of predicted value. Currently it is only valid with
 #' 'survival'
@@ -36,24 +36,24 @@ predict.GPTCM <- function(object, dat, newdata = NULL,
   burnin <- object$input$burnin / object$input$thin
 
   # survival predictions based on posterior mean
-  xi.hat <- colMeans(object$output$mcmc$xi[-c(1:burnin), ])
-  betas.hat <- matrix(colMeans(object$output$mcmc$betas[-c(1:burnin), ]), ncol = L)
+  xi.hat <- colMeans(object$output$xi[-c(1:burnin), ])
+  betas.hat <- matrix(colMeans(object$output$betas[-c(1:burnin), ]), ncol = L)
   if (object$input$proportion.model) {
-    zetas.hat <- matrix(colMeans(object$output$mcmc$zetas[-c(1:burnin), ]), ncol = L)
+    zetas.hat <- matrix(colMeans(object$output$zetas[-c(1:burnin), ]), ncol = L)
   }
   if (object$input$BVS) {
-    gammas.hat <- matrix(colMeans(object$output$mcmc$gammas[-c(1:burnin), ]), ncol = L)
+    gammas.hat <- matrix(colMeans(object$output$gammas[-c(1:burnin), ]), ncol = L)
     gammas.hat <- rbind(1, gammas.hat)
     betas.hat <- (gammas.hat >= 0.5) * betas.hat / gammas.hat
     betas.hat[is.na(betas.hat)] <- 0
 
     if (object$input$proportion.model) {
-      etas.hat <- rbind(1, matrix(colMeans(object$output$mcmc$etas[-c(1:burnin), ]), ncol = L))
+      etas.hat <- rbind(1, matrix(colMeans(object$output$etas[-c(1:burnin), ]), ncol = L))
       zetas.hat <- (etas.hat >= 0.5) * zetas.hat / etas.hat
       zetas.hat[is.na(zetas.hat)] <- 0
     }
   }
-  kappa.hat <- mean(object$output$mcmc$kappa[-c(1:burnin)])
+  kappa.hat <- mean(object$output$kappa[-c(1:burnin)])
   thetas.hat <- exp(newdata$x0 %*% xi.hat)
 
   # predict survival probabilities based on GPTCM

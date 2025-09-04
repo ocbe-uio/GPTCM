@@ -8,7 +8,6 @@
 plotBrier(
   dat,
   datMCMC,
-  datMCMC2 = NULL,
   dat.new = NULL,
   time.star = NULL,
   xlab = "Time",
@@ -19,23 +18,26 @@ plotBrier(
 plotMCMC(dat, datMCMC, estimator = "xi")
 }
 \arguments{
-\item{dat}{TBA}
+\item{dat}{input data as a list containing survival data sub-list 
+\code{survObj} with two vectors (\code{event} and \code{time}), clinical 
+variable matrix \code{x0}, cluster-specific covariates \code{X}, and 
+proportions data matrix \code{proportion}}
 
-\item{datMCMC}{TBA}
+\item{datMCMC}{returned object from the main function \code{GPTCM()}}
 
-\item{datMCMC2}{TBA}
+\item{dat.new}{input data for out-sample prediction, with the same format 
+as \code{dat}}
 
-\item{dat.new}{TBA}
+\item{time.star}{largest time for survival prediction}
 
-\item{time.star}{TBA}
+\item{xlab}{a title for the x axis}
 
-\item{xlab}{TBA}
+\item{ylab}{a title for the y axis}
 
-\item{ylab}{TBA}
+\item{...}{others}
 
-\item{...}{TBA}
-
-\item{estimator}{TBA}
+\item{estimator}{print estimators, one of 
+\code{c("beta", "zeta", "gamma", "eta")}}
 }
 \value{
 A \code{ggplot2::ggplot} object. See \code{?ggplot2::ggplot} for more

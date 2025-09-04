@@ -11,19 +11,25 @@
 #' @importFrom utils capture.output
 #' @importFrom scales alpha
 #'
-#' @param dat TBA
-#' @param datMCMC TBA
-#' @param estimator TBA
-#' @param intercept TBA
-#' @param bandwidth TBA
-#' @param xlim TBA
-#' @param xlab TBA
-#' @param label.y TBA
-#' @param first.coef TBA
-#' @param y.axis.size TBA
-#' @param ... TBA
+#' @param dat input data as a list containing survival data sub-list 
+#' \code{survObj} with two vectors (\code{event} and \code{time}), clinical 
+#' variable matrix \code{x0}, cluster-specific covariates \code{X}, and 
+#' proportions data matrix \code{proportion}
+#' @param datMCMC returned object from the main function \code{GPTCM()}
+#' @param estimator print estimators, one of 
+#' \code{c("beta", "zeta", "gamma", "eta")} 
+#' @param intercept logical value to print intercepts
+#' @param bandwidth a value of bandwidth used for the ridgeplot
+#' @param xlim numeric vectors of length 2, giving the x-coordinate range.
+#' @param xlab a title for the x axis
+#' @param label.y a title for the y axis
+#' @param first.coef number of the first variables. Default \code{NULL} for 
+#' all variables
+#' @param y.axis.size text size in pts
+#' @param ... others
 #'
-#' @return An object of ...
+#' @return A \code{ggplot2::ggplot} object. See \code{?ggplot2::ggplot} for more
+#' details of the object.
 #'
 #'
 #' @examples
@@ -63,7 +69,7 @@ plotCoeff <- function(dat,
   # legend0 <- ifelse(is.null(legend.labs), 0, 1)
 
   if (estimator == "beta") {
-    betas.mcmc <- datMCMC$output$mcmc$betas[-c(1:burnin), ]
+    betas.mcmc <- datMCMC$output$betas[-c(1:burnin), ]
     betas.true <- dat$betas
     if (!intercept) {
       betas.mcmc <- betas.mcmc[, -seq(1, ((p + 1) * L), by = p + 1)]
@@ -126,9 +132,9 @@ plotCoeff <- function(dat,
 
   if (estimator %in% c("gamma", "eta")) {
     if (estimator == "gamma") {
-      bvs.mcmc <- datMCMC$output$mcmc$gammas[-c(1:burnin), ]
+      bvs.mcmc <- datMCMC$output$gammas[-c(1:burnin), ]
     } else {
-      bvs.mcmc <- datMCMC$output$mcmc$etas[-c(1:burnin), ]
+      bvs.mcmc <- datMCMC$output$etas[-c(1:burnin), ]
     }
     mPIP <- matrix(colMeans(bvs.mcmc), nrow = p, ncol = L)
     if (any(mPIP < 5e-3)) {
@@ -178,7 +184,7 @@ plotCoeff <- function(dat,
     if (!datMCMC$input$dirichlet) {
       L <- L - 1
     }
-    zetas.mcmc <- datMCMC$output$mcmc$zetas[-c(1:burnin), 1:(L * (p + 1))]
+    zetas.mcmc <- datMCMC$output$zetas[-c(1:burnin), 1:(L * (p + 1))]
     zetas.true <- dat$zetas[, 1:L]
     if (!intercept) {
       zetas.mcmc <- zetas.mcmc[, -seq(1, ((p + 1) * L), by = p + 1)]

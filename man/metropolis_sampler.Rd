@@ -18,31 +18,31 @@ metropolis_sampler(
 )
 }
 \arguments{
-\item{initial_value}{TBA}
+\item{initial_value}{initial values}
 
-\item{n}{TBA}
+\item{n}{number of draws}
 
-\item{proposal_shape}{TBA}
+\item{proposal_shape}{Weibull's shape parameter in the proposal}
 
-\item{proposal_scale}{TBA}
+\item{proposal_scale}{Weibull's scale parameter in the proposal}
 
-\item{theta}{TBA}
+\item{theta}{cure rate parameter (log scale)}
 
-\item{proportion}{TBA}
+\item{proportion}{proportions data}
 
-\item{mu}{TBA}
+\item{mu}{mean survival time}
 
-\item{kappas}{TBA}
+\item{kappas}{Weibull's true shape parameter}
 
-\item{burnin}{TBA}
+\item{burnin}{length of burn-in period}
 
-\item{lag}{TBA}
+\item{lag}{discarding lag-1 values in the Metropolis step}
 }
 \value{
-An object of ...
+A dataframe consisting of the sampled values and acceptance rate
 }
 \description{
-Random number generator via MH algorithm.
+Random number generator via Metropolis-Hastings algorithm.
 }
 \examples{
 

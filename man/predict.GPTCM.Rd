@@ -11,7 +11,7 @@
 
 \item{dat}{the dataset used in \code{GPTCM()}}
 
-\item{newdata}{pptional new data at which to do predictions. If missing, the
+\item{newdata}{optional new data at which to do predictions. If missing, the
 prediction will be based on the training data}
 
 \item{type}{the type of predicted value. Currently it is only valid with

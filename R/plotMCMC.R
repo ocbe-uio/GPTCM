@@ -8,10 +8,14 @@
 #' @importFrom ggplot2 ggplot aes geom_step theme element_blank
 #' @importFrom graphics segments
 #'
-#' @param dat TBA
-#' @param datMCMC TBA
-#' @param estimator TBA
-#' @param ... TBA
+#' @param dat input data as a list containing survival data sub-list 
+#' \code{survObj} with two vectors (\code{event} and \code{time}), clinical 
+#' variable matrix \code{x0}, cluster-specific covariates \code{X}, and 
+#' proportions data matrix \code{proportion}
+#' @param datMCMC returned object from the main function \code{GPTCM()}
+#' @param estimator print estimators, one of 
+#' \code{c("beta", "zeta", "gamma", "eta")} 
+#' @param ... others
 #'
 #' @return A \code{ggplot2::ggplot} object. See \code{?ggplot2::ggplot} for more
 #' details of the object.
@@ -40,7 +44,7 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
     p <- 10
   }
   if ("beta" %in% estimator) {
-    betas.mcmc <- datMCMC$output$mcmc$betas[, p.idx]
+    betas.mcmc <- datMCMC$output$betas[, p.idx]
     dat$betas <- rbind(dat$beta0, dat$betas)
     ylabel <- paste0(
       "expression(beta['", rep(0:p, L), ",",
@@ -60,13 +64,13 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
   if ("zeta" %in% estimator) {
     dirichlet <- datMCMC$input$dirichlet
     if (dirichlet) {
-      zetas.mcmc <- datMCMC$output$mcmc$zetas[, p.idx]
+      zetas.mcmc <- datMCMC$output$zetas[, p.idx]
       ylabel <- paste0(
         "expression(zeta['", rep(0:p, L), ",",
         rep(1:L, each = p + 1), "'])"
       )
     } else {
-      zetas.mcmc <- datMCMC$output$mcmc$zetas[, p.DirFalse.idx] # 1:((p + 1) * (L - 1))]
+      zetas.mcmc <- datMCMC$output$zetas[, p.DirFalse.idx] # 1:((p + 1) * (L - 1))]
       ylabel <- paste0(
         "expression(zeta['", rep(0:p, L - 1), ",",
         rep(1:(L - 1), each = p + 1), "'])"
@@ -89,7 +93,7 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
   }
 
   if (any(estimator %in% c("gamma", "eta"))) {
-    bvs.mcmc <- eval(parse(text = paste0("datMCMC$output$mcmc$", estimator, "s")))
+    bvs.mcmc <- eval(parse(text = paste0("datMCMC$output$", estimator, "s")))
     nIter <- nrow(bvs.mcmc)
     p <- dim(dat$XX)[2]
 
@@ -117,8 +121,8 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
   }
 
   if ("xi" %in% estimator) {
-    p <- dim(datMCMC$output$mcmc$xi)[2]
-    xi.mcmc <- datMCMC$output$mcmc$xi
+    p <- dim(datMCMC$output$xi)[2]
+    xi.mcmc <- datMCMC$output$xi
 
     ylabel <- paste0("expression(xi[", 0:(p - 1), "])")
     layout(matrix(1:p, ncol = 1))
@@ -137,7 +141,7 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
     layout(matrix(1:length(estimator), ncol = 1))
     par(mar = c(2, 4.1, 2, 2))
     if ("kappa" %in% estimator) {
-      kappa.mcmc <- datMCMC$output$mcmc$kappa
+      kappa.mcmc <- datMCMC$output$kappa
       plot(kappa.mcmc,
         type = "l", lty = 1,
         ylab = expression(kappa), xlab = "MCMC iteration",
@@ -147,7 +151,7 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
     }
 
     if ("tau" %in% estimator) {
-      tauSq.mcmc <- datMCMC$output$mcmc$tauSq
+      tauSq.mcmc <- datMCMC$output$tauSq
       plot(tauSq.mcmc,
         type = "l", lty = 1,
         ylab = expression(tau^2), xlab = "MCMC iteration",
@@ -156,7 +160,7 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
     }
 
     if ("w" %in% estimator) {
-      wSq.mcmc <- datMCMC$output$mcmc$wSq
+      wSq.mcmc <- datMCMC$output$wSq
       plot(wSq.mcmc,
         type = "l", lty = 1,
         ylab = expression(w^2), xlab = "MCMC iteration",
@@ -165,7 +169,7 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
     }
 
     if ("v" %in% estimator) {
-      vSq.mcmc <- datMCMC$output$mcmc$vSq
+      vSq.mcmc <- datMCMC$output$vSq
       plot(vSq.mcmc,
         type = "l", lty = 1,
         ylab = expression(v^2), xlab = "MCMC iteration",
@@ -174,7 +178,7 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
     }
 
     if ("phi" %in% estimator) {
-      phi.mcmc <- datMCMC$output$mcmc$phi
+      phi.mcmc <- datMCMC$output$phi
       plot(phi.mcmc,
         type = "l", lty = 1,
         ylab = expression(phi), xlab = "MCMC iteration",

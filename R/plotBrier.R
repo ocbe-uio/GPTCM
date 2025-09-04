@@ -13,14 +13,17 @@
 #' @importFrom utils globalVariables
 #' @importFrom graphics layout par abline
 #'
-#' @param dat TBA
-#' @param datMCMC TBA
-#' @param datMCMC2 TBA
-#' @param dat.new TBA
-#' @param time.star TBA
-#' @param xlab TBA
-#' @param ylab TBA
-#' @param ... TBA
+#' @param dat input data as a list containing survival data sub-list 
+#' \code{survObj} with two vectors (\code{event} and \code{time}), clinical 
+#' variable matrix \code{x0}, cluster-specific covariates \code{X}, and 
+#' proportions data matrix \code{proportion}
+#' @param datMCMC returned object from the main function \code{GPTCM()}
+#' @param dat.new input data for out-sample prediction, with the same format 
+#' as \code{dat}
+#' @param time.star largest time for survival prediction
+#' @param xlab a title for the x axis
+#' @param ylab a title for the y axis
+#' @param ... other parameters
 #'
 #' @return A \code{ggplot2::ggplot} object. See \code{?ggplot2::ggplot} for more
 #' details of the object.
@@ -31,7 +34,6 @@
 #'
 #' @export
 plotBrier <- function(dat, datMCMC,
-                      datMCMC2 = NULL,
                       dat.new = NULL,
                       time.star = NULL,
                       xlab = "Time",
@@ -81,24 +83,24 @@ plotBrier <- function(dat, datMCMC,
   burnin <- datMCMC$input$burnin / datMCMC$input$thin
 
   # survival predictions based on posterior mean
-  xi.hat <- colMeans(datMCMC$output$mcmc$xi[-c(1:burnin), ])
-  betas.hat <- matrix(colMeans(datMCMC$output$mcmc$betas[-c(1:burnin), ]), ncol = L)
+  xi.hat <- colMeans(datMCMC$output$xi[-c(1:burnin), ])
+  betas.hat <- matrix(colMeans(datMCMC$output$betas[-c(1:burnin), ]), ncol = L)
   if (datMCMC$input$proportion.model) {
-    zetas.hat <- matrix(colMeans(datMCMC$output$mcmc$zetas[-c(1:burnin), ]), ncol = L)
+    zetas.hat <- matrix(colMeans(datMCMC$output$zetas[-c(1:burnin), ]), ncol = L)
   }
   if (datMCMC$input$BVS) {
-    gammas.hat <- matrix(colMeans(datMCMC$output$mcmc$gammas[-c(1:burnin), ]), ncol = L)
+    gammas.hat <- matrix(colMeans(datMCMC$output$gammas[-c(1:burnin), ]), ncol = L)
     gammas.hat <- rbind(1, gammas.hat)
     betas.hat <- (gammas.hat >= 0.5) * betas.hat / gammas.hat
     betas.hat[is.na(betas.hat)] <- 0
 
     if (datMCMC$input$proportion.model) {
-      etas.hat <- rbind(1, matrix(colMeans(datMCMC$output$mcmc$etas[-c(1:burnin), ]), ncol = L))
+      etas.hat <- rbind(1, matrix(colMeans(datMCMC$output$etas[-c(1:burnin), ]), ncol = L))
       zetas.hat <- (etas.hat >= 0.5) * zetas.hat / etas.hat
       zetas.hat[is.na(zetas.hat)] <- 0
     }
   }
-  kappa.hat <- mean(datMCMC$output$mcmc$kappa[-c(1:burnin)])
+  kappa.hat <- mean(datMCMC$output$kappa[-c(1:burnin)])
   thetas.hat <- exp(dat.new$x0 %*% xi.hat)
 
   # predict survival probabilities based on GPTCM
@@ -123,54 +125,6 @@ plotBrier <- function(dat, datMCMC,
     Surv.prob[, j] <- exp(-thetas.hat * (1 - tmp))
   }
   pred.prob <- 1 - Surv.prob
-
-  # predict survival probabilities for dat.new based on GPTCM
-  if (!is.null(datMCMC2)) {
-    burnin <- datMCMC2$input$burnin / datMCMC2$input$thin
-
-    # survival predictions based on posterior mean
-    xi.hat2 <- colMeans(datMCMC2$output$mcmc$xi[-c(1:burnin), ])
-    betas.hat2 <- matrix(colMeans(datMCMC2$output$mcmc$betas[-c(1:burnin), ]), ncol = L)
-    if (datMCMC2$input$proportion.model) {
-      zetas.hat2 <- matrix(colMeans(datMCMC2$output$mcmc$zetas[-c(1:burnin), ]), ncol = L)
-    }
-    if (datMCMC2$input$BVS) {
-      gammas.hat2 <- matrix(colMeans(datMCMC2$output$mcmc$gammas[-c(1:burnin), ]), ncol = L)
-      gammas.hat2 <- rbind(1, gammas.hat2)
-      betas.hat2 <- (gammas.hat2 >= 0.5) * betas.hat2 / gammas.hat2
-      betas.hat2[is.na(betas.hat2)] <- 0
-
-      if (datMCMC2$input$proportion.model) {
-        etas.hat2 <- rbind(1, matrix(colMeans(datMCMC2$output$mcmc$etas[-c(1:burnin), ]), ncol = L))
-        zetas.hat2 <- (etas.hat2 >= 0.5) * zetas.hat2 / etas.hat2
-        zetas.hat2[is.na(zetas.hat2)] <- 0
-      }
-    }
-    kappa.hat2 <- mean(datMCMC2$output$mcmc$kappa[-c(1:burnin)])
-    thetas.hat2 <- exp(dat.new$x0 %*% xi.hat2)
-
-    # predict survival probabilities based on GPTCM
-    Surv.prob2 <- matrix(nrow = n, ncol = length(time_eval))
-    if (datMCMC2$input$proportion.model) {
-      alphas <- sapply(1:L, function(ll) {
-        exp(cbind(1, dat.new$XX[, , ll]) %*% zetas.hat2[, ll])
-      })
-      proportion.hat2 <- alphas / rowSums(alphas)
-    } else {
-      proportion.hat2 <- dat$proportion
-    }
-    for (j in 1:length(time_eval)) {
-      tmp <- 0
-      for (l in 1:L) {
-        mu <- exp(cbind(1, dat.new$XX[, , l]) %*% betas.hat2[, l])
-        lambdas <- mu / gamma(1 + 1 / kappa.hat2)
-        weibull.S <- exp(-(time_eval[j] / lambdas)^kappa.hat2)
-        tmp <- tmp + proportion.hat2[, l] * weibull.S
-      }
-      Surv.prob2[, j] <- exp(-thetas.hat2 * (1 - tmp))
-    }
-    pred.prob2 <- 1 - Surv.prob2
-  }
 
   # other competing survival models
   formula.tmp <- as.formula(paste0("Surv(time, event) ~ ", paste0(x0.names, collapse = "+")))
@@ -255,9 +209,7 @@ plotBrier <- function(dat, datMCMC,
     # "GPTCM-BetaBin" = pred.prob2,
     "GPTCM" = pred.prob
   )
-  if (!is.null(datMCMC2)) {
-    list.models <- c(list.models, list("GPTCM2" = pred.prob2))
-  }
+
   g <- riskRegression::Score(
     list.models,
     formula = Surv(time, event) ~ 1,

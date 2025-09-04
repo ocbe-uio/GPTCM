@@ -8,38 +8,47 @@ simData(
   n = 200,
   p = 10,
   L = 3,
-  effects = NULL,
-  Sigma = 0,
+  Sigma = NULL,
   kappas = 2,
   proportion.model = "dirichlet",
-  phi = 10,
   model = "GPTCM"
 )
 }
 \arguments{
-\item{n}{TBA}
+\item{n}{number of subjects}
 
-\item{p}{TBA}
+\item{p}{number of covariates in each cluster}
 
-\item{L}{TBA}
+\item{L}{number of clusters}
 
-\item{effects}{either NULL or 0 for default or 0 cell-type-specific effects}
-
-\item{Sigma}{TBA}
+\item{Sigma}{NULL (for a default covariance matrix) or "independent" 
+(i.e. Sigma=diag(p*L)) or a self-defined matrix}
 
 \item{kappas}{value of the Weibull's shape parameter}
 
 \item{proportion.model}{One of \code{c("alr", "cloglog", "log", "dirichlet")}}
 
-\item{phi}{TBA}
-
 \item{model}{one of \code{c("GPTCM", "Cox")}}
 }
 \value{
-An object of ...
+An object of a list with 14 components
+\itemize{
+\item "\code{survObj}" - a list including events and times
+\item "\code{accepted}" - a vector with acceptance rates to generate each time-to-event data point by Metropolis-Hastings algorithm.
+\item "\code{proportion.model}" - value to indicate the model type for simulating proportions data.
+\item "\code{proportion}" - a matrix with simulated proportions data.
+\item "\code{kappas}" - value of the Weibull's shape parameter.
+\item "\code{x0}" - a matrix with the data of clinical variables
+\item "\code{X}" - an array with cluster-specific covariates
+\item "\code{xi}" - effects of clinical variables
+\item "\code{beta0}" - intercepts related to cluster-specific-survival.
+\item "\code{betas}" - effects related to cluster-specific-survival.
+\item "\code{zetas}" - effects related to cluster-specific-proportions.
+\item "\code{mrfG}" - a graph corresponding to the precision matrix of cluster-specific covariates
+}
 }
 \description{
-Simulate survival data. (This requires external function 'metropolis_sampler')
+Simulate survival data.
 }
 \examples{
 
