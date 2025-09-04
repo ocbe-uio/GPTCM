@@ -16,7 +16,7 @@
 #'
 #' @examples
 #'
-#' x <- 1
+#' time1 <- target(1.2, 0.1, c(0.2, 0.3, 0.5), c(0.2, 0.1, 0.4), 2)
 #'
 #' @export
 target <- function(x, theta, proportion, mu, kappas) {

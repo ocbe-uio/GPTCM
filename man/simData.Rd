@@ -31,7 +31,7 @@ simData(
 \item{model}{one of \code{c("GPTCM", "Cox")}}
 }
 \value{
-An object of a list with 14 components
+An object of a list with 12 components
 \itemize{
 \item "\code{survObj}" - a list including events and times
 \item "\code{accepted}" - a vector with acceptance rates to generate each time-to-event data point by Metropolis-Hastings algorithm.
@@ -52,6 +52,15 @@ Simulate survival data.
 }
 \examples{
 
-x <- 1
+# simulate data
+set.seed(123)
+n <- 200 # subjects
+p <- 10 # variable selection predictors
+L <- 3 # cell types
+dat <- simData(n, p, L)
+str(dat)
 
+}
+\references{
+Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
 }

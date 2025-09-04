@@ -4,7 +4,7 @@
 \alias{predict.GPTCM}
 \title{Predictions for a GPTCM}
 \usage{
-\method{predict}{GPTCM}(object, dat, newdata = NULL, type = "survival", ...)
+\method{predict}{GPTCM}(object, dat, newdata = NULL, type = "survival", times = NULL, ...)
 }
 \arguments{
 \item{object}{the results of a \code{GPTCM} fit}
@@ -15,7 +15,10 @@
 prediction will be based on the training data}
 
 \item{type}{the type of predicted value. Currently it is only valid with
-'survival'}
+\code{'survival'}}
+
+\item{times}{evaluation time points for survival prediction. Default 
+\code{NULL} for predicting all time points in the \code{newdata} set}
 
 \item{...}{for future methods}
 }
@@ -27,6 +30,19 @@ Compute fitted values for a generalized promotion time cure model (GPTCM)
 }
 \examples{
 
-x <- 1
+# simulate data
+set.seed(123)
+n <- 200 # subjects
+p <- 10 # variable selection predictors
+L <- 3 # cell types
+dat <- simData(n, p, L)
 
+# run a Bayesian GPTCM model: GPTCM-Ber2
+fit <- GPTCM(dat, nIter = 50, burnin = 0)
+
+pred.survival <- predict(fit, dat, newdata = dat, times = c(1, 3, 5))
+
+}
+\references{
+Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
 }

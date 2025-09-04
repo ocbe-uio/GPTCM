@@ -20,9 +20,21 @@
 #' @return A \code{ggplot2::ggplot} object. See \code{?ggplot2::ggplot} for more
 #' details of the object.
 #'
+#' @references Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
+#' 
 #' @examples
 #'
-#' x <- 1
+#' # simulate data
+#' set.seed(123)
+#' n <- 200 # subjects
+#' p <- 10 # variable selection predictors
+#' L <- 3 # cell types
+#' dat <- simData(n, p, L)
+#' 
+#' # run a Bayesian GPTCM model: GPTCM-Ber2
+#' fit <- GPTCM(dat, nIter = 50, burnin = 0)
+#' 
+#' plotMCMC(dat, datMCMC = fit, estimator = "xi")
 #'
 #' @export
 plotMCMC <- function(dat, datMCMC, estimator = "xi") {

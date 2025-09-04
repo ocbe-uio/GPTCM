@@ -23,21 +23,35 @@
 #' @param time.star largest time for survival prediction
 #' @param xlab a title for the x axis
 #' @param ylab a title for the y axis
+#' @param PTCM logical value for adding survival prediction by the PTCM 
 #' @param ... other parameters
 #'
 #' @return A \code{ggplot2::ggplot} object. See \code{?ggplot2::ggplot} for more
 #' details of the object.
 #'
+#' @references Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
+#' 
 #' @examples
 #'
-#' x <- 1
+#' # simulate data
+#' set.seed(123)
+#' n <- 200 # subjects
+#' p <- 10 # variable selection predictors
+#' L <- 3 # cell types
+#' dat <- simData(n, p, L)
+#' 
+#' # run a Bayesian GPTCM model: GPTCM-Ber2
+#' fit <- GPTCM(dat, nIter = 50, burnin = 0)
+#' 
+#' plotBrier(dat, datMCMC = fit, PTCM = FALSE)
 #'
 #' @export
 plotBrier <- function(dat, datMCMC,
                       dat.new = NULL,
                       time.star = NULL,
                       xlab = "Time",
-                      ylab = "Brier score", ...) {
+                      ylab = "Brier score", 
+                      PTCM = TRUE, ...) {
   n <- dim(dat$X)[1]
   p <- dim(dat$X)[2]
   L <- dim(dat$X)[3]
@@ -149,55 +163,57 @@ plotBrier <- function(dat, datMCMC,
   survfit0 <- survival::survfit(fitCox.clin.X.mean, survObj.new)
   pred.fitCox.clin.X.mean <- t(1 - summary(survfit0, times = time_eval, extend = TRUE)$surv)
 
-  # library(miCoPTCM) # good estimation for cure fraction; same BS as Cox.clin
-  formula.tmp <- as.formula(paste0("Surv(time, event) ~ ", paste0(x0.names, collapse = "+")))
-  p0 <- 1 + length(x0.names)
-  suppressWarnings(
-    resMY <- miCoPTCM::PTCMestimBF(formula.tmp,
-      data = survObj,
-      varCov = matrix(0, nrow = p0, ncol = p0),
-      init = rep(0, p0)
+  if (PTCM) {
+    # library(miCoPTCM) # good estimation for cure fraction; same BS as Cox.clin
+    formula.tmp <- as.formula(paste0("Surv(time, event) ~ ", paste0(x0.names, collapse = "+")))
+    p0 <- 1 + length(x0.names)
+    suppressWarnings(
+      resMY <- miCoPTCM::PTCMestimBF(formula.tmp,
+                                     data = survObj,
+                                     varCov = matrix(0, nrow = p0, ncol = p0),
+                                     init = rep(0, p0)
+      )
     )
-  )
-  # use interpolation to resMY$estimCDF for testing validation time points
-  if (dat.new.flag) {
-    n.new <- length(dat.new$survObj$time)
-    estimCDF.new <- rep(NA, n.new)
-
-    time.old.sort <- sort(survObj$time)
-    time.old.min <- min(survObj$time)
-    time.old.max <- max(survObj$time)
-    time.old.max2 <- survObj$time[n - 1]
-    for (i in 1:n.new) {
-      if (dat.new$survObj$time[i] %in% survObj$time) {
-        estimCDF.new[i] <- resMY$estimCDF[which(time.old.sort ==
-          dat.new$survObj$time[i])[1]]
-      } else {
-        if (dat.new$survObj$time[i] < time.old.min) {
-          # use linear interpolation
-          estimCDF.new[i] <- resMY$estimCDF[1] *
-            dat.new$survObj$time[i] / time.old.min
+    # use interpolation to resMY$estimCDF for testing validation time points
+    if (dat.new.flag) {
+      n.new <- length(dat.new$survObj$time)
+      estimCDF.new <- rep(NA, n.new)
+      
+      time.old.sort <- sort(survObj$time)
+      time.old.min <- min(survObj$time)
+      time.old.max <- max(survObj$time)
+      time.old.max2 <- survObj$time[n - 1]
+      for (i in 1:n.new) {
+        if (dat.new$survObj$time[i] %in% survObj$time) {
+          estimCDF.new[i] <- resMY$estimCDF[which(time.old.sort ==
+                                                    dat.new$survObj$time[i])[1]]
         } else {
-          if (dat.new$survObj$time[i] < time.old.max) {
+          if (dat.new$survObj$time[i] < time.old.min) {
             # use linear interpolation
-            time.idxU <- which(dat.new$survObj$time[i] < time.old.sort)[1]
-            time.idxL <- time.idxU - 1
-            estimCDF.new[i] <- resMY$estimCDF[time.idxL] +
-              (resMY$estimCDF[time.idxU] - resMY$estimCDF[time.idxL]) *
-                (dat.new$survObj$time[i] - time.old.sort[time.idxL])
+            estimCDF.new[i] <- resMY$estimCDF[1] *
+              dat.new$survObj$time[i] / time.old.min
           } else {
-            # use linear extrapolation
-            estimCDF.new[i] <- resMY$estimCDF[n] +
-              (resMY$estimCDF[n] - resMY$estimCDF[n - 1]) *
+            if (dat.new$survObj$time[i] < time.old.max) {
+              # use linear interpolation
+              time.idxU <- which(dat.new$survObj$time[i] < time.old.sort)[1]
+              time.idxL <- time.idxU - 1
+              estimCDF.new[i] <- resMY$estimCDF[time.idxL] +
+                (resMY$estimCDF[time.idxU] - resMY$estimCDF[time.idxL]) *
+                (dat.new$survObj$time[i] - time.old.sort[time.idxL])
+            } else {
+              # use linear extrapolation
+              estimCDF.new[i] <- resMY$estimCDF[n] +
+                (resMY$estimCDF[n] - resMY$estimCDF[n - 1]) *
                 (dat.new$survObj$time[i] - time.old.max) /
                 (time.old.max - time.old.min)
+            }
           }
         }
       }
     }
+    Surv.PTCM <- exp(-exp(dat.new$x0 %*% resMY$coefficients) %*% t(resMY$estimCDF))
+    predPTCM.prob <- 1 - Surv.PTCM
   }
-  Surv.PTCM <- exp(-exp(dat.new$x0 %*% resMY$coefficients) %*% t(resMY$estimCDF))
-  predPTCM.prob <- 1 - Surv.PTCM
 
   list.models <- list(
     "Cox.clin" = pred.fitCox.clin,
@@ -205,11 +221,13 @@ plotBrier <- function(dat, datMCMC,
     "Cox.X.median" = pred.fitCox.X.median,
     # "Cox.clin.X.median"=fitCox.clin.X.median,
     "Cox.clin.X.mean" = pred.fitCox.clin.X.mean,
-    "PTCM.clin" = predPTCM.prob,
+    # "PTCM.clin" = predPTCM.prob,
     # "GPTCM-BetaBin" = pred.prob2,
     "GPTCM" = pred.prob
   )
-
+  if (PTCM) {
+    list.models <- c(list.models, list("GPTCM-PTCM.clin" = predPTCM.prob))
+  }
   g <- riskRegression::Score(
     list.models,
     formula = Surv(time, event) ~ 1,

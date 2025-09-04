@@ -12,6 +12,7 @@ plotBrier(
   time.star = NULL,
   xlab = "Time",
   ylab = "Brier score",
+  PTCM = TRUE,
   ...
 )
 
@@ -34,6 +35,8 @@ as \code{dat}}
 
 \item{ylab}{a title for the y axis}
 
+\item{PTCM}{logical value for adding survival prediction by the PTCM}
+
 \item{...}{others}
 
 \item{estimator}{print estimators, one of 
@@ -53,9 +56,34 @@ MCMC
 }
 \examples{
 
-x <- 1
+# simulate data
+set.seed(123)
+n <- 200 # subjects
+p <- 10 # variable selection predictors
+L <- 3 # cell types
+dat <- simData(n, p, L)
+
+# run a Bayesian GPTCM model: GPTCM-Ber2
+fit <- GPTCM(dat, nIter = 50, burnin = 0)
+
+plotBrier(dat, datMCMC = fit, PTCM = FALSE)
 
 
-x <- 1
+# simulate data
+set.seed(123)
+n <- 200 # subjects
+p <- 10 # variable selection predictors
+L <- 3 # cell types
+dat <- simData(n, p, L)
 
+# run a Bayesian GPTCM model: GPTCM-Ber2
+fit <- GPTCM(dat, nIter = 50, burnin = 0)
+
+plotMCMC(dat, datMCMC = fit, estimator = "xi")
+
+}
+\references{
+Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
+
+Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
 }
