@@ -1,8 +1,8 @@
 #' @title Fit Bayesian GPTCM Model with C/C++
 #'
 #' @description
-#' This is the main function to fit the Bayesian GPTCM model with multiscale data
-#' for sparse identification of high-dimensional covariates.
+#' This is the main function to fit the Bayesian GPTCM models (Zhao et al. 2025)
+#' with multiscale data for sparse identification of high-dimensional covariates
 #'
 #' @name GPTCM
 #' @useDynLib GPTCM
@@ -63,9 +63,21 @@
 #' \item call - the matched call
 #' }
 #'
+#' @references Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
+#' 
 #' @examples
 #'
-#' x <- 1
+#' # simulate data
+#' set.seed(123)
+#' n <- 200 # subjects
+#' p <- 10 # variable selection predictors
+#' L <- 3 # cell types
+#' dat <- simData(n, p, L)
+#' 
+#' # run a Bayesian GPTCM model: GPTCM-Ber2
+#' fit <- GPTCM(dat, nIter = 50, burnin = 0)
+#' 
+#' plotCoeff(dat, datMCMC = fit, estimator = "beta")
 #'
 #' @export
 GPTCM <- function(dat,
@@ -88,7 +100,7 @@ GPTCM <- function(dat,
                   arms.list = NULL) {
   # Validation
   stopifnot(burnin < nIter)
-  stopifnot(burnin >= 1)
+  stopifnot(burnin >= 0)
 
   n <- dim(dat$X)[1]
   p <- dim(dat$X)[2]

@@ -22,9 +22,9 @@
 #' @export
 predict.GPTCM <- function(object, dat, newdata = NULL,
                           type = "survival", ...) {
-  n <- dim(dat$XX)[1]
-  p <- dim(dat$XX)[2]
-  L <- dim(dat$XX)[3]
+  n <- dim(dat$X)[1]
+  p <- dim(dat$X)[2]
+  L <- dim(dat$X)[3]
 
   if (is.null(newdata)) {
     survObj.new <- dat$survObj
@@ -61,7 +61,7 @@ predict.GPTCM <- function(object, dat, newdata = NULL,
   Surv.prob <- matrix(nrow = n, ncol = length(time_eval))
   if (object$input$proportion.model) {
     alphas <- sapply(1:L, function(ll) {
-      exp(cbind(1, newdata$XX[, , ll]) %*% zetas.hat[, ll])
+      exp(cbind(1, newdata$X[, , ll]) %*% zetas.hat[, ll])
     })
     proportion.hat <- alphas / rowSums(alphas)
   } else {
@@ -70,7 +70,7 @@ predict.GPTCM <- function(object, dat, newdata = NULL,
   for (j in 1:length(time_eval)) {
     tmp <- 0
     for (l in 1:L) {
-      mu <- exp(cbind(1, newdata$XX[, , l]) %*% betas.hat[, l])
+      mu <- exp(cbind(1, newdata$X[, , l]) %*% betas.hat[, l])
       lambdas <- mu / gamma(1 + 1 / kappa.hat)
       weibull.S <- exp(-(time_eval[j] / lambdas)^kappa.hat)
       tmp <- tmp + proportion.hat[, l] * weibull.S

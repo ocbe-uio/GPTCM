@@ -38,14 +38,14 @@ plotBrier <- function(dat, datMCMC,
                       time.star = NULL,
                       xlab = "Time",
                       ylab = "Brier score", ...) {
-  n <- dim(dat$XX)[1]
-  p <- dim(dat$XX)[2]
-  L <- dim(dat$XX)[3]
+  n <- dim(dat$X)[1]
+  p <- dim(dat$X)[2]
+  L <- dim(dat$X)[3]
 
   # re-organize clinical variables for classical Cox and PTCM models
-  x <- apply(dat$XX, c(1, 2), mean)
+  x <- apply(dat$X, c(1, 2), mean)
   colnames(x) <- paste0("x", 1:p)
-  x.median <- apply(dat$XX, c(1, 2), median)
+  x.median <- apply(dat$X, c(1, 2), median)
   colnames(x.median) <- paste0("x.median", 1:p)
   p.orig <- p
   if (p > 10) {
@@ -65,9 +65,9 @@ plotBrier <- function(dat, datMCMC,
   } else {
     dat.new.flag <- TRUE
     # re-organize clinical variables for classical Cox and PTCM models
-    x.new <- apply(dat.new$XX, c(1, 2), mean)
+    x.new <- apply(dat.new$X, c(1, 2), mean)
     colnames(x.new) <- paste0("x", 1:p.orig)
-    x.median.new <- apply(dat.new$XX, c(1, 2), median)
+    x.median.new <- apply(dat.new$X, c(1, 2), median)
     colnames(x.median.new) <- paste0("x.median", 1:p.orig)
     if (p > 10) {
       p <- 10
@@ -108,7 +108,7 @@ plotBrier <- function(dat, datMCMC,
   Surv.prob <- matrix(nrow = n, ncol = length(time_eval))
   if (datMCMC$input$proportion.model) {
     alphas <- sapply(1:L, function(ll) {
-      exp(cbind(1, dat.new$XX[, , ll]) %*% zetas.hat[, ll])
+      exp(cbind(1, dat.new$X[, , ll]) %*% zetas.hat[, ll])
     })
     proportion.hat <- alphas / rowSums(alphas)
   } else {
@@ -117,7 +117,7 @@ plotBrier <- function(dat, datMCMC,
   for (j in 1:length(time_eval)) {
     tmp <- 0
     for (l in 1:L) {
-      mu <- exp(cbind(1, dat.new$XX[, , l]) %*% betas.hat[, l])
+      mu <- exp(cbind(1, dat.new$X[, , l]) %*% betas.hat[, l])
       lambdas <- mu / gamma(1 + 1 / kappa.hat)
       weibull.S <- exp(-(time_eval[j] / lambdas)^kappa.hat)
       tmp <- tmp + proportion.hat[, l] * weibull.S

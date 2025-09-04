@@ -26,9 +26,9 @@
 #'
 #' @export
 plotMCMC <- function(dat, datMCMC, estimator = "xi") {
-  # n <- dim(dat$XX)[1]
-  p <- dim(dat$XX)[2]
-  L <- dim(dat$XX)[3]
+  # n <- dim(dat$X)[1]
+  p <- dim(dat$X)[2]
+  L <- dim(dat$X)[3]
   # nIter <- datMCMC$input$nIter
   # burnin <- datMCMC$input$burnin
 
@@ -95,7 +95,7 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
   if (any(estimator %in% c("gamma", "eta"))) {
     bvs.mcmc <- eval(parse(text = paste0("datMCMC$output$", estimator, "s")))
     nIter <- nrow(bvs.mcmc)
-    p <- dim(dat$XX)[2]
+    p <- dim(dat$X)[2]
 
     layout(matrix(1:L, nrow = 1))
     par(mar = c(2, 4.1, 2, 2))

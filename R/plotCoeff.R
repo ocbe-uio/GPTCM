@@ -47,9 +47,9 @@ plotCoeff <- function(dat,
                       label.y = NULL,
                       first.coef = NULL,
                       y.axis.size = 8, ...) {
-  # n <- dim(dat$XX)[1]
-  p <- dim(dat$XX)[2]
-  L <- dim(dat$XX)[3]
+  # n <- dim(dat$X)[1]
+  p <- dim(dat$X)[2]
+  L <- dim(dat$X)[3]
   thin <- datMCMC$input$thin
   nIter <- datMCMC$input$nIter / thin
   burnin <- datMCMC$input$burnin / thin + 1
