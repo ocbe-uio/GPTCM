@@ -7,18 +7,18 @@
 #' @name GPTCM
 #' @useDynLib GPTCM
 #' @aliases GPTCM-package
-#' 
+#'
 #' @importFrom Rcpp evalCpp
 #'
-#' @param dat input data as a list containing survival data sub-list 
-#' \code{survObj} with two vectors (\code{event} and \code{time}), clinical 
-#' variable matrix \code{x0}, cluster-specific covariates \code{X}, and 
+#' @param dat input data as a list containing survival data sub-list
+#' \code{survObj} with two vectors (\code{event} and \code{time}), clinical
+#' variable matrix \code{x0}, cluster-specific covariates \code{X}, and
 #' proportions data matrix \code{proportion}
 #' @param nIter the number of iterations of the chain
 #' @param burnin number of iterations to discard at the start of the chain
 #' @param thin thinning MCMC intermediate results to be stored
-#' @param tick an integer used for printing the iteration index and some updated 
-#' parameters every tick-th iteration. Default is 1 
+#' @param tick an integer used for printing the iteration index and some updated
+#' parameters every tick-th iteration. Default is 1
 #' @param proportion.model logical value; should the proportions be modeled or
 #' not. If (\code{proportion.model = FALSE}), the argument \code{dirichlet} will
 #' be invalid
@@ -27,7 +27,7 @@
 #' parametrization of the Dirichlet regression model
 #' @param hyperpar a list of relevant hyperparameters
 #' @param BVS logical value for implementing Bayesian variable selection
-#' @param kappaIGamma logical value for using inverse-gamma prior (\code{TRUE}) 
+#' @param kappaIGamma logical value for using inverse-gamma prior (\code{TRUE})
 #' or gamma prior (\code{FALSE}) for Weibull's shape parameter
 #' shape parameter
 #' @param kappaSampler one of \code{"arms", "slice"} (slice not yet implemented)
@@ -35,9 +35,9 @@
 #' @param gammaSampler one of \code{c("mc3", "bandit")}
 #' @param etaPrior one of \code{c("bernoulli", "MRF")}
 #' @param etaSampler one of \code{c("mc3", "bandit")}
-#' @param w0IGamma logical value; if \code{FALSE}, a common parameter is used 
+#' @param w0IGamma logical value; if \code{FALSE}, a common parameter is used
 #' for the intercept's prior variance and the coefficient's prior variance
-#' @param initial a list of initial values for parameters "kappa", "xi", 
+#' @param initial a list of initial values for parameters "kappa", "xi",
 #' "betas", and "zetas"
 #' @param arms.list a list of parameters for the ARMS method
 #'
@@ -64,7 +64,7 @@
 #' }
 #'
 #' @references Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
-#' 
+#'
 #' @examples
 #'
 #' # simulate data
@@ -73,10 +73,10 @@
 #' p <- 10 # variable selection predictors
 #' L <- 3 # cell types
 #' dat <- simData(n, p, L)
-#' 
+#'
 #' # run a Bayesian GPTCM model: GPTCM-Ber2
 #' fit <- GPTCM(dat, nIter = 50, burnin = 0)
-#' 
+#'
 #' plotCoeff(dat, datMCMC = fit, estimator = "beta")
 #'
 #' @export

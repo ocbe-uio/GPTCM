@@ -13,24 +13,24 @@
 #' @importFrom utils globalVariables
 #' @importFrom graphics layout par abline
 #'
-#' @param dat input data as a list containing survival data sub-list 
-#' \code{survObj} with two vectors (\code{event} and \code{time}), clinical 
-#' variable matrix \code{x0}, cluster-specific covariates \code{X}, and 
+#' @param dat input data as a list containing survival data sub-list
+#' \code{survObj} with two vectors (\code{event} and \code{time}), clinical
+#' variable matrix \code{x0}, cluster-specific covariates \code{X}, and
 #' proportions data matrix \code{proportion}
 #' @param datMCMC returned object from the main function \code{GPTCM()}
-#' @param dat.new input data for out-sample prediction, with the same format 
+#' @param dat.new input data for out-sample prediction, with the same format
 #' as \code{dat}
 #' @param time.star largest time for survival prediction
 #' @param xlab a title for the x axis
 #' @param ylab a title for the y axis
-#' @param PTCM logical value for adding survival prediction by the PTCM 
+#' @param PTCM logical value for adding survival prediction by the PTCM
 #' @param ... other parameters
 #'
 #' @return A \code{ggplot2::ggplot} object. See \code{?ggplot2::ggplot} for more
 #' details of the object.
 #'
 #' @references Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
-#' 
+#'
 #' @examples
 #'
 #' # simulate data
@@ -39,10 +39,10 @@
 #' p <- 10 # variable selection predictors
 #' L <- 3 # cell types
 #' dat <- simData(n, p, L)
-#' 
+#'
 #' # run a Bayesian GPTCM model: GPTCM-Ber2
 #' fit <- GPTCM(dat, nIter = 50, burnin = 0)
-#' 
+#'
 #' plotBrier(dat, datMCMC = fit, PTCM = FALSE)
 #'
 #' @export
@@ -50,7 +50,7 @@ plotBrier <- function(dat, datMCMC,
                       dat.new = NULL,
                       time.star = NULL,
                       xlab = "Time",
-                      ylab = "Brier score", 
+                      ylab = "Brier score",
                       PTCM = TRUE, ...) {
   n <- dim(dat$X)[1]
   p <- dim(dat$X)[2]
@@ -128,7 +128,7 @@ plotBrier <- function(dat, datMCMC,
   } else {
     proportion.hat <- dat$proportion
   }
-  for (j in 1:length(time_eval)) {
+  for (j in seq_along(time_eval)) {
     tmp <- 0
     for (l in 1:L) {
       mu <- exp(cbind(1, dat.new$X[, , l]) %*% betas.hat[, l])
@@ -169,24 +169,24 @@ plotBrier <- function(dat, datMCMC,
     p0 <- 1 + length(x0.names)
     suppressWarnings(
       resMY <- miCoPTCM::PTCMestimBF(formula.tmp,
-                                     data = survObj,
-                                     varCov = matrix(0, nrow = p0, ncol = p0),
-                                     init = rep(0, p0)
+        data = survObj,
+        varCov = matrix(0, nrow = p0, ncol = p0),
+        init = rep(0, p0)
       )
     )
     # use interpolation to resMY$estimCDF for testing validation time points
     if (dat.new.flag) {
       n.new <- length(dat.new$survObj$time)
       estimCDF.new <- rep(NA, n.new)
-      
+
       time.old.sort <- sort(survObj$time)
       time.old.min <- min(survObj$time)
       time.old.max <- max(survObj$time)
-      time.old.max2 <- survObj$time[n - 1]
+      # time.old.max2 <- survObj$time[n - 1]
       for (i in 1:n.new) {
         if (dat.new$survObj$time[i] %in% survObj$time) {
           estimCDF.new[i] <- resMY$estimCDF[which(time.old.sort ==
-                                                    dat.new$survObj$time[i])[1]]
+            dat.new$survObj$time[i])[1]]
         } else {
           if (dat.new$survObj$time[i] < time.old.min) {
             # use linear interpolation
@@ -199,13 +199,13 @@ plotBrier <- function(dat, datMCMC,
               time.idxL <- time.idxU - 1
               estimCDF.new[i] <- resMY$estimCDF[time.idxL] +
                 (resMY$estimCDF[time.idxU] - resMY$estimCDF[time.idxL]) *
-                (dat.new$survObj$time[i] - time.old.sort[time.idxL])
+                  (dat.new$survObj$time[i] - time.old.sort[time.idxL])
             } else {
               # use linear extrapolation
               estimCDF.new[i] <- resMY$estimCDF[n] +
                 (resMY$estimCDF[n] - resMY$estimCDF[n - 1]) *
-                (dat.new$survObj$time[i] - time.old.max) /
-                (time.old.max - time.old.min)
+                  (dat.new$survObj$time[i] - time.old.max) /
+                  (time.old.max - time.old.min)
             }
           }
         }

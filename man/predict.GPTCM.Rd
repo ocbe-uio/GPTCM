@@ -17,7 +17,7 @@ prediction will be based on the training data}
 \item{type}{the type of predicted value. Currently it is only valid with
 \code{'survival'}}
 
-\item{times}{evaluation time points for survival prediction. Default 
+\item{times}{evaluation time points for survival prediction. Default
 \code{NULL} for predicting all time points in the \code{newdata} set}
 
 \item{...}{for future methods}

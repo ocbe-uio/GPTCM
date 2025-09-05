@@ -19,14 +19,14 @@ plotBrier(
 plotMCMC(dat, datMCMC, estimator = "xi")
 }
 \arguments{
-\item{dat}{input data as a list containing survival data sub-list 
-\code{survObj} with two vectors (\code{event} and \code{time}), clinical 
-variable matrix \code{x0}, cluster-specific covariates \code{X}, and 
+\item{dat}{input data as a list containing survival data sub-list
+\code{survObj} with two vectors (\code{event} and \code{time}), clinical
+variable matrix \code{x0}, cluster-specific covariates \code{X}, and
 proportions data matrix \code{proportion}}
 
 \item{datMCMC}{returned object from the main function \code{GPTCM()}}
 
-\item{dat.new}{input data for out-sample prediction, with the same format 
+\item{dat.new}{input data for out-sample prediction, with the same format
 as \code{dat}}
 
 \item{time.star}{largest time for survival prediction}
@@ -39,7 +39,7 @@ as \code{dat}}
 
 \item{...}{others}
 
-\item{estimator}{print estimators, one of 
+\item{estimator}{print estimators, one of
 \code{c("beta", "zeta", "gamma", "eta")}}
 }
 \value{

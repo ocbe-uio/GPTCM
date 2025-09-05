@@ -21,7 +21,7 @@ simData(
 
 \item{L}{number of clusters}
 
-\item{Sigma}{NULL (for a default covariance matrix) or "independent" 
+\item{Sigma}{NULL (for a default covariance matrix) or "independent"
 (i.e. Sigma=diag(p*L)) or a self-defined matrix}
 
 \item{kappas}{value of the Weibull's shape parameter}

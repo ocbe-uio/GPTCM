@@ -10,7 +10,7 @@
 #' @param n number of subjects
 #' @param p number of covariates in each cluster
 #' @param L number of clusters
-#' @param Sigma NULL (for a default covariance matrix) or "independent" 
+#' @param Sigma NULL (for a default covariance matrix) or "independent"
 #' (i.e. Sigma=diag(p*L)) or a self-defined matrix
 #' @param kappas value of the Weibull's shape parameter
 #' @param proportion.model One of \code{c("alr", "cloglog", "log", "dirichlet")}
@@ -33,7 +33,7 @@
 #' }
 #'
 #' @references Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
-#' 
+#'
 #'
 #' @examples
 #'
@@ -226,7 +226,7 @@ simData <- function(n = 200, p = 10, L = 3,
   ## the following is via logit/alr-link function
   if (proportion.model == "alr") {
     stop("The specification 'proportion.model == 'alr'' is under development!")
-    
+
     proportion <- tmp <- matrix(nrow = n, ncol = L)
     for (l in 1:(L - 1)) {
       tmp[, l] <- exp(cbind(1, X[, , l]) %*% zetas[, l])
@@ -235,7 +235,7 @@ simData <- function(n = 200, p = 10, L = 3,
     for (l in 1:(L - 1)) {
       proportion[, l] <- tmp[, l] / (1 + rowSums(tmp[, -L]))
     }
-    
+
     phi <- NA
     alphas <- proportion * phi
     for (i in 1:n) {
@@ -266,7 +266,8 @@ simData <- function(n = 200, p = 10, L = 3,
 
     for (i in which(U > cure)) {
       ## M-H sampler for event time
-      out <- metropolis_sampler( # If the target is set as Gompertz distr., it's a bit model misspecification
+      # If the target is set as Gompertz distr., it's a bit model misspecification
+      out <- metropolis_sampler( 
         initial_value = 10,
         n = 5,
         proposal_shape = 0.9,
@@ -286,10 +287,10 @@ simData <- function(n = 200, p = 10, L = 3,
     set.seed(12345)
     Sigma1 <- Sigma2 <- Sigma3 <- diag(p)
     x0 <- cbind(1, x01, x02, matrix(rnorm(n * (p - 2)), nrow = n))
-    names(x0) <- c("", paste0("x0", 1:NCOL(x0)))
+    names(x0) <- c("", paste0("x0", seq_len(NCOL(x0))))
     # xi <- runif(p + 1, -2, 2)
     # xi <- c(1, 0.5, -1, -1.5, 0.5, -1) # too small censoring rate
-    #xi <- c(-1.8, 0.6, -1, -1.2, 1, -1.5)
+    # xi <- c(-1.8, 0.6, -1, -1.2, 1, -1.5)
     xi <- c(0, -0.8, -2, -2, 1, 1) # no intercept
     for (l in 1:L) {
       X[, , l] <- x0[, -1]
@@ -344,8 +345,8 @@ simData <- function(n = 200, p = 10, L = 3,
     survObj = survObj, accepted = accepted,
     proportion.model = proportion.model,
     proportion = proportion,
-    #thetas = thetas,
-    kappas = kappas, #mu = mu0,
+    # thetas = thetas,
+    kappas = kappas, # mu = mu0,
     x0 = x0, # x1 = x1, x2 = x2, x3 = x3,
     X = X,
     xi = xi, beta0 = beta0, # zeta0=zeta0,

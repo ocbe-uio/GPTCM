@@ -11,19 +11,19 @@
 #' @importFrom utils capture.output
 #' @importFrom scales alpha
 #'
-#' @param dat input data as a list containing survival data sub-list 
-#' \code{survObj} with two vectors (\code{event} and \code{time}), clinical 
-#' variable matrix \code{x0}, cluster-specific covariates \code{X}, and 
+#' @param dat input data as a list containing survival data sub-list
+#' \code{survObj} with two vectors (\code{event} and \code{time}), clinical
+#' variable matrix \code{x0}, cluster-specific covariates \code{X}, and
 #' proportions data matrix \code{proportion}
 #' @param datMCMC returned object from the main function \code{GPTCM()}
-#' @param estimator print estimators, one of 
-#' \code{c("beta", "zeta", "gamma", "eta")} 
+#' @param estimator print estimators, one of
+#' \code{c("beta", "zeta", "gamma", "eta")}
 #' @param intercept logical value to print intercepts
 #' @param bandwidth a value of bandwidth used for the ridgeplot
 #' @param xlim numeric vectors of length 2, giving the x-coordinate range.
 #' @param xlab a title for the x axis
 #' @param label.y a title for the y axis
-#' @param first.coef number of the first variables. Default \code{NULL} for 
+#' @param first.coef number of the first variables. Default \code{NULL} for
 #' all variables
 #' @param y.axis.size text size in pts
 #' @param ... others
@@ -32,7 +32,7 @@
 #' details of the object.
 #'
 #' @references Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
-#' 
+#'
 #'
 #' @examples
 #'
@@ -42,10 +42,10 @@
 #' p <- 10 # variable selection predictors
 #' L <- 3 # cell types
 #' dat <- simData(n, p, L)
-#' 
+#'
 #' # run a Bayesian GPTCM model: GPTCM-Ber2
 #' fit <- GPTCM(dat, nIter = 50, burnin = 0)
-#' 
+#'
 #' plotCoeff(dat, datMCMC = fit, estimator = "beta")
 #'
 #' @export
@@ -63,7 +63,7 @@ plotCoeff <- function(dat,
   p <- dim(dat$X)[2]
   L <- dim(dat$X)[3]
   thin <- datMCMC$input$thin
-  nIter <- datMCMC$input$nIter / thin
+  # nIter <- datMCMC$input$nIter / thin
   burnin <- datMCMC$input$burnin / thin + 1
 
   xlab0 <- xlab
@@ -118,9 +118,11 @@ plotCoeff <- function(dat,
     }
     pp <-
       ggplot(dat.estimate,
-        mapping = aes(x = .data$value, 
-                      y = .data$covariate, 
-                      group = .data$covariate)
+        mapping = aes(
+          x = .data$value,
+          y = .data$covariate,
+          group = .data$covariate
+        )
       ) +
       geom_density_ridges(aes(fill = .data$covariate),
         scale = 0.95, col = NA, bandwidth = bandwidth
@@ -168,9 +170,11 @@ plotCoeff <- function(dat,
     )
     pp <-
       ggplot(dat.estimate,
-        mapping = aes(x = .data$value, 
-                      y = .data$covariate, 
-                      group = .data$covariate)
+        mapping = aes(
+          x = .data$value,
+          y = .data$covariate,
+          group = .data$covariate
+        )
       ) +
       facet_wrap(~cluster, nrow = 1, scales = "fixed") +
       geom_segment(aes(x = 0, xend = .data$value),
@@ -227,7 +231,7 @@ plotCoeff <- function(dat,
       coef.true = rep(zetas.true, each = nrow(zetas.mcmc))
     )
     dat.estimate$covariate <- factor(dat.estimate$covariate,
-      levels = label.y[length(label.y):1]
+      levels = label.y[rev(seq_along(label.y))]
     )
     if (abs(xlim.lower - xlim.upper) < 0.1) {
       xlim.lower <- xlim.lower - 1
@@ -236,9 +240,11 @@ plotCoeff <- function(dat,
     }
     pp <-
       ggplot(dat.estimate,
-        mapping = aes(x = .data$value, 
-                      y = .data$covariate, 
-                      group = .data$covariate)
+        mapping = aes(
+          x = .data$value,
+          y = .data$covariate,
+          group = .data$covariate
+        )
       ) +
       geom_density_ridges(aes(fill = .data$covariate),
         scale = 0.95, col = NA, bandwidth = bandwidth

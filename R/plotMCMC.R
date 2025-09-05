@@ -8,20 +8,20 @@
 #' @importFrom ggplot2 ggplot aes geom_step theme element_blank
 #' @importFrom graphics segments
 #'
-#' @param dat input data as a list containing survival data sub-list 
-#' \code{survObj} with two vectors (\code{event} and \code{time}), clinical 
-#' variable matrix \code{x0}, cluster-specific covariates \code{X}, and 
+#' @param dat input data as a list containing survival data sub-list
+#' \code{survObj} with two vectors (\code{event} and \code{time}), clinical
+#' variable matrix \code{x0}, cluster-specific covariates \code{X}, and
 #' proportions data matrix \code{proportion}
 #' @param datMCMC returned object from the main function \code{GPTCM()}
-#' @param estimator print estimators, one of 
-#' \code{c("beta", "zeta", "gamma", "eta")} 
+#' @param estimator print estimators, one of
+#' \code{c("beta", "zeta", "gamma", "eta")}
 #' @param ... others
 #'
 #' @return A \code{ggplot2::ggplot} object. See \code{?ggplot2::ggplot} for more
 #' details of the object.
 #'
 #' @references Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
-#' 
+#'
 #' @examples
 #'
 #' # simulate data
@@ -30,10 +30,10 @@
 #' p <- 10 # variable selection predictors
 #' L <- 3 # cell types
 #' dat <- simData(n, p, L)
-#' 
+#'
 #' # run a Bayesian GPTCM model: GPTCM-Ber2
 #' fit <- GPTCM(dat, nIter = 50, burnin = 0)
-#' 
+#'
 #' plotMCMC(dat, datMCMC = fit, estimator = "xi")
 #'
 #' @export
@@ -62,9 +62,9 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
       "expression(beta['", rep(0:p, L), ",",
       rep(1:L, each = p + 1), "'])"
     )
-    layout(matrix(1:NCOL(betas.mcmc), ncol = L))
+    layout(matrix(seq_len(NCOL(betas.mcmc)), ncol = L))
     par(mar = c(2, 4.1, 2, 2))
-    for (j in 1:NCOL(betas.mcmc)) {
+    for (j in seq_len(NCOL(betas.mcmc))) {
       plot(betas.mcmc[, j],
         type = "l", lty = 1, ylab = eval(parse(text = ylabel[j])),
         ylim = summary(c(betas.mcmc, dat$betas))[c(1, 6)]
@@ -93,9 +93,9 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
       "expression(zeta['", rep(0:p, ifelse(dirichlet, L, L - 1)), ",",
       rep(1:ifelse(dirichlet, L, L - 1), each = p + 1), "'])"
     )
-    layout(matrix(1:NCOL(zetas.mcmc), nrow = p + 1))
+    layout(matrix(seq_len(NCOL(zetas.mcmc)), nrow = p + 1))
     par(mar = c(2, 4.1, 2, 2))
-    for (j in 1:NCOL(zetas.mcmc)) {
+    for (j in seq_len(NCOL(zetas.mcmc))) {
       plot(zetas.mcmc[, j],
         type = "l", lty = 1, ylab = eval(parse(text = ylabel[j])),
         ylim = summary(c(zetas.mcmc, dat$zetas))[c(1, 6)]
@@ -150,7 +150,7 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
 
 
   if (any(estimator %in% c("kappa", "tau", "w", "v", "phi"))) {
-    layout(matrix(1:length(estimator), ncol = 1))
+    layout(matrix(seq_along(estimator), ncol = 1))
     par(mar = c(2, 4.1, 2, 2))
     if ("kappa" %in% estimator) {
       kappa.mcmc <- datMCMC$output$kappa

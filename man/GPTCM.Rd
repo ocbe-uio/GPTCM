@@ -27,9 +27,9 @@ GPTCM(
 )
 }
 \arguments{
-\item{dat}{input data as a list containing survival data sub-list 
-\code{survObj} with two vectors (\code{event} and \code{time}), clinical 
-variable matrix \code{x0}, cluster-specific covariates \code{X}, and 
+\item{dat}{input data as a list containing survival data sub-list
+\code{survObj} with two vectors (\code{event} and \code{time}), clinical
+variable matrix \code{x0}, cluster-specific covariates \code{X}, and
 proportions data matrix \code{proportion}}
 
 \item{nIter}{the number of iterations of the chain}
@@ -38,7 +38,7 @@ proportions data matrix \code{proportion}}
 
 \item{thin}{thinning MCMC intermediate results to be stored}
 
-\item{tick}{an integer used for printing the iteration index and some updated 
+\item{tick}{an integer used for printing the iteration index and some updated
 parameters every tick-th iteration. Default is 1}
 
 \item{proportion.model}{logical value; should the proportions be modeled or
@@ -53,7 +53,7 @@ parametrization of the Dirichlet regression model}
 
 \item{BVS}{logical value for implementing Bayesian variable selection}
 
-\item{kappaIGamma}{logical value for using inverse-gamma prior (\code{TRUE}) 
+\item{kappaIGamma}{logical value for using inverse-gamma prior (\code{TRUE})
 or gamma prior (\code{FALSE}) for Weibull's shape parameter
 shape parameter}
 
@@ -67,10 +67,10 @@ shape parameter}
 
 \item{etaSampler}{one of \code{c("mc3", "bandit")}}
 
-\item{w0IGamma}{logical value; if \code{FALSE}, a common parameter is used 
+\item{w0IGamma}{logical value; if \code{FALSE}, a common parameter is used
 for the intercept's prior variance and the coefficient's prior variance}
 
-\item{initial}{a list of initial values for parameters "kappa", "xi", 
+\item{initial}{a list of initial values for parameters "kappa", "xi",
 "betas", and "zetas"}
 
 \item{arms.list}{a list of parameters for the ARMS method}

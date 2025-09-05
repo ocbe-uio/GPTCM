@@ -27,9 +27,9 @@ target <- function(x, theta, proportion, mu, kappas) {
   # improper pdf
   pdf <- exp(-theta * (1 - sum(proportion * survival.function))) *
     theta *
-    sum(proportion * kappas / lambdas *
-      (x / lambdas)^(kappas - 1) *
-      exp(-(x / lambdas)^kappas))
+    sum(proportion * kappas / lambdas * 
+          (x / lambdas)^(kappas - 1) * 
+          exp(-(x / lambdas)^kappas))
 
   return(pdf)
 }

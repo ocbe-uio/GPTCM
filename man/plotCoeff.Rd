@@ -19,14 +19,14 @@ plotCoeff(
 )
 }
 \arguments{
-\item{dat}{input data as a list containing survival data sub-list 
-\code{survObj} with two vectors (\code{event} and \code{time}), clinical 
-variable matrix \code{x0}, cluster-specific covariates \code{X}, and 
+\item{dat}{input data as a list containing survival data sub-list
+\code{survObj} with two vectors (\code{event} and \code{time}), clinical
+variable matrix \code{x0}, cluster-specific covariates \code{X}, and
 proportions data matrix \code{proportion}}
 
 \item{datMCMC}{returned object from the main function \code{GPTCM()}}
 
-\item{estimator}{print estimators, one of 
+\item{estimator}{print estimators, one of
 \code{c("beta", "zeta", "gamma", "eta")}}
 
 \item{intercept}{logical value to print intercepts}
@@ -39,7 +39,7 @@ proportions data matrix \code{proportion}}
 
 \item{label.y}{a title for the y axis}
 
-\item{first.coef}{number of the first variables. Default \code{NULL} for 
+\item{first.coef}{number of the first variables. Default \code{NULL} for
 all variables}
 
 \item{y.axis.size}{text size in pts}

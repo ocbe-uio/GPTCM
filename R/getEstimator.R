@@ -18,19 +18,19 @@
 #' a matrix or vector
 #'
 #' @references Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
-#' 
+#'
 #' @examples
-#' 
+#'
 #' # simulate data
 #' set.seed(123)
 #' n <- 200 # subjects
 #' p <- 10 # variable selection predictors
 #' L <- 3 # cell types
 #' dat <- simData(n, p, L)
-#' 
+#'
 #' # run a Bayesian GPTCM model: GPTCM-Ber2
 #' fit <- GPTCM(dat, nIter = 50, burnin = 0)
-#' 
+#'
 #' gamma.hat <- getEstimator(fit, estimator = "gamma")
 #'
 #' @export
