@@ -1,7 +1,7 @@
 #' @title Simulate data
 #'
 #' @description
-#' Simulate survival data.
+#' Simulate survival data based on a GPTCM or Cox model
 #'
 #' @name simData
 #'

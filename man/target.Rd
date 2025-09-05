@@ -21,7 +21,8 @@ target(x, theta, proportion, mu, kappas)
 value of the targeted (improper) probability density function
 }
 \description{
-Predefined target density for S_pop in GTPCM
+Predefined target density corresponding to the population survival function
+of GTPCM
 }
 \examples{
 

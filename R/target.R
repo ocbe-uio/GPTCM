@@ -1,7 +1,8 @@
 #' @title Target density
 #'
 #' @description
-#' Predefined target density for S_pop in GTPCM
+#' Predefined target density corresponding to the population survival function
+#' of GTPCM
 #'
 #' @name target
 #'

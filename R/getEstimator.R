@@ -1,4 +1,4 @@
-#' @title extract the posterior estimate of parameters
+#' @title Extract the posterior estimate of parameters
 #' @description
 #' Extract the posterior estimate of the parameters of a \code{GPTCM} class object.
 #' @name getEstimator

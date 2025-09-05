@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict.GPTCM.R
 \name{predict.GPTCM}
 \alias{predict.GPTCM}
-\title{Predictions for a GPTCM}
+\title{Prediction of survival probability}
 \usage{
 \method{predict}{GPTCM}(object, dat, newdata = NULL, type = "survival", times = NULL, ...)
 }
@@ -26,7 +26,7 @@ prediction will be based on the training data}
 A matrix object
 }
 \description{
-Compute fitted values for a generalized promotion time cure model (GPTCM)
+Compute predicted survival probability for a GPTCM
 }
 \examples{
 

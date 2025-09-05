@@ -48,7 +48,7 @@ An object of a list with 12 components
 }
 }
 \description{
-Simulate survival data.
+Simulate survival data based on a GPTCM or Cox model
 }
 \examples{
 

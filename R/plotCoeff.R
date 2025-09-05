@@ -1,4 +1,4 @@
-#' @title Plots for estimated coefficients
+#' @title Plot posterior estimates of regression coefficients
 #'
 #' @description
 #' create nice plots for estimated coefficients and 95% credible intervals

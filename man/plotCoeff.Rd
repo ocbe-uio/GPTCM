@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotCoeff.R
 \name{plotCoeff}
 \alias{plotCoeff}
-\title{Plots for estimated coefficients}
+\title{Plot posterior estimates of regression coefficients}
 \usage{
 plotCoeff(
   dat,

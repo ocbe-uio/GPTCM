@@ -1,8 +1,8 @@
-#' @title Fit Bayesian GPTCM Model with C/C++
+#' @title Fit Bayesian GPTCM Models
 #'
 #' @description
-#' This is the main function to fit the Bayesian GPTCM models (Zhao et al. 2025)
-#' with multiscale data for sparse identification of high-dimensional covariates
+#' This is the main function to fit the Bayesian GPTCMs (Zhao et al. 2025) with
+#' multiscale data for sparse identification of high-dimensional covariates
 #'
 #' @name GPTCM
 #' @useDynLib GPTCM

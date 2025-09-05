@@ -3,7 +3,7 @@
 \name{plotBrier}
 \alias{plotBrier}
 \alias{plotMCMC}
-\title{Time-dependent Brier scores}
+\title{Plot curves of time-dependent Brier score}
 \usage{
 plotBrier(
   dat,
@@ -52,7 +52,7 @@ details of the object.
 \description{
 Predict time-dependent Brier scores based on different survival models
 
-MCMC
+Trace-plots of regression coefficients over MCMC iterations
 }
 \examples{
 

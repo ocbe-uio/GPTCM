@@ -2,7 +2,7 @@
 % Please edit documentation in R/getEstimator.R
 \name{getEstimator}
 \alias{getEstimator}
-\title{extract the posterior estimate of parameters}
+\title{Extract the posterior estimate of parameters}
 \usage{
 getEstimator(object, estimator = "gamma", Pmax = 0, type = "marginal")
 }

@@ -1,7 +1,7 @@
-#' @title Predictions for a GPTCM
+#' @title Prediction of survival probability
 #'
 #' @description
-#' Compute fitted values for a generalized promotion time cure model (GPTCM)
+#' Compute predicted survival probability for a GPTCM
 #'
 #' @name predict.GPTCM
 #'

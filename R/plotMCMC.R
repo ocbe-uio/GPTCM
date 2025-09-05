@@ -1,7 +1,7 @@
 #' @title MCMC trace-plots
 #'
 #' @description
-#' MCMC
+#' Trace-plots of regression coefficients over MCMC iterations
 #'
 #' @name plotBrier
 #'

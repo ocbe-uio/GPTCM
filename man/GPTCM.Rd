@@ -3,7 +3,7 @@
 \name{GPTCM}
 \alias{GPTCM}
 \alias{GPTCM-package}
-\title{Fit Bayesian GPTCM Model with C/C++}
+\title{Fit Bayesian GPTCM Models}
 \usage{
 GPTCM(
   dat,
@@ -99,8 +99,8 @@ An object of a list including the following components:
 }
 }
 \description{
-This is the main function to fit the Bayesian GPTCM models (Zhao et al. 2025)
-with multiscale data for sparse identification of high-dimensional covariates
+This is the main function to fit the Bayesian GPTCMs (Zhao et al. 2025) with
+multiscale data for sparse identification of high-dimensional covariates
 }
 \examples{
 

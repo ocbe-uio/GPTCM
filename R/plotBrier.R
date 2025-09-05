@@ -1,4 +1,4 @@
-#' @title Time-dependent Brier scores
+#' @title Plot curves of time-dependent Brier score
 #'
 #' @description
 #' Predict time-dependent Brier scores based on different survival models
