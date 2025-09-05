@@ -1,5 +1,5 @@
 /* adaptive rejection metropolis sampling */
-/* Adapted from work by Wally Gilks, taken from http://www1.maths.leeds.ac.uk/~wally.gilks/adaptive.rejection/web_page/Welcome.html
+/* Code slightly adapted  by Zhi Zhao, based on the original research paper implementation by Wally Gilks
  */
 
 /* *********************************************************************** */
