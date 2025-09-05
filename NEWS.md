@@ -1,3 +1,7 @@
+# GPTCM 1.0.3
+
+* Fix NOTE about `elapsed time` from Winbuilder checks 
+
 # GPTCM 1.0.2
 
 * Improve help files

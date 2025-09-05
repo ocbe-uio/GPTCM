@@ -3,8 +3,8 @@
 [![CRAN
 status](https://www.r-pkg.org/badges/version/GPTCM)](https://cran.r-project.org/package=GPTCM)
 [![DOI](https://img.shields.io/badge/doi-10.32614%2FCRAN.package.GPTCM-brightgreen)](https://doi.org/10.32614/CRAN.package.GPTCM)
--->
 [![r-universe](https://ocbe-uio.r-universe.dev/badges/GPTCM)](https://ocbe-uio.r-universe.dev/GPTCM)
+-->
 [![R-CMD-check](https://github.com/ocbe-uio/GPTCM/workflows/R-CMD-check/badge.svg)](https://github.com/ocbe-uio/GPTCM/actions)
 [![License](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
@@ -108,7 +108,7 @@ $$
 $$
 -->
 
-After fitting GPTCM-Ber2, we compare its the survival prediction performance with other approaches (i.e. Kaplan-Meier method without covariates, classic Cox model with two clinical covariates (Cox.clin), Cox model with mean aggregate covariates (Cox.X.mean), Cox model with median aggregate covariatess (Cox.X.median), Cox model with clinical and mean aggregate covariates (Cox.clin.X.mean), and frequentist semiparametric promotion time cure model with clinical variables (PTCM.clin)). 
+After fitting GPTCM-Ber2, we compare its the survival prediction performance with other approaches (i.e. Kaplan-Meier method without covariates, classic Cox model with two clinical covariates (Cox.clin), Cox model with mean aggregate covariates (Cox.X.mean), Cox model with median aggregate covariates (Cox.X.median), Cox model with clinical and mean aggregate covariates (Cox.clin.X.mean), and frequentist semiparametric promotion time cure model with clinical variables (PTCM.clin)). 
 The follow figure shows the prediction performance of time-dependent Brier scores. 
 It is clear that our GPTCM has much better survival prognosis than other approaches. 
 
@@ -126,7 +126,7 @@ plotBrier(dat, datMCMC = fit,
 
 <img src="man/figures/cran_brier.png" width="70%" />
 
-The following figure shows the posterior distributions of cell-type-specific effects associated with cell-type-specific progression with the black dimonds indicating true effects, and marginal posterior inclusion probabilities (mPIP) of Bayesian variable selection (BVS). 
+The following figure shows the posterior distributions of cell-type-specific effects associated with cell-type-specific progression with the black diamonds indicating true effects, and marginal posterior inclusion probabilities (mPIP) of Bayesian variable selection (BVS). 
 
 ```{r}
 # show cel-type-specific effects

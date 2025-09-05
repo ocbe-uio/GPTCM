@@ -44,7 +44,7 @@
 #' dat <- simData(n, p, L)
 #'
 #' # run a Bayesian GPTCM model: GPTCM-Ber2
-#' fit <- GPTCM(dat, nIter = 50, burnin = 0)
+#' fit <- GPTCM(dat, nIter = 10, burnin = 0)
 #'
 #' plotCoeff(dat, datMCMC = fit, estimator = "beta")
 #'

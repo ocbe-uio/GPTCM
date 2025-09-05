@@ -66,19 +66,6 @@ dat <- simData(n, p, L)
 # run a Bayesian GPTCM model: GPTCM-Ber2
 fit <- GPTCM(dat, nIter = 50, burnin = 0)
 
-plotBrier(dat, datMCMC = fit, PTCM = FALSE)
-
-
-# simulate data
-set.seed(123)
-n <- 200 # subjects
-p <- 10 # variable selection predictors
-L <- 3 # cell types
-dat <- simData(n, p, L)
-
-# run a Bayesian GPTCM model: GPTCM-Ber2
-fit <- GPTCM(dat, nIter = 50, burnin = 0)
-
 plotMCMC(dat, datMCMC = fit, estimator = "xi")
 
 }

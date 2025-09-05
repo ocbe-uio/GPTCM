@@ -32,6 +32,6 @@
 #' @param datProportionConst TBA
 #'
 run_mcmc <- function(nIter, burnin, thin, n, nsamp, ninit, metropolis, simple, convex, npoint, dirichlet, proportion_model, BVS, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst) {
-    .Call('_GPTCM_run_mcmc', PACKAGE = 'GPTCM', nIter, burnin, thin, n, nsamp, ninit, metropolis, simple, convex, npoint, dirichlet, proportion_model, BVS, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst)
+    .Call(`_GPTCM_run_mcmc`, nIter, burnin, thin, n, nsamp, ninit, metropolis, simple, convex, npoint, dirichlet, proportion_model, BVS, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst)
 }
 

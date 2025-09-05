@@ -23,7 +23,7 @@
 #'
 #' @examples
 #'
-#' x <- 1
+#' times <- metropolis_sampler(10, 5)
 #'
 #' @export
 metropolis_sampler <- function(initial_value,

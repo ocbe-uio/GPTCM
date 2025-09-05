@@ -46,6 +46,6 @@ Random number generator via Metropolis-Hastings algorithm.
 }
 \examples{
 
-x <- 1
+times <- metropolis_sampler(10, 5)
 
 }

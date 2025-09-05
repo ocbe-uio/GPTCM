@@ -2,7 +2,7 @@
 #'
 #' @description
 #' Predefined target density corresponding to the population survival function
-#' of GTPCM
+#' of GPTCM
 #'
 #' @name target
 #'

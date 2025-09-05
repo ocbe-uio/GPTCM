@@ -2,7 +2,6 @@
 % Please edit documentation in R/GPTCM.R
 \name{GPTCM}
 \alias{GPTCM}
-\alias{GPTCM-package}
 \title{Fit Bayesian GPTCM Models}
 \usage{
 GPTCM(
@@ -112,7 +111,7 @@ L <- 3 # cell types
 dat <- simData(n, p, L)
 
 # run a Bayesian GPTCM model: GPTCM-Ber2
-fit <- GPTCM(dat, nIter = 50, burnin = 0)
+fit <- GPTCM(dat, nIter = 10, burnin = 0)
 
 plotCoeff(dat, datMCMC = fit, estimator = "beta")
 

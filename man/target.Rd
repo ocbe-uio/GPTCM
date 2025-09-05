@@ -22,7 +22,7 @@ value of the targeted (improper) probability density function
 }
 \description{
 Predefined target density corresponding to the population survival function
-of GTPCM
+of GPTCM
 }
 \examples{
 
