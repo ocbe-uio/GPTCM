@@ -1,3 +1,8 @@
+# GPTCM 1.1.0
+
+* First CRAN version
+* Add vignette
+
 # GPTCM 1.0.3
 
 * Fix NOTE about `elapsed time` from Winbuilder checks 

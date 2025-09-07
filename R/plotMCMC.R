@@ -3,7 +3,7 @@
 #' @description
 #' Trace-plots of regression coefficients over MCMC iterations
 #'
-#' @name plotBrier
+#' @name plotMCMC
 #'
 #' @importFrom ggplot2 ggplot aes geom_step theme element_blank
 #' @importFrom graphics segments
@@ -15,7 +15,6 @@
 #' @param datMCMC returned object from the main function \code{GPTCM()}
 #' @param estimator print estimators, one of
 #' \code{c("beta", "zeta", "gamma", "eta")}
-#' @param ... others
 #'
 #' @return A \code{ggplot2::ggplot} object. See \code{?ggplot2::ggplot} for more
 #' details of the object.
@@ -32,7 +31,7 @@
 #' dat <- simData(n, p, L)
 #'
 #' # run a Bayesian GPTCM model: GPTCM-Ber2
-#' fit <- GPTCM(dat, nIter = 50, burnin = 0)
+#' fit <- GPTCM(dat, nIter = 10, burnin = 0)
 #'
 #' plotMCMC(dat, datMCMC = fit, estimator = "xi")
 #'

@@ -14,6 +14,12 @@ This is an R package **GPTCM** implementing Bayesian hierarchical modeling for a
 
 ## Installation
 
+Install the latest released version from [CRAN](https://CRAN.R-project.org/package=GPTCM)
+
+```r
+install.packages("GPTCM")
+```
+
 Install the latest development version from [GitHub](https://github.com/ocbe-uio/GPTCM):
 
 ```r
