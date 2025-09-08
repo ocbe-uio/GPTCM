@@ -14,6 +14,6 @@ Encoding: UTF-8
 RoxygenNote: 7.3.2
 LinkingTo: Rcpp, RcppArmadillo
 Imports: Rcpp, survival, riskRegression, ggplot2, ggridges, miCoPTCM, loo, MASS, Matrix, scales, utils, stats, graphics
-Suggests: knitr
+Suggests: knitr, survminer
 NeedsCompilation: yes
 SystemRequirements: C++17
