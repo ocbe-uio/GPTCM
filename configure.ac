@@ -18,7 +18,7 @@ AC_LANG(C++)
 AC_PROG_CXX
 
 # Check for c++17 support
-CXXFLAGS="-Werror -std=c++17 -Wno-reorder -fPIC" ## -DARMA_USE_CURRENT"
+CXXFLAGS="-Werror -std=c++17 -Wno-reorder -fPIC -DARMA_USE_CURRENT"
 AC_MSG_CHECKING([whether CXX supports -std=c++17])
 AC_COMPILE_IFELSE(
 	[AC_LANG_PROGRAM([])], 

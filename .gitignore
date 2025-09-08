@@ -9,7 +9,6 @@ src/*.o
 src/*.so
 src/*.dll
 src/symbols.rds
-src/Makevars
 GPTCM.Rcheck/*
 GPTCM.Rcheck/*
 *.gcno
