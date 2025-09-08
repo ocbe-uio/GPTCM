@@ -3,8 +3,8 @@
 [![CRAN
 status](https://www.r-pkg.org/badges/version/GPTCM)](https://cran.r-project.org/package=GPTCM)
 [![DOI](https://img.shields.io/badge/doi-10.32614%2FCRAN.package.GPTCM-brightgreen)](https://doi.org/10.32614/CRAN.package.GPTCM)
-[![r-universe](https://ocbe-uio.r-universe.dev/badges/GPTCM)](https://ocbe-uio.r-universe.dev/GPTCM)
 -->
+[![r-universe](https://ocbe-uio.r-universe.dev/badges/GPTCM)](https://ocbe-uio.r-universe.dev/GPTCM)
 [![R-CMD-check](https://github.com/ocbe-uio/GPTCM/workflows/R-CMD-check/badge.svg)](https://github.com/ocbe-uio/GPTCM/actions)
 [![License](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
