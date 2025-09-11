@@ -268,16 +268,4 @@ plotCoeff <- function(dat,
 
   return(pp)
 
-  # if (!is.null(legend.labs)) {
-  #   par(mar = c(5.1, 0, 4.1, 0))
-  #   plot(0, xaxt = "n", yaxt = "n", bty = "n", pch = "", ylab = "", xlab = "")
-  #   legend("topleft",
-  #     bty = "n",
-  #     legend = legend.labs,
-  #     pch = c(4, 5, NA),
-  #     lty = c(NA, NA, 1),
-  #     col = scales::alpha(c("red", "green", "green"), 0.7)
-  #   )
-  #   par(mar = c(5.1, 4.1, 4.1, 2.1))
-  # }
 }

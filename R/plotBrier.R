@@ -42,8 +42,10 @@
 #'
 #' # run a Bayesian GPTCM model: GPTCM-Ber2
 #' fit <- GPTCM(dat, nIter = 5, burnin = 0)
-#'
-#' #plotBrier(dat, datMCMC = fit, PTCM = FALSE)
+#' 
+#' \donttest{
+#' plotBrier(dat, datMCMC = fit, PTCM = FALSE)
+#' }
 #'
 #' @export
 plotBrier <- function(dat, datMCMC,

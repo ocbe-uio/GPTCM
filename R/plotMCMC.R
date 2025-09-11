@@ -37,12 +37,15 @@
 #'
 #' @export
 plotMCMC <- function(dat, datMCMC, estimator = "xi") {
+
+  oldpar <- par(no.readonly = TRUE)
+  on.exit(par(oldpar))
+
   # n <- dim(dat$X)[1]
   p <- dim(dat$X)[2]
   L <- dim(dat$X)[3]
   # nIter <- datMCMC$input$nIter
   # burnin <- datMCMC$input$burnin
-
   # p.idx <- 1:(p * L)
   p.idx <- 1:((p + 1) * L)
   # p.DirTrue.idx <- 1:((p + 1) * L)

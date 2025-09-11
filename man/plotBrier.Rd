@@ -55,7 +55,9 @@ dat <- simData(n, p, L)
 # run a Bayesian GPTCM model: GPTCM-Ber2
 fit <- GPTCM(dat, nIter = 5, burnin = 0)
 
-#plotBrier(dat, datMCMC = fit, PTCM = FALSE)
+\donttest{
+plotBrier(dat, datMCMC = fit, PTCM = FALSE)
+}
 
 }
 \references{

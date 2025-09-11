@@ -1,6 +1,7 @@
 # GPTCM 1.1.1
 
 * Fix a warning about fallback compilation with Armadillo 14.6.3 from CRAN check on machine `r-devel-linux-x86_64-debian-gcc`
+* Fix issues raised from CRAN reviewer
 
 # GPTCM 1.1.0
 

@@ -30,6 +30,7 @@
 #' \item "\code{betas}" - effects related to cluster-specific-survival.
 #' \item "\code{zetas}" - effects related to cluster-specific-proportions.
 #' \item "\code{mrfG}" - a graph corresponding to the precision matrix of cluster-specific covariates
+#' \item "\code{mrfG2}" - a graph corresponding to every second edge in "\code{mrfG}"
 #' }
 #'
 #' @references Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
@@ -58,17 +59,10 @@ simData <- function(n = 200, p = 10, L = 3,
     list(rate = lambda)
   }
 
-  ## effects; need to change values of zetas
-  # beta1 <- c(-1, -.5, .5, .2, -.5, 0, 0, 0, 0, 0)
+  ## effects
   beta1 <- c(-1, -.5, .8, .8, -1, 0, 0, 0, 0, 0)
-  # beta2 <- c(0, -.3, -.8, 0, .8, -.4, 0, 0, 0, 0)
   beta2 <- c(0, -.9, -.8, 0, 1.5, 1, 0, 0, 0, 0)
   beta3 <- c(1, 0, -0.4, -1.5, 0, 0, 0.8, 0, 0, 0)
-  # if (n < 100) {
-  #   beta1 <- c(-2, -1.5, 1.8, 1.8, -2, 0, 0, 0, 0, 0)
-  #   beta2 <- c(0, -1.3, -1.8, 0, 1.8, -1.4, 0, 0, 0, 0)
-  #   beta3 <- c(2, 0, -1.4, -1.5, 0, 0, 1.8, 0, 0, 0)
-  # }
   betas <- cbind(beta1, beta2, beta3)
 
   zeta1 <- c(0.7, -0.7, 0.5, -0.5, 1, 0, 0, 0, 0, 0)
@@ -77,7 +71,6 @@ simData <- function(n = 200, p = 10, L = 3,
 
   beta0 <- rep(0, 3) # c(-1.5, 0.5, -1.) # intercepts in different cell types linked to survival
   zeta0 <- c(-.5, -1, 1.2) # intercepts in different cell types linked to proportions
-  # zeta0 <- rep(0, 3)
   zetas <- rbind(zeta0, cbind(zeta1, zeta2, zeta3))
 
   p0 <- 6 # limit true relevant features only among the first p0 features
@@ -108,14 +101,6 @@ simData <- function(n = 200, p = 10, L = 3,
         Sigma3[j, jj] <- rho3^abs(jj - j)
       }
     }
-    # Sigma1[lower.tri(Sigma1)] <- Sigma1[upper.tri(Sigma1)]
-    # Sigma2[lower.tri(Sigma2)] <- Sigma2[upper.tri(Sigma2)]
-    # Sigma3[lower.tri(Sigma3)] <- Sigma3[upper.tri(Sigma3)]
-
-    # #set.seed(123)
-    # x1 <- scale(MASS::mvrnorm(n, means, Sigma1))
-    # x2 <- scale(MASS::mvrnorm(n, means, Sigma2))
-    # x3 <- scale(MASS::mvrnorm(n, means, Sigma3))
     # simulate (x1, x2, x3) simultaneously with a big Sigma
     Sigma <- Matrix::bdiag(Sigma1, Sigma2, Sigma3)
     off.diag1 <- list(1:(2 * p), p + 1:(2 * p))
@@ -137,18 +122,8 @@ simData <- function(n = 200, p = 10, L = 3,
   } else {
     stop("Argument 'Sigma' is not valid!")
   }
-  # Matrix::image(Sigma, sub = "", xlab = "X1     X2     X3", ylab = "")
-  # pdf("X_cov.pdf", height = 3, width = 3)
-  # par(mar = c(2, 2, 2, 2))
-  # graphics::image(data.matrix(Sigma), col = gray.colors(33, 0, 1, rev = T), axes = FALSE)
-  # axis(1, at = c(0.33/2, 0.33+0.33/2, 1-0.33/2), labels = paste0("X",1:3), tick=F)
-  # axis(2, at = c(0.33/2, 0.33+0.33/2, 1-0.33/2), labels = paste0("X",1:3), tick=F)
-  # abline(h = c(0.33, 0.67), v = c(0.33, 0.67), col = "gray90", lty = 3, lwd = 1)
-  # box(lwd = 0.5)
-  # dev.off()
 
-
-  X00 <- scale(MASS::mvrnorm(n, rep(0, p * L), Sigma))
+  X00 <- scale(mvnfast::rmvn(n, rep(0, p * L), Sigma))
   x1 <- X00[, 1:p]
   x2 <- X00[, p + 1:p]
   x3 <- X00[, 2 * p + 1:p]
@@ -156,12 +131,10 @@ simData <- function(n = 200, p = 10, L = 3,
 
   x01 <- rbinom(n, 1, 0.5)
   x02 <- rnorm(n)
-  x0 <- cbind(1, x01, x02) # mandatory covariates for cured fraction
-  # xi <- c(-0.5, 1.5, 0.2) # effects of mandatory covariates for cured fraction
+  # mandatory covariates for cured fraction
+  x0 <- cbind(1, x01, x02) 
+  # effects of mandatory covariates for cured fraction
   xi <- c(0.5, 0.6, -1)
-  # if (p > 10) {
-  #  xi <- c(1, 0.6, -1) # lower cure rate in high dimensions
-  # }
 
   # censoring function
   # - follow-up time 1 to 3 years
@@ -284,13 +257,9 @@ simData <- function(n = 200, p = 10, L = 3,
     }
   }
   if (model == "Cox") {
-    set.seed(12345)
     Sigma1 <- Sigma2 <- Sigma3 <- diag(p)
     x0 <- cbind(1, x01, x02, matrix(rnorm(n * (p - 2)), nrow = n))
     names(x0) <- c("", paste0("x0", seq_len(NCOL(x0))))
-    # xi <- runif(p + 1, -2, 2)
-    # xi <- c(1, 0.5, -1, -1.5, 0.5, -1) # too small censoring rate
-    # xi <- c(-1.8, 0.6, -1, -1.2, 1, -1.5)
     xi <- c(0, -0.8, -2, -2, 1, 1) # no intercept
     for (l in 1:L) {
       X[, , l] <- x0[, -1]
@@ -313,15 +282,12 @@ simData <- function(n = 200, p = 10, L = 3,
   ###############################
   # browser()
   Omega1 <- matrix(as.numeric(abs(solve(Sigma1)) > 0), # 1e-6),
-    # Omega1 <- matrix(as.numeric(abs(solve(Sigma1)) > 1e-6),
     nrow = p, ncol = p
   )
   Omega2 <- matrix(as.numeric(abs(solve(Sigma2)) > 0), # 1e-6),
-    # Omega2 <- matrix(as.numeric(abs(solve(Sigma2)) > 1e-6),
     nrow = p, ncol = p
   )
   Omega3 <- matrix(as.numeric(abs(solve(Sigma3)) > 0), # 1e-6),
-    # Omega3 <- matrix(as.numeric(abs(solve(Sigma3)) > 1e-6),
     nrow = p, ncol = p
   )
   Omega <- Matrix::bdiag(Omega1, Omega2, Omega3)
@@ -340,6 +306,9 @@ simData <- function(n = 200, p = 10, L = 3,
   mrfG <- which(data.matrix(Omega) != 0, arr.ind = TRUE)
   mrfG <- mrfG[!duplicated(t(apply(mrfG, 1, sort))), ]
   mrfG <- cbind(mrfG, 1) # add weights (default: 1)
+  
+  # specify a graph with half true positive edges
+  mrfG2 <- mrfG[seq(1, NROW(mrfG), by = 2)]
 
   return(list(
     survObj = survObj, accepted = accepted,
@@ -352,6 +321,7 @@ simData <- function(n = 200, p = 10, L = 3,
     xi = xi, beta0 = beta0, # zeta0=zeta0,
     betas = betas, # cbind(beta1, beta2, beta3),
     zetas = zetas,
-    mrfG = mrfG
+    mrfG = mrfG,
+    mrfG2 = mrfG2
   ))
 }

@@ -45,6 +45,7 @@ An object of a list with 12 components
 \item "\code{betas}" - effects related to cluster-specific-survival.
 \item "\code{zetas}" - effects related to cluster-specific-proportions.
 \item "\code{mrfG}" - a graph corresponding to the precision matrix of cluster-specific covariates
+\item "\code{mrfG2}" - a graph corresponding to every second edge in "\code{mrfG}"
 }
 }
 \description{
