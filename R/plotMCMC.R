@@ -41,19 +41,14 @@ plotMCMC <- function(dat, datMCMC, estimator = "xi") {
   oldpar <- par(no.readonly = TRUE)
   on.exit(par(oldpar))
 
-  # n <- dim(dat$X)[1]
   p <- dim(dat$X)[2]
   L <- dim(dat$X)[3]
-  # nIter <- datMCMC$input$nIter
-  # burnin <- datMCMC$input$burnin
-  # p.idx <- 1:(p * L)
+  
+  # set covariates' indexes for plotting
   p.idx <- 1:((p + 1) * L)
-  # p.DirTrue.idx <- 1:((p + 1) * L)
   p.DirFalse.idx <- 1:((p + 1) * (L - 1))
   if (p > 10) {
-    # p.idx <- rep(1:10, L) + p * rep(0:(L - 1), each = 10)
     p.idx <- rep(1:11, L) + (p + 1) * rep(0:(L - 1), each = 11)
-    # p.DirTrue.idx <- rep(1:11, L) + (p + 1) * rep(0:(L - 1), each = 11)
     p.DirFalse.idx <- rep(1:11, L - 1) + (p + 1) * rep(0:(L - 2), each = 11)
     p <- 10
   }

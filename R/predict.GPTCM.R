@@ -39,7 +39,6 @@ predict.GPTCM <- function(object, dat,
                           type = "survival",
                           times = NULL, ...) {
   n <- dim(dat$X)[1]
-  # p <- dim(dat$X)[2]
   L <- dim(dat$X)[3]
 
   if (is.null(newdata)) {
@@ -48,7 +47,6 @@ predict.GPTCM <- function(object, dat,
     survObj.new <- newdata$survObj
   }
 
-  # nIter <- object$input$nIter
   burnin <- object$input$burnin / object$input$thin
 
   # survival predictions based on posterior mean
