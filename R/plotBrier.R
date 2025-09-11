@@ -218,17 +218,17 @@ plotBrier <- function(dat, datMCMC,
   }
 
   list.models <- list(
-    "Cox.clin" = pred.fitCox.clin,
-    "Cox.X.mean" = pred.fitCox.X.mean,
-    "Cox.X.median" = pred.fitCox.X.median,
-    # "Cox.clin.X.median"=fitCox.clin.X.median,
-    "Cox.clin.X.mean" = pred.fitCox.clin.X.mean,
-    # "PTCM.clin" = predPTCM.prob,
+    "Cox-X0" = pred.fitCox.clin,
+    "Cox-Xmean" = pred.fitCox.X.mean,
+    "Cox-Xmedian" = pred.fitCox.X.median,
+    # "Cox-X0-Xmedian"=fitCox.clin.X.median,
+    "Cox-X0Xmean" = pred.fitCox.clin.X.mean,
+    # "PTCM-X0" = predPTCM.prob,
     # "GPTCM-BetaBin" = pred.prob2,
     "GPTCM" = pred.prob
   )
   if (PTCM) {
-    list.models <- c(list.models, list("GPTCM-PTCM.clin" = predPTCM.prob))
+    list.models <- c(list.models, list("PTCM-X0" = predPTCM.prob))
   }
   g <- riskRegression::Score(
     list.models,
@@ -242,10 +242,7 @@ plotBrier <- function(dat, datMCMC,
     data <- data[data$times <= time.star, ]
   }
   levels(data$model)[1] <- "Kaplan-Meier"
-  # utils::globalVariables(c("times", "Brier", "model"))
-  # NOTE: `aes_string()` was deprecated in ggplot2 3.0.0.
   g2 <- ggplot2::ggplot(data, aes(
-    # x = "times", y = "Brier", group = "model", color = "model"
     x = .data$times, y = .data$Brier, group = .data$model, color = .data$model
   )) +
     xlab(xlab) +

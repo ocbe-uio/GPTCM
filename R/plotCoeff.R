@@ -59,11 +59,10 @@ plotCoeff <- function(dat,
                       label.y = NULL,
                       first.coef = NULL,
                       y.axis.size = 8, ...) {
-  # n <- dim(dat$X)[1]
+
   p <- dim(dat$X)[2]
   L <- dim(dat$X)[3]
   thin <- datMCMC$input$thin
-  # nIter <- datMCMC$input$nIter / thin
   burnin <- datMCMC$input$burnin / thin + 1
 
   xlab0 <- xlab
@@ -77,8 +76,6 @@ plotCoeff <- function(dat,
     xlim.lower <- xlim[1]
     xlim.upper <- xlim[2]
   }
-
-  # legend0 <- ifelse(is.null(legend.labs), 0, 1)
 
   if (estimator == "beta") {
     betas.mcmc <- datMCMC$output$betas[-c(1:burnin), ]
