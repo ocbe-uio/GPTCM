@@ -78,7 +78,7 @@ ggsurv$plot <- ggsurv$plot +
 ggsurv
 ```
 
-<img src="man/figures/cran_km.png" width="70%" />
+<img src="man/figures/cran_km.png" width="60%" />
 
 <!-- 
 We fit one of the proposed GPTCM, GPTCM with the Bernoulli-beta prior (GPTCM-Ber2):
@@ -139,8 +139,8 @@ plotCoeff(dat, datMCMC = fit, estimator = "beta", bandwidth = 0.02)
 plotCoeff(dat, datMCMC = fit, estimator = "gamma")
 ```
 
-<img src="man/figures/cran_betas.png" width="100%" />
-<img src="man/figures/cran_gammas.png" width="100%" />
+<img src="man/figures/cran_betas.png" width="80%" />
+<img src="man/figures/cran_gammas.png" width="80%" />
 
 
 The following figure shows the posterior distributions of cell-type-specific effects associated with cell-type-specific proportions, and mPIP of Bayesian variable selection. 
@@ -152,8 +152,8 @@ plotCoeff(dat, datMCMC = fit, estimator = "zeta", bandwidth = 0.01)
 plotCoeff(dat, datMCMC = fit, estimator = "eta")
 ```
 
-<img src="man/figures/cran_zetas.png" width="100%" />
-<img src="man/figures/cran_etas.png" width="100%" />
+<img src="man/figures/cran_zetas.png" width="80%" />
+<img src="man/figures/cran_etas.png" width="80%" />
 
 ## References
 
