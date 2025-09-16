@@ -228,7 +228,15 @@ plotBrier <- function(dat, datMCMC,
     "GPTCM" = pred.prob
   )
   if (PTCM) {
-    list.models <- c(list.models, list("PTCM-X0" = predPTCM.prob))
+    #list.models <- c(list.models, list("PTCM-X0" = predPTCM.prob))
+    list.models <- list(
+      "Cox-X0" = pred.fitCox.clin,
+      "Cox-Xmean" = pred.fitCox.X.mean,
+      "Cox-Xmedian" = pred.fitCox.X.median,
+      "Cox-X0-Xmean" = pred.fitCox.clin.X.mean,
+      "PTCM-X0" = predPTCM.prob,
+      "GPTCM" = pred.prob
+    )
   }
   g <- riskRegression::Score(
     list.models,

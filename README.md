@@ -8,7 +8,7 @@ status](https://www.r-pkg.org/badges/version/GPTCM)](https://cran.r-project.org/
 [![DOI](https://img.shields.io/badge/doi-10.32614%2FCRAN.package.GPTCM-brightgreen)](https://doi.org/10.32614/CRAN.package.GPTCM)
 
 
-This is an R package **GPTCM** implementing Bayesian hierarchical modeling for a generalized promotion time cure model (GPTCM) ([Zhao \& Kızılaslan, 2024](https://doi.org/10.48550/arXiv.2408.17188); [Zhao et al., 2025](https://doi.org/10.48550/arXiv.2509.01001)) for the identification of cell-type-specific tumor driver genes and survival prognosis. 
+This is an R package **GPTCM** implementing Bayesian hierarchical modeling for a class of generalized promotion time cure model (GPTCM) ([Zhao \& Kızılaslan, 2024](https://doi.org/10.48550/arXiv.2408.17188); [Zhao et al., 2025](https://doi.org/10.48550/arXiv.2509.01001)) for the identification of cell-type-specific tumor driver genes and survival prognosis. 
 
 ## Installation
 

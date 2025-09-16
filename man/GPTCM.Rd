@@ -99,7 +99,9 @@ An object of a list including the following components:
 }
 \description{
 This is the main function to fit the Bayesian GPTCMs (Zhao et al. 2025) with
-multiscale data for sparse identification of high-dimensional covariates
+multiscale data for sparse identification of high-dimensional covariates. The
+core code for MCMC algorithm uses Rcpp (Eddelbuettel and François 2011) and
+RcppArmadillo (Eddelbuettel and Sanderson 2014)
 }
 \examples{
 
@@ -116,5 +118,7 @@ fit <- GPTCM(dat, nIter = 10, burnin = 0)
 
 }
 \references{
+Eddelbuettel D, Sanderson C (2014). \emph{RcppArmadillo: Accelerating R with high-performance C++ linear algebra}. Computational Statistics and Data Analysis, 71, 1054--1063
+
 Zhao Z, Kızılaslan F, Wang S, Zucknick M (2025). \emph{Generalized promotion time cure model: A new modeling framework to identify cell-type-specific genes and improve survival prognosis}. arXiv:2509.01001
 }

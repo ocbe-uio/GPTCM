@@ -83,6 +83,11 @@ ggsurv$plot <- ggsurv$plot +
   )
 ggsurv
 ```
+```{r eval=FALSE, echo=FALSE}
+png("cran_km.png", bg = "transparent", width = 1200, height = 1200, res = 200)
+ggsurv
+dev.off()
+```
 
 <img src="../man/figures/cran_km.png" width="70%" />
 
@@ -103,6 +108,16 @@ plotBrier(dat,
   ylab = "Prediction error"
 )
 ```
+```{r eval=FALSE, echo=FALSE}
+png("cran_brier.png", bg = "transparent", width = 950, height = 600, res = 200)
+plotBrier(dat,
+  datMCMC = fit,
+  time.star = 3,
+  xlab = "Evalutation time points",
+  ylab = "Prediction error"
+)
+dev.off()
+```
 
 <img src="../man/figures/cran_brier.png" width="70%" />
 
@@ -113,6 +128,14 @@ The following figure shows the posterior distributions of cell-type-specific eff
 plotCoeff(dat, datMCMC = fit, estimator = "beta", bandwidth = 0.02)
 # show BVS
 plotCoeff(dat, datMCMC = fit, estimator = "gamma")
+```
+```{r eval=FALSE, echo=FALSE}
+png("cran_betas.png", bg = "transparent", width = 950, height = 600, res = 200)
+plotCoeff(dat, datMCMC = fit, estimator = "beta", bandwidth = 0.02)
+dev.off()
+png("cran_gammas.png", bg = "transparent", width = 950, height = 600, res = 200)
+plotCoeff(dat, datMCMC = fit, estimator = "gamma")
+dev.off()
 ```
 
 <img src="../man/figures/cran_betas.png" width="100%" />
@@ -126,6 +149,14 @@ The following figure shows the posterior distributions of cell-type-specific eff
 plotCoeff(dat, datMCMC = fit, estimator = "zeta", bandwidth = 0.01)
 # show BVS
 plotCoeff(dat, datMCMC = fit, estimator = "eta")
+```
+```{r eval=FALSE, echo=FALSE}
+png("cran_zetas.png", bg = "transparent", width = 950, height = 600, res = 200)
+plotCoeff(dat, datMCMC = fit, estimator = "zeta", bandwidth = 0.02)
+dev.off()
+png("cran_etas.png", bg = "transparent", width = 950, height = 600, res = 200)
+plotCoeff(dat, datMCMC = fit, estimator = "eta")
+dev.off()
 ```
 
 <img src="../man/figures/cran_zetas.png" width="100%" />
