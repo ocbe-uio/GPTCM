@@ -139,8 +139,8 @@ plotCoeff(dat, datMCMC = fit, estimator = "beta", bandwidth = 0.02)
 plotCoeff(dat, datMCMC = fit, estimator = "gamma")
 ```
 
-<img src="man/figures/cran_betas.png" width="80%" />
-<img src="man/figures/cran_gammas.png" width="80%" />
+<img src="man/figures/cran_betas.png" width="70%" />
+<img src="man/figures/cran_gammas.png" width="70%" />
 
 
 The following figure shows the posterior distributions of cell-type-specific effects associated with cell-type-specific proportions, and mPIP of Bayesian variable selection. 
@@ -152,8 +152,8 @@ plotCoeff(dat, datMCMC = fit, estimator = "zeta", bandwidth = 0.01)
 plotCoeff(dat, datMCMC = fit, estimator = "eta")
 ```
 
-<img src="man/figures/cran_zetas.png" width="80%" />
-<img src="man/figures/cran_etas.png" width="80%" />
+<img src="man/figures/cran_zetas.png" width="70%" />
+<img src="man/figures/cran_etas.png" width="70%" />
 
 ## References
 
