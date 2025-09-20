@@ -1,10 +1,11 @@
 <div style="text-align: left;">
 
-### GPTCM 1.1.2 (2025-09-16) (GitHub Only)
+### GPTCM 1.1.2 (2025-09-20) (GitHub Only)
 
 * Update simulation examples in vignette due to the change of `mvnfast::rmvn()`
 * Convert line endings in `configure.ac` to LF
 * Improve help documentation
+* Update function `simData()` for any number of clusters 
 
 ### GPTCM 1.1.1 (2025-09-16)
 

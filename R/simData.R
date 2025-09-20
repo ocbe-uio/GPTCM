@@ -85,6 +85,16 @@ simData <- function(n = 200, p = 10, L = 3,
       zetas <- rbind(zetas, matrix(0, nrow = p - 10, ncol = L))
     }
   }
+  
+  # generate other effects if more than 3 clusters
+  if (L > 3) {
+    beta0 <- c(beta0, rep(0, L - 3))
+    betas <- cbind(betas, matrix(0, nrow = p, ncol = L - 3))
+    betas[1:min(2, p), 4:L] <- runif(min(2, p) * (L - 3), -2, 2)
+    
+    zetas <- cbind(zetas, matrix(0, nrow = p + 1, ncol = L - 3))
+    zetas[1:min(2, p), 4:L] <- runif(min(2, p) * (L - 3), -2, 2)
+  }
 
   ## covariates
   # means <- rep(0, p)
@@ -103,6 +113,11 @@ simData <- function(n = 200, p = 10, L = 3,
     }
     # simulate (x1, x2, x3) simultaneously with a big Sigma
     Sigma <- Matrix::bdiag(Sigma1, Sigma2, Sigma3)
+    
+    if (L > 3) {
+      Sigma <- Matrix::bdiag(Sigma, diag(p*(L - 3)))
+    }
+      
     off.diag1 <- list(1:(2 * p), p + 1:(2 * p))
     off.diag2 <- list(1:p, 2 * p + 1:p)
     for (j in 1:(2 * p)) {
@@ -123,11 +138,8 @@ simData <- function(n = 200, p = 10, L = 3,
     stop("Argument 'Sigma' is not valid!")
   }
 
-  X00 <- scale(mvnfast::rmvn(n, rep(0, p * L), Sigma))
-  x1 <- X00[, 1:p]
-  x2 <- X00[, p + 1:p]
-  x3 <- X00[, 2 * p + 1:p]
-  X <- array(X00, dim = c(n, p, L))
+  X.all <- scale(mvnfast::rmvn(n, rep(0, p * L), Sigma))
+  X <- array(X.all, dim = c(n, p, L))
 
   x01 <- rbinom(n, 1, 0.5)
   x02 <- rnorm(n)
@@ -154,35 +166,38 @@ simData <- function(n = 200, p = 10, L = 3,
   thetas <- exp(x0 %*% xi)
   cure <- exp(-thetas) # cure probabilities
 
-  mu1 <- exp(beta0[1] + x1 %*% matrix(betas[, 1], ncol = 1))
-  mu2 <- exp(beta0[2] + x2 %*% matrix(betas[, 2], ncol = 1))
-  mu3 <- exp(beta0[3] + x3 %*% matrix(betas[, 3], ncol = 1))
-  mu0 <- cbind(mu1, mu2, mu3)
+  mu0 <- matrix(nrow = n, ncol = L)
+  for (l in 1:L) {
+    mu0[, l] <- exp(beta0[l] + X.all[, (l-1)*p + 1:p] %*% 
+                      matrix(betas[, l], ncol = 1))
+  }
 
   # simulate proportions from cloglog-link function; this is a bit model misspecification
   if (proportion.model == "cloglog") {
-    p1 <- 1 - exp(-exp(zeta0[1] + x1 %*% matrix(zetas[-1, 1], ncol = 1)))
-    p2 <- 1 - exp(-exp(zeta0[2] + x2 %*% matrix(zetas[-1, 2], ncol = 1)))
-    p3 <- 1 - exp(-exp(zeta0[3] + x3 %*% matrix(zetas[-1, 3], ncol = 1)))
-    proportion <- cbind(p1, p2, p3)
+    proportion <- matrix(nrow = n, ncol = L)
+    for (l in 1:L) {
+      proportion[, l] <- 1 - exp(cbind(1, X.all[, (l-1)*p + 1:p]) %*% 
+                                   matrix(zetas[, l], ncol = 1))
+    }
     proportion <- t(apply(proportion, 1, function(pp) pp / sum(pp)))
   }
   # simulate proportions from log-link function; this is a bit model misspecification
   if (proportion.model == "log") {
-    p1 <- exp(zeta0[1] + x1 %*% matrix(zetas[-1, 1], ncol = 1))
-    p2 <- exp(zeta0[2] + x2 %*% matrix(zetas[-1, 2], ncol = 1))
-    p3 <- exp(zeta0[3] + x3 %*% matrix(zetas[-1, 3], ncol = 1))
-    # p3 <- 1 - p1 - p2 # We cannot use this, since p1+p2 can be > 1
-    proportion <- cbind(p1, p2, p3)
+    proportion <- matrix(nrow = n, ncol = L)
+    for (l in 1:L) {
+      proportion[, l] <- 1 - exp(cbind(1, X.all[, (l-1)*p + 1:p]) %*% 
+                                   matrix(zetas[, l], ncol = 1))
+    }
     proportion <- t(apply(proportion, 1, function(pp) pp / sum(pp)))
   }
 
   ## simulate proportions from Dirichlet distribution (n, alpha=1:L)
   if (proportion.model == "dirichlet") {
-    alpha1 <- exp(zeta0[1] + x1 %*% matrix(zetas[-1, 1], ncol = 1))
-    alpha2 <- exp(zeta0[2] + x2 %*% matrix(zetas[-1, 2], ncol = 1))
-    alpha3 <- exp(zeta0[3] + x3 %*% matrix(zetas[-1, 3], ncol = 1))
-    alphas <- cbind(alpha1, alpha2, alpha3)
+    alphas <- matrix(nrow = n, ncol = L)
+    for (l in 1:L) {
+      alphas[, l] <- exp(cbind(1, X.all[, (l-1)*p + 1:p]) %*% 
+                           matrix(zetas[, l], ncol = 1))
+    }
     # alpha0 <- alpha1 + alpha2 + alpha3
     # proportion <- cbind(alpha1 / alpha0, alpha2 / alpha0, alpha3 / alpha0)
 
@@ -222,7 +237,7 @@ simData <- function(n = 200, p = 10, L = 3,
 
   ## fixed proportions for debug estimation of other parameters
   # proportion <- matrix(c(0.13, 0.53, 0.34), nrow = n, ncol = 3, byrow = TRUE)
-  colnames(proportion) <- paste0("p", 1:3)
+  colnames(proportion) <- paste0("p", 1:L)
 
   # kappas <- 2 # 0.9
   ## simulate censoring times
