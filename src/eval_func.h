@@ -76,11 +76,13 @@ public:
         void *abc_data
     );
 
+    /*
     static double log_dens_phi
     (
         double par,
         void *abc_data
     );
+    */
 
     static double log_dens_kappa
     (
@@ -88,6 +90,7 @@ public:
         void *abc_data
     );
 
+    /*
     static double pdfTruncNorm
     (
         double x,
@@ -96,6 +99,7 @@ public:
         double lower,
         double upper
     );
+    */
 };
 
 #endif

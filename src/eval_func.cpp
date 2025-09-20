@@ -280,6 +280,7 @@ double EvalFunction::log_dens_zetas(
 }
 
 // density of truncated normal distribution
+/*
 double EvalFunction::pdfTruncNorm(double x, double m, double sd, double lower, double upper)
 {
     // find quantiles that correspond the the given low and high levels
@@ -292,8 +293,10 @@ double EvalFunction::pdfTruncNorm(double x, double m, double sd, double lower, d
 
     return ret;
 }
+*/
 
 // log-density for Dirichlet dispersion phi if the alternative parametrization is used
+/*
 double EvalFunction::log_dens_phi(
     double par,
     void *abc_data)
@@ -325,6 +328,7 @@ double EvalFunction::log_dens_phi(
     // free(mydata_parm);
     return h;
 }
+*/
 
 
 // log-density for kappa

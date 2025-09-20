@@ -3,6 +3,8 @@
 ### GPTCM 1.1.2 (2025-09-16) (GitHub Only)
 
 * Update simulation examples in vignette due to the change of `mvnfast::rmvn()`
+* Convert line endings in `configure.ac` to LF
+* Improve help documentation
 
 ### GPTCM 1.1.1 (2025-09-16)
 

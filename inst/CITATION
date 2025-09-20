@@ -1,10 +1,11 @@
 bibentry("Manual",
-  title = "{Generalized Promotion Time Cure Model with Bayesian Shrinkage Priors}",
+  title = "{{GPTCM: Generalized Promotion Time Cure Model with Bayesian Shrinkage Priors}}",
   author = c(person(given = "Zhi",
                           family = "Zhao",
                           email = "zhi.zhao@medisin.uio.no")),
   year = 2025,
-  note = "R package version 1.1.1",
+  note = "R package version 1.1.2",
+  doi  = "10.32614/CRAN.package.GPTCM",
   header  = "To cite GPTCM in publications use:"
 )
 
