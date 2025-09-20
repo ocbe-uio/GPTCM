@@ -10,35 +10,35 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 
 
-//' Main function for the MCMC loop
+//' Main function implemented in C++ for the MCMC loop
 //'
-//' @name mcmc
+//' @name run_mcmc
 //'
-//' @param nIter Number of MCMC iterations
-//' @param burnin Length of MCMC burn-in period
-//' @param thin Number of thinning
-//' @param n Number of samples to draw
-//' @param nsamp How many samples to draw for generating each sample; only the last draw will be kept
-//' @param ninit Number of initials as meshgrid values for envelop search
-//' @param metropolis TBA
-//' @param simple TBA
-//' @param convex Adjustment for convexity (non-negative value, default 1.0)
-//' @param npoint Maximum number of envelope points
-//' @param dirichlet Not yet implemented
-//' @param proportion_model TBA
-//' @param BVS TBA
-//' @param gamma_prior TBA
-//' @param gamma_sampler TBA
-//' @param eta_prior TBA
-//' @param eta_sampler TBA
-//' @param initList TBA
-//' @param rangeList TBA
-//' @param hyperparList TBA
-//' @param datEvent TBA
-//' @param datTime TBA
-//' @param datX TBA
-//' @param datX0 TBA
-//' @param datProportionConst TBA
+//' @param nIter number of MCMC iterations
+//' @param burnin length of MCMC burn-in period
+//' @param thin number of thinning
+//' @param n number of samples to draw
+//' @param nsamp how many samples to draw for generating each sample; only the last draw will be kept
+//' @param ninit number of initials as meshgrid values for envelop search
+//' @param metropolis value 0/1 for metropolis step or not
+//' @param simple logical value for implementing a simple arms algorithm
+//' @param convex adjustment for convexity (non-negative value, default 1.0)
+//' @param npoint maximum number of envelope points
+//' @param dirichlet not yet implemented
+//' @param proportion_model logical value for modeling the proportions data
+//' @param BVS logical value for implementing Bayesian variable selection
+//' @param gamma_prior one of \code{c("bernoulli", "MRF")}
+//' @param gamma_sampler one of \code{c("mc3", "bandit")}
+//' @param eta_prior one of \code{c("bernoulli", "MRF")}
+//' @param eta_sampler one of \code{c("mc3", "bandit")}
+//' @param initList a list of initial values for parameters "kappa", "xi", "betas", and "zetas"
+//' @param rangeList a list of ranges of initial values for parameters "kappa", "xi", "betas", and "zetas"
+//' @param hyperparList a list of relevant hyperparameters
+//' @param datEvent a vector of survival status
+//' @param datTime a vector of survival times
+//' @param datX an array of cluster-specific covariates
+//' @param datX0 a matrix of mandatory variables
+//' @param datProportionConst an array of cluster-specific proportions
 //'
 // [[Rcpp::export]]
 Rcpp::List run_mcmc(
@@ -267,7 +267,7 @@ Rcpp::List run_mcmc(
         // gammas = arma::zeros<arma::umat>(p, L);
         for(unsigned int l=0; l<L; ++l)
         {
-            // the Bernoulli probability is cell-type-specific
+            // the Bernoulli probability is cluster-specific
             double pi;// = R::rbeta(hyperpar->piA, hyperpar->piB);
             if(gamma_prior == "mrf")
             {
@@ -315,7 +315,7 @@ Rcpp::List run_mcmc(
         {
             for(unsigned int l=0; l<L; ++l)
             {
-                // the Bernoulli probability is cell-type-specific
+                // the Bernoulli probability is cluster-specific
                 double rho;// = R::rbeta(hyperpar->rhoA, hyperpar->rhoB);
                 if(eta_prior == "mrf")
                 {
@@ -513,7 +513,7 @@ Rcpp::List run_mcmc(
                 // Here both etas and zetas are updated inside due to passing their addresses
                 if(BVS)
                 {
-                    //// update cell-type-specific Bernoulli probability via Gibbs
+                    //// update cluster-specific Bernoulli probability via Gibbs
                     // arma::vec rho = arma::zeros<arma::vec>(L); 
                     // for (unsigned int l=0; l<L; ++l)
                     // {
@@ -626,7 +626,7 @@ Rcpp::List run_mcmc(
         // update \gammas -- variable selection indicators
         if(BVS)
         {
-            //// update cell-type-specific Bernoulli probability via Gibbs
+            //// update cluster-specific Bernoulli probability via Gibbs
             // arma::vec pi = arma::zeros<arma::vec>(L); 
             // for (unsigned int l=0; l<L; ++l)
             // {

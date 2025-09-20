@@ -245,7 +245,7 @@ void BVS_Sampler::sampleGamma(
     case Gamma_Prior_Type::bernoulli:
     {
         proposedGammaPrior = logP_gamma_; // copy the original one and later change the address of the copied one
-        // update corresponding Bernoulli probabilities (allow cell-type-specific sparsity)
+        // update corresponding Bernoulli probabilities (allow cluster-specific sparsity)
         // pi_proposed = R::rbeta(hyperpar->piA + (double)(arma::accu(proposedGamma.col(componentUpdateIdx))),
         //                      hyperpar->piB + (double)(p) - (double)(arma::accu(proposedGamma.col(componentUpdateIdx))));
 
@@ -669,7 +669,7 @@ void BVS_Sampler::sampleEta(
     case Eta_Prior_Type::bernoulli:
     {
         proposedEtaPrior = logP_eta_; // copy the original one and later change the address of the copied one
-        // update corresponding Bernoulli probabilities (allow cell-type-specific sparsity)
+        // update corresponding Bernoulli probabilities (allow cluster-specific sparsity)
         // rho_proposed = R::rbeta(hyperpar->rhoA + (double)(arma::accu(proposedEta.col(componentUpdateIdx))),
         //                       hyperpar->rhoB + (double)(p) - (double)(arma::accu(proposedEta.col(componentUpdateIdx))));
         
