@@ -90,10 +90,10 @@ simData <- function(n = 200, p = 10, L = 3,
   if (L > 3) {
     beta0 <- c(beta0, rep(0, L - 3))
     betas <- cbind(betas, matrix(0, nrow = p, ncol = L - 3))
-    betas[1:min(2, p), 4:L] <- runif(min(2, p) * (L - 3), -2, 2)
+    betas[1:min(2, p), 4:L] <- c(-1, 1) #runif(min(2, p) * (L - 3), -2, 2)
     
     zetas <- cbind(zetas, matrix(0, nrow = p + 1, ncol = L - 3))
-    zetas[1:min(2, p), 4:L] <- runif(min(2, p) * (L - 3), -2, 2)
+    zetas[1:min(2, p), 4:L] <- c(1, 0.5) #runif(min(2, p) * (L - 3), -2, 2)
   }
 
   ## covariates
