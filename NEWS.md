@@ -6,6 +6,7 @@
 * Convert line endings in `configure.ac` to LF
 * Improve help documentation
 * Update function `simData()` for any number of clusters 
+* Simplify `BVS.cpp`
 
 ### GPTCM 1.1.1 (2025-09-16)
 

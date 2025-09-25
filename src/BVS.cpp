@@ -212,8 +212,9 @@ void BVS_Sampler::sampleGamma(
     unsigned int L = gammas_.n_cols;
 
     // define static variables for global updates for the use of bandit algorithm
-    static arma::mat banditAlpha = arma::mat(gammas_.n_rows, gammas_.n_cols, arma::fill::value(0.5));
-    static arma::mat banditBeta = arma::mat(gammas_.n_rows, gammas_.n_cols, arma::fill::value(0.5));
+    // initial value 0.5 here forces shrinkage toward 0 or 1
+    static arma::mat banditAlpha = arma::mat(p, L, arma::fill::value(0.5));
+    static arma::mat banditBeta = arma::mat(p, L, arma::fill::value(0.5));
 
     // decide on one component
     unsigned int componentUpdateIdx = static_cast<unsigned int>( R::runif( 0, L ) );
@@ -226,11 +227,11 @@ void BVS_Sampler::sampleGamma(
     switch( gamma_sampler )
     {
     case Gamma_Sampler_Type::bandit:
-        logProposalRatio += gammaBanditProposal( proposedGamma, gammas_, updateIdx, componentUpdateIdx, banditAlpha );
+        logProposalRatio += gammaBanditProposal( p, proposedGamma, gammas_, updateIdx, componentUpdateIdx, banditAlpha );
         break;
 
     case Gamma_Sampler_Type::mc3:
-        logProposalRatio += gammaMC3Proposal( proposedGamma, gammas_, updateIdx, componentUpdateIdx );
+        logProposalRatio += gammaMC3Proposal( p, proposedGamma, gammas_, updateIdx, componentUpdateIdx );
         break;
     }
 
@@ -558,6 +559,7 @@ void BVS_Sampler::sampleGamma(
     // after A/R, update bandit Related variables
     if( gamma_sampler == Gamma_Sampler_Type::bandit )
     {
+        // banditLimit to control the beta prior with relatively large variance
         double banditLimit = (double)(log_likelihood_.n_elem);
         double banditIncrement = 1.;
 
@@ -636,8 +638,8 @@ void BVS_Sampler::sampleEta(
     unsigned int L = etas_.n_cols;
 
     // define static variables for global updates for the use of bandit algorithm
-    static arma::mat banditAlpha2 = arma::mat(etas_.n_rows, etas_.n_cols, arma::fill::value(0.5));
-    static arma::mat banditBeta2 = arma::mat(etas_.n_rows, etas_.n_cols, arma::fill::value(0.5));
+    static arma::mat banditAlpha2 = arma::mat(p, L, arma::fill::value(0.5));
+    static arma::mat banditBeta2 = arma::mat(p, L, arma::fill::value(0.5));
 
     // decide on one component
     unsigned int componentUpdateIdx = static_cast<unsigned int>( R::runif( 0, L ) );
@@ -648,11 +650,11 @@ void BVS_Sampler::sampleEta(
     switch( eta_sampler )
     {
     case Eta_Sampler_Type::bandit:
-        logProposalRatio += etaBanditProposal( proposedEta, etas_, updateIdx, componentUpdateIdx, banditAlpha2 );
+        logProposalRatio += etaBanditProposal( p, proposedEta, etas_, updateIdx, componentUpdateIdx, banditAlpha2 );
         break;
 
     case Eta_Sampler_Type::mc3:
-        logProposalRatio += gammaMC3Proposal( proposedEta, etas_, updateIdx, componentUpdateIdx );
+        logProposalRatio += gammaMC3Proposal( p, proposedEta, etas_, updateIdx, componentUpdateIdx );
         break;
     }
 
@@ -902,13 +904,13 @@ void BVS_Sampler::sampleEta(
 }
 
 double BVS_Sampler::gammaMC3Proposal(
+    unsigned int p,
     arma::umat& mutantGamma,
     const arma::umat gammas_,
     arma::uvec& updateIdx,
     unsigned int componentUpdateIdx_ )
 {
     //arma::umat mutantGamma = gammas_;
-    unsigned int p = gammas_.n_rows;
     unsigned int n_updates_MC3 = std::max(5., std::ceil( (double)(p) / 5. )); //arbitrary number, should I use something different?
     // unsigned int n_updates_MC3 = (p>5)? 5 : (p-1);
     //TODO: re-run all high-dimensional cases to check if upto 20 covariates result in similar results as before
@@ -938,6 +940,7 @@ double BVS_Sampler::gammaMC3Proposal(
 
 // sampler for proposed updates on gammas_
 double BVS_Sampler::gammaBanditProposal(
+    unsigned int p,
     arma::umat& mutantGamma,
     const arma::umat gammas_,
     arma::uvec& updateIdx,
@@ -945,50 +948,48 @@ double BVS_Sampler::gammaBanditProposal(
     arma::mat& banditAlpha )
 {
     // define static variables for global updates
-    static arma::vec banditZeta = arma::vec(gammas_.n_rows);
+    // 'banditZeta' corresponds to pi in GPTCM
+    static arma::vec banditZeta = arma::vec(p);
     /*
     static arma::mat banditAlpha = arma::mat(gammas_.n_rows, gammas_.n_cols, arma::fill::value(0.5));
     // banditAlpha.fill( 0.5 );
     static arma::mat banditBeta = arma::mat(gammas_.n_rows, gammas_.n_cols, arma::fill::value(0.5));
     // banditBeta.fill( 0.5 );
     */
-    static arma::vec mismatch = arma::vec(gammas_.n_rows);
-    static arma::vec normalised_mismatch = arma::vec(gammas_.n_rows);
-    static arma::vec normalised_mismatch_backwards = arma::vec(gammas_.n_rows);
+    static arma::vec mismatch = arma::vec(p);
+    static arma::vec normalised_mismatch = arma::vec(p);
+    static arma::vec normalised_mismatch_backwards = arma::vec(p);
 
     unsigned int n_updates_bandit = 4; // this needs to be low as its O(n_updates!)
     // banditLimit = (double)N;
     // banditIncrement = 1.;
 
 
-    unsigned int nVSPredictors = gammas_.n_rows;
     //int nOutcomes = gammas_.n_cols;
     //arma::umat mutantGamma = gammas_;
     double logProposalRatio = 0.;
 
-    // Sample Zs (only for relevant component)
-    for(unsigned int i=0; i<nVSPredictors; ++i)
+    for(unsigned int j=0; j<p; ++j)
     {
-        banditZeta(i) = R::rbeta(banditAlpha(i,componentUpdateIdx_),banditAlpha(i,componentUpdateIdx_));
-    }
+        // Sample Zs (only for relevant component)
+        banditZeta(j) = R::rbeta(banditAlpha(j,componentUpdateIdx_),banditAlpha(j,componentUpdateIdx_));
 
-    // Create mismatch (only for relevant outcome)
-    for(unsigned int i=0; i<nVSPredictors; ++i)
-    {
-        mismatch(i) = (mutantGamma(i,componentUpdateIdx_)==0)?(banditZeta(i)):(1.-banditZeta(i));   //mismatch
+        // Create mismatch (only for relevant outcome)
+        mismatch(j) = (mutantGamma(j,componentUpdateIdx_)==0)?(banditZeta(j)):(1.-banditZeta(j));   //mismatch
     }
 
     // Normalise
     // mismatch = arma::log(mismatch); //logscale ??? TODO
     // normalised_mismatch = mismatch - Utils::logspace_add(mismatch);
 
-    normalised_mismatch = mismatch / arma::as_scalar(arma::sum(mismatch));
+    // normalised_mismatch = mismatch / arma::as_scalar(arma::sum(mismatch));
+    normalised_mismatch = mismatch / arma::sum(mismatch);
 
     if( R::runif(0,1) < 0.5 )   // one deterministic update
     {
         // Decide which to update
         updateIdx = arma::zeros<arma::uvec>(1);
-        //updateIdx(0) = randWeightedIndexSampleWithoutReplacement(nVSPredictors,normalised_mismatch); // sample the one
+        //updateIdx(0) = randWeightedIndexSampleWithoutReplacement(p,normalised_mismatch); // sample the one
         updateIdx(0) = randWeightedIndexSampleWithoutReplacement(normalised_mismatch); // sample the one
 
         // Update
@@ -999,7 +1000,8 @@ double BVS_Sampler::gammaBanditProposal(
         normalised_mismatch_backwards(updateIdx(0)) = 1. - normalised_mismatch_backwards(updateIdx(0)) ;
 
         // normalised_mismatch_backwards = normalised_mismatch_backwards - Utils::logspace_add(normalised_mismatch_backwards);
-        normalised_mismatch_backwards = normalised_mismatch_backwards / arma::as_scalar(arma::sum(normalised_mismatch_backwards));
+        // normalised_mismatch_backwards = normalised_mismatch_backwards / arma::as_scalar(arma::sum(normalised_mismatch_backwards));
+        normalised_mismatch_backwards = normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
 
         logProposalRatio = ( std::log( normalised_mismatch_backwards(updateIdx(0)) ) ) -
                            ( std::log( normalised_mismatch(updateIdx(0)) ) );
@@ -1015,14 +1017,16 @@ double BVS_Sampler::gammaBanditProposal(
         // logProposalRatio = 0.;
         // Decide which to update
         updateIdx = arma::zeros<arma::uvec>(n_updates_bandit);
-        updateIdx = randWeightedIndexSampleWithoutReplacement(nVSPredictors,normalised_mismatch,n_updates_bandit); // sample n_updates_bandit indexes
+        updateIdx = randWeightedIndexSampleWithoutReplacement(p,normalised_mismatch,n_updates_bandit); // sample n_updates_bandit indexes
 
         normalised_mismatch_backwards = mismatch; // copy for backward proposal
 
         // Update
         for(unsigned int i=0; i<n_updates_bandit; ++i)
         {
-            mutantGamma(updateIdx(i),componentUpdateIdx_) = static_cast<unsigned int>(R::rbinom( 1, banditZeta(updateIdx(i)))); // random update
+            // mutantGamma(updateIdx(i),componentUpdateIdx_) = static_cast<unsigned int>(R::rbinom( 1, banditZeta(updateIdx(i)))); // random update
+            unsigned int j = R::rbinom( 1, banditZeta(updateIdx(i))); // random update
+            mutantGamma(updateIdx(i),componentUpdateIdx_) = j;
 
             normalised_mismatch_backwards(updateIdx(i)) = 1.- normalised_mismatch_backwards(updateIdx(i));
 
@@ -1034,7 +1038,8 @@ double BVS_Sampler::gammaBanditProposal(
 
         // Compute logProposalRatio probabilities
         // normalised_mismatch_backwards = normalised_mismatch_backwards - Utils::logspace_add(normalised_mismatch_backwards);
-        normalised_mismatch_backwards = normalised_mismatch_backwards / arma::as_scalar(arma::sum(normalised_mismatch_backwards));
+        // normalised_mismatch_backwards = normalised_mismatch_backwards / arma::as_scalar(arma::sum(normalised_mismatch_backwards));
+        normalised_mismatch_backwards = normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
 
         logProposalRatio += logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch_backwards,updateIdx) -
                             logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch,updateIdx);
@@ -1047,6 +1052,7 @@ double BVS_Sampler::gammaBanditProposal(
 
 // sampler for proposed updates on etas_
 double BVS_Sampler::etaBanditProposal(
+    unsigned int p,
     arma::umat& mutantEta,
     const arma::umat etas_,
     arma::uvec& updateIdx,
@@ -1054,47 +1060,46 @@ double BVS_Sampler::etaBanditProposal(
     arma::mat& banditAlpha2)
 {
     // define static variables for global updates
-    static arma::vec banditZeta2 = arma::vec(etas_.n_rows);
+    // 'banditZeta2' corresponds to rho in GPTCM
+    static arma::vec banditZeta2 = arma::vec(p);
     /*
     static arma::mat banditAlpha = arma::mat(gammas_.n_rows, gammas_.n_cols, arma::fill::value(0.5));
     // banditAlpha.fill( 0.5 );
     static arma::mat banditBeta = arma::mat(gammas_.n_rows, gammas_.n_cols, arma::fill::value(0.5));
     // banditBeta.fill( 0.5 );
     */
-    static arma::vec mismatch2 = arma::vec(etas_.n_rows);
-    static arma::vec normalised_mismatch2 = arma::vec(etas_.n_rows);
-    static arma::vec normalised_mismatch_backwards2 = arma::vec(etas_.n_rows);
+    static arma::vec mismatch2 = arma::vec(p);
+    static arma::vec normalised_mismatch2 = arma::vec(p);
+    static arma::vec normalised_mismatch_backwards2 = arma::vec(p);
 
     unsigned int n_updates_bandit = 4; // this needs to be low as its O(n_updates!)
     // banditLimit = (double)N;
     // banditIncrement = 1.;
 
-    unsigned int nVSPredictors = etas_.n_rows;
     double logProposalRatio = 0.;
 
-    // Sample Zs (only for relevant component)
-    for(unsigned int i=0; i<nVSPredictors; ++i)
+    for(unsigned int j=0; j<p; ++j)
     {
-        banditZeta2(i) = R::rbeta(banditAlpha2(i,componentUpdateIdx_),banditAlpha2(i,componentUpdateIdx_));
-    }
+        // Sample Zs (only for relevant component)
+        banditZeta2(j) = R::rbeta(banditAlpha2(j,componentUpdateIdx_),banditAlpha2(j,componentUpdateIdx_));
 
-    // Create mismatch (only for relevant outcome)
-    for(unsigned int i=0; i<nVSPredictors; ++i)
-    {
-        mismatch2(i) = (mutantEta(i,componentUpdateIdx_)==0)?(banditZeta2(i)):(1.-banditZeta2(i));   //mismatch
+        // Create mismatch (only for relevant outcome)
+        mismatch2(j) = (mutantEta(j,componentUpdateIdx_)==0)?(banditZeta2(j)):(1.-banditZeta2(j));   //mismatch
     }
 
     // Normalise
     // mismatch = arma::log(mismatch); //logscale ??? TODO
     // normalised_mismatch = mismatch - Utils::logspace_add(mismatch);
 
-    normalised_mismatch2 = mismatch2 / arma::as_scalar(arma::sum(mismatch2));
+    // normalised_mismatch2 = mismatch2 / arma::as_scalar(arma::sum(mismatch2));
+    normalised_mismatch2 = mismatch2 /arma::sum(mismatch2);
 
+    // TODO: confirm if this is "ε-Greedy Strategy for Bernoulli Bandits". Choose ε=0.5 to balance exploration and exploitation
     if( R::runif(0,1) < 0.5 )   // one deterministic update
     {
         // Decide which to update
         updateIdx = arma::zeros<arma::uvec>(1);
-        //updateIdx(0) = randWeightedIndexSampleWithoutReplacement(nVSPredictors,normalised_mismatch); // sample the one
+        //updateIdx(0) = randWeightedIndexSampleWithoutReplacement(p,normalised_mismatch); // sample the one
         updateIdx(0) = randWeightedIndexSampleWithoutReplacement(normalised_mismatch2); // sample the one
 
         // Update
@@ -1105,7 +1110,8 @@ double BVS_Sampler::etaBanditProposal(
         normalised_mismatch_backwards2(updateIdx(0)) = 1. - normalised_mismatch_backwards2(updateIdx(0)) ;
 
         // normalised_mismatch_backwards = normalised_mismatch_backwards - Utils::logspace_add(normalised_mismatch_backwards);
-        normalised_mismatch_backwards2 = normalised_mismatch_backwards2 / arma::as_scalar(arma::sum(normalised_mismatch_backwards2));
+        // normalised_mismatch_backwards2 = normalised_mismatch_backwards2 / arma::as_scalar(arma::sum(normalised_mismatch_backwards2));
+        normalised_mismatch_backwards2 = normalised_mismatch_backwards2 / arma::sum(normalised_mismatch_backwards2);
 
         logProposalRatio = ( std::log( normalised_mismatch_backwards2(updateIdx(0)) ) ) -
                            ( std::log( normalised_mismatch2(updateIdx(0)) ) );
@@ -1121,14 +1127,16 @@ double BVS_Sampler::etaBanditProposal(
         // logProposalRatio = 0.;
         // Decide which to update
         updateIdx = arma::zeros<arma::uvec>(n_updates_bandit);
-        updateIdx = randWeightedIndexSampleWithoutReplacement(nVSPredictors,normalised_mismatch2,n_updates_bandit); // sample n_updates_bandit indexes
+        updateIdx = randWeightedIndexSampleWithoutReplacement(p,normalised_mismatch2,n_updates_bandit); // sample n_updates_bandit indexes
 
         normalised_mismatch_backwards2 = mismatch2; // copy for backward proposal
 
         // Update
         for(unsigned int i=0; i<n_updates_bandit; ++i)
         {
-            mutantEta(updateIdx(i),componentUpdateIdx_) = static_cast<unsigned int>(R::rbinom( 1, banditZeta2(updateIdx(i)))); // random update
+            // mutantEta(updateIdx(i),componentUpdateIdx_) = static_cast<unsigned int>(R::rbinom( 1, banditZeta2(updateIdx(i)))); // random update
+            unsigned int j = R::rbinom( 1, banditZeta2(updateIdx(i))); // random update
+            mutantEta(updateIdx(i),componentUpdateIdx_) = j;
 
             normalised_mismatch_backwards2(updateIdx(i)) = 1.- normalised_mismatch_backwards2(updateIdx(i));
 
@@ -1140,7 +1148,8 @@ double BVS_Sampler::etaBanditProposal(
 
         // Compute logProposalRatio probabilities
         // normalised_mismatch_backwards = normalised_mismatch_backwards - Utils::logspace_add(normalised_mismatch_backwards);
-        normalised_mismatch_backwards2 = normalised_mismatch_backwards2 / arma::as_scalar(arma::sum(normalised_mismatch_backwards2));
+        // normalised_mismatch_backwards2 = normalised_mismatch_backwards2 / arma::as_scalar(arma::sum(normalised_mismatch_backwards2));
+        normalised_mismatch_backwards2 = normalised_mismatch_backwards2 / arma::sum(normalised_mismatch_backwards2);
 
         logProposalRatio += logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch_backwards2,updateIdx) -
                             logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch2,updateIdx);
@@ -1168,6 +1177,7 @@ arma::uvec BVS_Sampler::randWeightedIndexSampleWithoutReplacement(
 }
 
 // Overload with equal weights
+/*
 arma::uvec BVS_Sampler::randWeightedIndexSampleWithoutReplacement(
     unsigned int populationSize,    // size of set sampling from
     unsigned int sampleSize         // size of each sample
@@ -1179,6 +1189,7 @@ arma::uvec BVS_Sampler::randWeightedIndexSampleWithoutReplacement(
 
     return result.subvec(0,sampleSize-1);
 }
+*/
 
 // overload with sampleSize equal to one
 unsigned int BVS_Sampler::randWeightedIndexSampleWithoutReplacement(
@@ -1200,6 +1211,7 @@ unsigned int BVS_Sampler::randWeightedIndexSampleWithoutReplacement(
     return t;
 }
 
+// TODO: verify if the following function is equivalent to 'arma::sum( arma::log(weights.elem( indexes )) )'? It seems NO! Why?
 // logPDF rand Weighted Indexes (need to implement the one for the original starting vector?)
 double BVS_Sampler::logPDFWeightedIndexSampleWithoutReplacement(
     const arma::vec& weights,
@@ -1256,7 +1268,7 @@ double BVS_Sampler::logPDFBernoulli(unsigned int x, double pi)
     else
         return (double)(x) * std::log(pi) + (1.-(double)(x)) * std::log(1. - pi);
 }
-
+/*
 double BVS_Sampler::lBeta(double a,double b)
 {    //log beta function
 		return std::lgamma(a) + std::lgamma(b) - std::lgamma(a+b);
@@ -1278,7 +1290,7 @@ double BVS_Sampler::logPDFNormal(const arma::vec& x, const double& sigmaSq)  // 
     return -0.5*(double)k*log(2.*M_PI) -0.5*tmp - 0.5 * arma::as_scalar( x.t() * x ) / sigmaSq;
 
 }
-
+*/
 /*
 double logPDFMRF(const arma::umat& externalGamma, const arma::mat& mrfG, double a, double b )
 {

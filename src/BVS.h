@@ -171,8 +171,8 @@ public:
     );
 
     static double logPDFBernoulli(unsigned int x, double pi);
-    static double lBeta(double a,double b);
-    static double logPDFBeta(double x, double a, double b);
+    // static double lBeta(double a,double b);
+    // static double logPDFBeta(double x, double a, double b);
 
     // static void banditInit(unsigned int p, unsigned int L, unsigned int N);
 
@@ -183,6 +183,7 @@ private:
     DataClass dataclass_;
 
     static double gammaMC3Proposal(
+        unsigned int p,
         arma::umat& mutantGammas,
         const arma::umat gammas_,
         arma::uvec& updateIdx,
@@ -190,6 +191,7 @@ private:
     );
 
     static double gammaBanditProposal(
+        unsigned int p,
         arma::umat& mutantGammas,
         const arma::umat gammas_,
         arma::uvec& updateIdx,
@@ -198,6 +200,7 @@ private:
     );
 
     static double etaBanditProposal(
+        unsigned int p,
         arma::umat& mutantEtas,
         const arma::umat etas_,
         arma::uvec& updateIdx,
@@ -210,11 +213,12 @@ private:
         const arma::vec& weights,
         unsigned int sampleSize
     );
-
+/*
     static arma::uvec randWeightedIndexSampleWithoutReplacement(
         unsigned int populationSize,
         unsigned int sampleSize
     );
+*/
 
     static unsigned int randWeightedIndexSampleWithoutReplacement(
         const arma::vec& weights
@@ -229,11 +233,12 @@ private:
         double a,
         double b
     );
-
+    /*
     static double logPDFNormal(
         const arma::vec& x,
         const double& sigmaSq
     );
+    */
 };
 
 // function logPDFMRF() is not yet used
