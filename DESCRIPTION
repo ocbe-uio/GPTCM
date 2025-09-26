@@ -12,8 +12,8 @@ VignetteBuilder: knitr
 Depends: R (>= 4.1.0)
 Encoding: UTF-8
 RoxygenNote: 7.3.2
-LinkingTo: Rcpp, RcppArmadillo, testthat
+LinkingTo: Rcpp, RcppArmadillo
 Imports: Rcpp, survival, riskRegression, ggplot2, ggridges, miCoPTCM, loo, mvnfast, Matrix, scales, utils, stats, graphics
-Suggests: knitr, testthat, survminer
+Suggests: knitr, survminer
 NeedsCompilation: yes
 SystemRequirements: C++17
