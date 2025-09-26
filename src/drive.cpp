@@ -6,6 +6,14 @@
 #include "BVS.h"
 #include "global.h"
 
+#ifdef _OPENMP
+ extern omp_lock_t RNGlock; /*defined in global.h*/
+ #include <omp.h>
+#endif
+
+#include <Rcpp.h>
+// [[Rcpp::plugins(openmp)]]
+
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 
@@ -71,6 +79,10 @@ Rcpp::List run_mcmc(
     arma::mat datX0,
     arma::mat datProportionConst)
 {
+    #ifdef _OPENMP
+        omp_set_num_threads( 1 );
+    #endif
+
     // dimensions
     unsigned int N = datX.n_rows;
     unsigned int p = datX.n_cols;

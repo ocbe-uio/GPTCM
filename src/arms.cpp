@@ -4,7 +4,7 @@
 
 /* *********************************************************************** */
 
-#include <Rmath.h>  /* for RNG interface */
+#include <Rcpp.h>  /* for RNG interface */
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -1043,9 +1043,15 @@ double u_random()
 
 /* to return a standard uniform random number */
 {
-    return (unif_rand());//((double)rand() + 0.5)/((double)RAND_MAX + 1.0);
+    // R::runif() for reproducibility, but other GPTCM computations might 
+    // have different numerical (upper) rounding in different machines for long iterations
+    double u = R::runif(0., 1.);//unif_rand();
+    // printf("unif_rand = %f ", u);
+    // u = unif_rand();
+    // u = ((double)rand() + 0.5)/((double)RAND_MAX + 1.0);
     // srand(time(NULL)); // randomize seed from library '#include <time.h>'
     // return (double)rand() / (double)RAND_MAX;
+    return (u);
 }
 
 /* *********************************************************************** */

@@ -1,4 +1,5 @@
 ## Generate the simulated dataset
+library(GPTCM)
 n <- 200 # subjects
 p <- 10 # variable selection predictors
 L <- 3 # cell types
@@ -18,18 +19,20 @@ test_that("dat has expected values", {
   tol <- 1e-3
   expect_equal(head(dat$survObj$event), c(0, 1, 0, 1, 1, 0), tolerance = tol)
   expect_equal(head(dat$survObj$time), 
-               c(3.6865, 2.7431, 3.3185, 0.3633, 0.1224, 3.1463), 
+               c(3.6864904, 2.7431144, 3.3184946, 0.3633143, 0.1224004, 3.1462821), 
                tolerance = tol)
   expect_equal(as.vector(dat$proportion[1, ]), 
                c(0.000573022, 0.051430838, 0.947996140), 
                tolerance = tol)
-  expect_equal(dat$X[1, 1, ], c(-1.9061,  0.5467, -0.7722), tolerance = tol)
+  expect_equal(dat$X[1, 1, ], 
+               c(-1.9061346,  0.5466742, -0.7721637), 
+               tolerance = tol)
 })
 
 ## Run a Bayesian GPTCM with spike-and-slab priors
 
 set.seed(123)
-fit <- GPTCM(dat, nIter = 110, burnin = 10)
+fit <- GPTCM(dat, nIter = 10, burnin = 2)
 
 
 test_that("fit has properly class and length", {
@@ -44,15 +47,15 @@ test_that("fit has properly class and length", {
 test_that("fit has expected values", {
   tol <- 1e-3
   with(fit$output$post, {
-    expect_equal(kappa, 1.632145, tolerance = tol)
+    expect_equal(kappa, 0.9262288, tolerance = tol)
     expect_equal(as.vector(xi), 
-                 c(0.4326006, 0.214969, -0.7831737), 
+                 c(0.2682705, 0.2761795, -0.6375256), 
                  tolerance = tol)
     expect_equal(as.vector(betas[1:2, ]), 
-                 c(-0.6971, -0.9087, -0.0346, -0.0025, -0.1471,  0.8426), 
+                 c(0.99975518,  0,  1.62017963,  0, -0.01426152,  0), 
                  tolerance = tol)
     expect_equal(as.vector(zetas[1:2, ]), 
-                 c(-0.4728,  0.4160, -0.6378, -0.2879,  0.8331,  0), 
+                 c(-0.976766309,  0, -1.132659925,  0,  0.193755512, -0.008727163), 
                  tolerance = tol)
   })
 })
