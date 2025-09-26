@@ -3,6 +3,7 @@
 ## GPTCM 1.1.3 (2025-09-26) (GitHub Only)
 
 * Add `testthat`
+* Update results in vignette
 
 ## GPTCM 1.1.2 (2025-09-26)
 
