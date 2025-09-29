@@ -135,7 +135,7 @@ public:
 
         bool proportion_model,
 
-        double& logPosteriorBeta,
+        // double& logPosteriorBeta,
         arma::mat& datProportion,
         arma::vec& datTheta,
         arma::mat datMu,
@@ -163,7 +163,7 @@ public:
 
         bool dirichlet,
 
-        double& logPosteriorZeta,
+        // double& logPosteriorZeta,
         arma::vec& datTheta,
         arma::mat weibullS,
         arma::mat weibullLambda,

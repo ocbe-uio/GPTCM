@@ -90,6 +90,7 @@ void BVS_Sampler::loglikelihood(
     //return loglik;
 }
 
+// TODO: Perhaps we will exclude loglikelihood0(), since we do not intend to compare e.g. GPTCM-Ber1 and GPTCM-Ber2
 // log-density for survival data only
 void BVS_Sampler::loglikelihood0(
     const arma::vec& xi,
@@ -189,7 +190,7 @@ void BVS_Sampler::sampleGamma(
 
     bool proportion_model,
 
-    double& logPosteriorBeta,
+    // double& logPosteriorBeta,
     arma::mat& datProportion,
     arma::vec& datTheta,
     arma::mat datMu,
@@ -343,7 +344,7 @@ void BVS_Sampler::sampleGamma(
 
     // update betas based on the proposal gammas
     arma::mat betas_proposal = betas_;
-    double logPosteriorBeta_proposal = 0.;
+    // double logPosteriorBeta_proposal = 0.;
     // double logPosteriorBeta = 0.; //TODO: logPosteriorBeta will be passed through function argument
     // double logProposalBetaRatio = 0.;
 
@@ -388,8 +389,8 @@ void BVS_Sampler::sampleGamma(
         datMu,
         datProportion,
         weibullS,
-        dataclass,
-        logPosteriorBeta_proposal
+        dataclass
+        // logPosteriorBeta_proposal
     );
 
     // double logPriorBetaRatio = 0.; // perhaps no need in our Bayesian GPTCM??? >> We need!!!
@@ -551,7 +552,7 @@ void BVS_Sampler::sampleGamma(
         }
         log_likelihood_ = proposedLikelihood;
         betas_ = betas_proposal;
-        logPosteriorBeta = logPosteriorBeta_proposal;
+        // logPosteriorBeta = logPosteriorBeta_proposal;
 
         ++gamma_acc_count_;
     }
@@ -616,7 +617,7 @@ void BVS_Sampler::sampleEta(
 
     bool dirichlet,
 
-    double& logPosteriorZeta,
+    // double& logPosteriorZeta,
     arma::vec& datTheta,
     arma::mat weibullS,
     arma::mat weibullLambda,
@@ -761,7 +762,7 @@ void BVS_Sampler::sampleEta(
 
     // update other quantities related to acceptance ratio
     arma::mat zetas_proposal = zetas_;
-    double logPosteriorZeta_proposal = 0.;
+    // double logPosteriorZeta_proposal = 0.;
     // double logProposalZetaRatio = 0.;
 
     // Do we need to update \xi, \zeta, \kappa based on proposal betas & gammas?
@@ -810,8 +811,8 @@ void BVS_Sampler::sampleEta(
         datTheta,
         weibullS,
         weibullLambda,
-        dataclass,
-        logPosteriorZeta_proposal
+        dataclass
+        // logPosteriorZeta_proposal
     );
 
     /// NO NEED TO CALCULATE logPriorZetaRatio & logProposalZetaRatio, SINCE THEY WILL BE CANCELLED OUT IN OUR MODEL.
@@ -862,7 +863,7 @@ void BVS_Sampler::sampleEta(
         }
         log_likelihood_ = proposedLikelihood;
         zetas_ = zetas_proposal;
-        logPosteriorZeta = logPosteriorZeta_proposal;
+        // logPosteriorZeta = logPosteriorZeta_proposal;
 
         ++eta_acc_count_;
     }
@@ -1034,8 +1035,6 @@ double BVS_Sampler::gammaBanditProposal(
                                 logPDFBernoulli(mutantGamma(updateIdx(i),componentUpdateIdx_),banditZeta(updateIdx(i)));
         }
 
-        // note that above I might be resampling a value equal to the current one, thus not updating da facto ... TODO
-
         // Compute logProposalRatio probabilities
         // normalised_mismatch_backwards = normalised_mismatch_backwards - Utils::logspace_add(normalised_mismatch_backwards);
         // normalised_mismatch_backwards = normalised_mismatch_backwards / arma::as_scalar(arma::sum(normalised_mismatch_backwards));
@@ -1094,7 +1093,7 @@ double BVS_Sampler::etaBanditProposal(
     // normalised_mismatch2 = mismatch2 / arma::as_scalar(arma::sum(mismatch2));
     normalised_mismatch2 = mismatch2 /arma::sum(mismatch2);
 
-    // TODO: confirm if this is "ε-Greedy Strategy for Bernoulli Bandits". Choose ε=0.5 to balance exploration and exploitation
+    // Use "ε-Greedy Strategy for Bernoulli Bandits". Choose ε=0.5 to balance exploration and exploitation
     if( R::runif(0,1) < 0.5 )   // one deterministic update
     {
         // Decide which to update
@@ -1143,8 +1142,6 @@ double BVS_Sampler::etaBanditProposal(
             logProposalRatio += logPDFBernoulli(etas_(updateIdx(i),componentUpdateIdx_),banditZeta2(updateIdx(i))) -
                                 logPDFBernoulli(mutantEta(updateIdx(i),componentUpdateIdx_),banditZeta2(updateIdx(i)));
         }
-
-        // note that above I might be resampling a value equal to the current one, thus not updating da facto ... TODO
 
         // Compute logProposalRatio probabilities
         // normalised_mismatch_backwards = normalised_mismatch_backwards - Utils::logspace_add(normalised_mismatch_backwards);
@@ -1211,7 +1208,6 @@ unsigned int BVS_Sampler::randWeightedIndexSampleWithoutReplacement(
     return t;
 }
 
-// TODO: verify if the following function is equivalent to 'arma::sum( arma::log(weights.elem( indexes )) )'? It seems NO! Why?
 // logPDF rand Weighted Indexes (need to implement the one for the original starting vector?)
 double BVS_Sampler::logPDFWeightedIndexSampleWithoutReplacement(
     const arma::vec& weights,

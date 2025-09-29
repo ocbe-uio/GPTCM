@@ -189,8 +189,9 @@ void ARMS_Gibbs::arms_gibbs_beta(
     // const arma::cube datX,
     // const arma::uvec datEvent,
     // const arma::vec datTime,
-    const DataClass &dataclass,
-    double& logPosteriorBeta)
+    const DataClass &dataclass
+    // double& logPosteriorBeta
+)
 {
     /* make a subfunction arms_gibbs for only vector betas that can be used for (varying-length) variable selected vector*/
 
@@ -199,7 +200,7 @@ void ARMS_Gibbs::arms_gibbs_beta(
     unsigned int p = dataclass.datX.n_cols;
     unsigned int L = dataclass.datX.n_slices;
 
-    logPosteriorBeta = 0.; // reset value 0
+    // logPosteriorBeta = 0.; // reset value 0
 
     // objects for arms()
     double minD = armsPar.betaMin;
@@ -370,8 +371,9 @@ void ARMS_Gibbs::arms_gibbs_betaK(
     arma::mat datMu,
     arma::mat& datProportion,
     arma::mat weibullS,
-    const DataClass &dataclass,
-    double& logPosteriorBeta)
+    const DataClass &dataclass
+    // double& logPosteriorBeta
+)
 {
     /* make a subfunction arms_gibbs for only vector betas that can be used for (varying-length) variable selected vector*/
 
@@ -380,7 +382,7 @@ void ARMS_Gibbs::arms_gibbs_betaK(
     unsigned int p = dataclass.datX.n_cols;
     unsigned int L = dataclass.datX.n_slices;
 
-    logPosteriorBeta = 0.; // reset value 0
+    // logPosteriorBeta = 0.; // reset value 0
 
     // objects for arms()
     double minD = armsPar.betaMin;
@@ -502,8 +504,9 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     arma::vec& datTheta,
     arma::mat weibullS,
     arma::mat weibullLambda,
-    const DataClass &dataclass,
-    double& logPosteriorZeta)
+    const DataClass &dataclass
+    // double& logPosteriorZeta
+)
 {
     // arma::mat datProportion, // remove this argument
     // double phi,
@@ -514,7 +517,7 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     unsigned int p = dataclass.datX.n_cols;
     unsigned int L = dataclass.datX.n_slices;
 
-    logPosteriorZeta = 0.;
+    // logPosteriorZeta = 0.;
     // int armsPar.metropolis = metropolis;
 
     // objects for arms()
@@ -669,8 +672,9 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
     arma::vec& datTheta,
     arma::mat weibullS,
     arma::mat weibullLambda,
-    const DataClass &dataclass,
-    double& logPosteriorZeta)
+    const DataClass &dataclass
+    // double& logPosteriorZeta
+)
 {
 
     // dimensions
@@ -678,7 +682,7 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
     unsigned int p = dataclass.datX.n_cols;
     unsigned int L = dataclass.datX.n_slices;
 
-    logPosteriorZeta = 0.;
+    // logPosteriorZeta = 0.;
 
     // objects for arms()
     double minD = armsPar.zetaMin;

@@ -3,6 +3,7 @@
 ## GPTCM 1.1.3 (2025-09-26) (GitHub Only)
 
 * Update results in vignette
+* Remove redundant variables `logPosteriorZeta` and `logPosteriorBeta` in cpp files
 
 ## GPTCM 1.1.2 (2025-09-26)
 

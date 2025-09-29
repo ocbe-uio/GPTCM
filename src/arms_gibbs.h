@@ -51,8 +51,8 @@ public:
         arma::mat datMu,
         arma::mat& datProportion,
         arma::mat weibullS,
-        const DataClass& dataclass,
-        double& logPosteriorBeta
+        const DataClass& dataclass
+        // double& logPosteriorBeta
     );
 
     static void arms_gibbs_betaK(
@@ -72,8 +72,8 @@ public:
         arma::mat datMu,
         arma::mat& datProportion,
         arma::mat weibullS,
-        const DataClass& dataclass,
-        double& logPosteriorBeta
+        const DataClass& dataclass
+        // double& logPosteriorBeta
     );
 
     static void arms_gibbs_zeta(
@@ -94,8 +94,8 @@ public:
         arma::vec& datTheta,
         arma::mat weibullS,
         arma::mat weibullLambda,
-        const DataClass& dataclass,
-        double& logPosteriorZeta
+        const DataClass& dataclass
+        // double& logPosteriorZeta
     );
 
     static void arms_gibbs_zetaK(
@@ -117,8 +117,8 @@ public:
         arma::vec& datTheta,
         arma::mat weibullS,
         arma::mat weibullLambda,
-        const DataClass& dataclass,
-        double& logPosteriorZeta
+        const DataClass& dataclass
+        // double& logPosteriorZeta
     );
 
     static void arms_kappa(

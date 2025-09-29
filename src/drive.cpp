@@ -441,8 +441,8 @@ Rcpp::List run_mcmc(
     // loglikelihood_mcmc.row(0) = log_likelihood.t();
     loglikelihood_mcmc.row(0) = log_likelihood0.t();
 
-    double logPosteriorBeta = 0.; // TODO: If using this, it's better to be computed through likelihood()
-    double logPosteriorZeta = 0.;
+    // double logPosteriorBeta = 0.; // TODO: If using this, it's better to be computed through likelihood()
+    // double logPosteriorZeta = 0.;
 
     // // initial points for ARS approach
     // arma::vec initialPoints = arma::linspace( range->xiMin+0.1, range->xiMin-0.1, ninit );
@@ -553,7 +553,7 @@ Rcpp::List run_mcmc(
                         rho0,
                         dirichlet,
 
-                        logPosteriorZeta,
+                        // logPosteriorZeta,
                         datTheta,
                         weibullS,
                         weibullLambda,
@@ -590,8 +590,8 @@ Rcpp::List run_mcmc(
                     datTheta,
                     weibullS,
                     weibullLambda,
-                    dataclass,
-                    logPosteriorZeta
+                    dataclass
+                    // logPosteriorZeta
                 );
 
                 // zeta_mcmc.row(1+m) = arma::vectorise(zetas).t();
@@ -668,7 +668,7 @@ Rcpp::List run_mcmc(
 
                 proportion_model,
 
-                logPosteriorBeta,
+                // logPosteriorBeta,
                 datProportion,
                 datTheta,
                 datMu,
@@ -699,8 +699,8 @@ Rcpp::List run_mcmc(
             datMu,
             datProportion,
             weibullS,
-            dataclass,
-            logPosteriorBeta
+            dataclass
+            // logPosteriorBeta
         );
 
         // }
