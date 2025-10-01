@@ -13,7 +13,7 @@
 //' @param npoint Maximum number of envelope points
 //'
 void ARMS_Gibbs::arms_gibbs_xi(
-    const armsParmClass armsPar,
+    const armsParmClass& armsPar,
     arma::vec& currentPars,
     double v0Sq,
     double vSq,
@@ -169,7 +169,7 @@ void ARMS_Gibbs::arms_gibbs_xi(
 //' @param npoint Maximum number of envelope points
 //'
 void ARMS_Gibbs::arms_gibbs_beta(
-    const armsParmClass armsPar,
+    const armsParmClass& armsPar,
     arma::mat& currentPars,
     arma::vec& tauSq,
     double& tau0Sq,
@@ -356,7 +356,7 @@ void ARMS_Gibbs::arms_gibbs_beta(
 // Multivariate ARMS via Gibbs sampler for betaK; used for M-H sampling for gammas update
 void ARMS_Gibbs::arms_gibbs_betaK(
     const unsigned int k,
-    const armsParmClass armsPar,
+    const armsParmClass& armsPar,
     arma::mat& currentPars,
     double tau0Sq,
     double tauSqK,
@@ -487,7 +487,7 @@ void ARMS_Gibbs::arms_gibbs_betaK(
 //' @param dirichlet Not yet implemented
 //'
 void ARMS_Gibbs::arms_gibbs_zeta(
-    const armsParmClass armsPar,
+    const armsParmClass& armsPar,
     arma::mat& currentPars,
     double& w0Sq,
     arma::vec& wSq,
@@ -503,7 +503,7 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     bool dirichlet,
     arma::vec& datTheta,
     arma::mat weibullS,
-    arma::mat weibullLambda,
+    arma::mat& weibullLambda,
     const DataClass &dataclass
     // double& logPosteriorZeta
 )
@@ -655,7 +655,7 @@ void ARMS_Gibbs::arms_gibbs_zeta(
 // Multivariate ARMS via Gibbs sampler for betaK; used for M-H sampling for gammas update
 void ARMS_Gibbs::arms_gibbs_zetaK(
     const unsigned int k,
-    const armsParmClass armsPar,
+    const armsParmClass& armsPar,
     arma::mat& currentPars,
     double w0Sq,
     double wSqK,
@@ -671,7 +671,7 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
     bool dirichlet,
     arma::vec& datTheta,
     arma::mat weibullS,
-    arma::mat weibullLambda,
+    arma::mat& weibullLambda,
     const DataClass &dataclass
     // double& logPosteriorZeta
 )
@@ -779,7 +779,7 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
 //' @param dirichlet Not yet implemented
 //'
 void ARMS_Gibbs::arms_kappa(
-    const armsParmClass armsPar,
+    const armsParmClass& armsPar,
     double& currentPars,
     double kappaA,
     double kappaB,

@@ -22,7 +22,7 @@ public:
         // bool simple,
         // double convex,
         // int npoint,
-        const armsParmClass armsPar,
+        const armsParmClass& armsPar,
         arma::vec& currentPars,
         double v0Sq,
         double vSq,
@@ -34,7 +34,7 @@ public:
     );
 
     static void arms_gibbs_beta(
-        const armsParmClass armsPar,
+        const armsParmClass& armsPar,
         arma::mat& currentPars,
         arma::vec& tauSq,
         double& tau0Sq,
@@ -57,7 +57,7 @@ public:
 
     static void arms_gibbs_betaK(
         const unsigned int k,
-        const armsParmClass armsPar,
+        const armsParmClass& armsPar,
         arma::mat& currentPars,
         double tau0Sq,
         double tauSqK,
@@ -77,7 +77,7 @@ public:
     );
 
     static void arms_gibbs_zeta(
-        const armsParmClass armsPar,
+        const armsParmClass& armsPar,
         arma::mat& currentPars,
         double& w0Sq,
         arma::vec& wSq,
@@ -93,14 +93,14 @@ public:
         bool dirichlet,
         arma::vec& datTheta,
         arma::mat weibullS,
-        arma::mat weibullLambda,
+        arma::mat& weibullLambda,
         const DataClass& dataclass
         // double& logPosteriorZeta
     );
 
     static void arms_gibbs_zetaK(
         const unsigned int k,
-        const armsParmClass armsPar,
+        const armsParmClass& armsPar,
         arma::mat& currentPars,
         double w0Sq,
         double wSq,
@@ -116,13 +116,13 @@ public:
         bool dirichlet,
         arma::vec& datTheta,
         arma::mat weibullS,
-        arma::mat weibullLambda,
+        arma::mat& weibullLambda,
         const DataClass& dataclass
         // double& logPosteriorZeta
     );
 
     static void arms_kappa(
-        const armsParmClass armsPar,
+        const armsParmClass& armsPar,
         double& currentPars,
         double kappaA,
         double kappaB,

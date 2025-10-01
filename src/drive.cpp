@@ -69,16 +69,17 @@ Rcpp::List run_mcmc(
     const std::string& eta_prior,
     const std::string& eta_sampler,
 
-    Rcpp::List initList,
-    Rcpp::List rangeList,
-    Rcpp::List hyperparList,
+    const Rcpp::List& initList,
+    const Rcpp::List& rangeList,
+    const Rcpp::List& hyperparList,
 
-    arma::uvec datEvent,
-    arma::vec datTime,
-    arma::cube datX,
-    arma::mat datX0,
-    arma::mat datProportionConst)
+    const arma::uvec& datEvent,
+    const arma::vec& datTime,
+    const arma::cube& datX,
+    const arma::mat& datX0,
+    const arma::mat& datProportionConst)
 {
+    // TODO: consider to make all above List and arma arguments to pass const references
     #ifdef _OPENMP
         omp_set_num_threads( 1 );
     #endif
@@ -97,11 +98,11 @@ Rcpp::List run_mcmc(
     // input constant data sets in a class
     DataClass dataclass(datEvent, datTime, datX, datX0, datProportionConst);
     // ,datProportion, datTheta, datMu, weibullLambda, weibullS);
-    datEvent.clear();
-    datTime.clear();
-    datX.clear();
-    datX0.clear();
-    datProportionConst.clear();
+    // datEvent.clear();
+    // datTime.clear();
+    // datX.clear();
+    // datX0.clear();
+    // datProportionConst.clear();
 
     // arms parameters in a class
     armsParmClass armsPar(n, nsamp, ninit, metropolis, simple, convex, npoint,
@@ -113,7 +114,7 @@ Rcpp::List run_mcmc(
                           Rcpp::as<double>(rangeList["kappaMax"]),
                           Rcpp::as<double>(rangeList["betaMin"]),
                           Rcpp::as<double>(rangeList["betaMax"]));
-    rangeList = Rcpp::List();  // Clear it by creating a new empty List
+    // rangeList = Rcpp::List();  // Clear it by creating a new empty List
 
     // hyperparameters
     // NOTE: Do not change try to change the struct hyperparS to a C++ class until I become a super expert in C++,
@@ -191,7 +192,7 @@ Rcpp::List run_mcmc(
     hyperpar->kappaB = Rcpp::as<double>(hyperparList["kappaB"]);
     hyperpar->kappaIGamma = Rcpp::as<bool>(hyperparList["kappaIGamma"]);
 
-    hyperparList = Rcpp::List();  // Clear it by creating a new empty List
+    // hyperparList = Rcpp::List();  // Clear it by creating a new empty List
 
     // Gamma Sampler
     Gamma_Sampler_Type gammaSampler;
@@ -241,7 +242,7 @@ Rcpp::List run_mcmc(
     arma::mat zetas = Rcpp::as<arma::mat>(initList["zetas"]);
     arma::mat betas = Rcpp::as<arma::mat>(initList["betas"]);
     double kappa = Rcpp::as<double>(initList["kappa"]);
-    initList = Rcpp::List();  // Clear it by creating a new empty List
+    // initList = Rcpp::List();  // Clear it by creating a new empty List
 
     unsigned int nIter_thin = nIter / thin;
     // initializing mcmc results
@@ -427,6 +428,8 @@ Rcpp::List run_mcmc(
         dataclass,
         log_likelihood
     );
+    loglikelihood_mcmc.row(0) = log_likelihood.t();
+    /*
     arma::vec log_likelihood0;
     BVS_Sampler::loglikelihood0(
         xi,
@@ -438,8 +441,8 @@ Rcpp::List run_mcmc(
         dataclass,
         log_likelihood0
     );
-    // loglikelihood_mcmc.row(0) = log_likelihood.t();
     loglikelihood_mcmc.row(0) = log_likelihood0.t();
+    */
 
     // double logPosteriorBeta = 0.; // TODO: If using this, it's better to be computed through likelihood()
     // double logPosteriorZeta = 0.;
@@ -748,6 +751,7 @@ Rcpp::List run_mcmc(
             beta_mcmc.row(1+nIter_thin_count) = arma::vectorise(betas).t();
             tauSq_mcmc[1+nIter_thin_count] = tauSq[0];//hyperpar->tauSq; // TODO: only keep the firs one for now
 
+            /*
             // update likelihood0
             BVS_Sampler::loglikelihood0(
                 xi,
@@ -758,7 +762,7 @@ Rcpp::List run_mcmc(
                 dataclass,
                 log_likelihood0
             );
-            loglikelihood_mcmc.row(1+nIter_thin_count) = log_likelihood0.t();
+            */
             if(BVS)
             {
                 gamma_mcmc.row(1+nIter_thin_count) = arma::vectorise(gammas).t();
@@ -766,23 +770,25 @@ Rcpp::List run_mcmc(
                 {
                     eta_mcmc.row(1+nIter_thin_count) = arma::vectorise(etas).t();
                 }
+            } 
+            else 
+            {
+                // update likelihood
+                BVS_Sampler::loglikelihood(
+                    xi,
+                    zetas,
+                    betas,
+                    kappa,
+                    proportion_model,
+                    dataclass,
+                    log_likelihood
+                );
             }
+            // save loglikelihoods
+            loglikelihood_mcmc.row(1+nIter_thin_count) = log_likelihood.t();
+
             ++nIter_thin_count;
         }
-        if(!BVS)
-        {
-            // update likelihood
-            BVS_Sampler::loglikelihood(
-                xi,
-                zetas,
-                betas,
-                kappa,
-                proportion_model,
-                dataclass,
-                log_likelihood
-            );
-        }
-
 
     }
 

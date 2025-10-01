@@ -41,7 +41,7 @@ public:
         const arma::vec& datTime_,
         const arma::cube& datX_,
         const arma::mat& datX0_,
-        const arma::mat& datProportionConst_//,
+        const arma::mat& datProportionConst_
         // std::shared_ptr<arma::mat> datProportion_,
         // std::shared_ptr<arma::vec> datTheta_,
         // std::shared_ptr<arma::vec> datMu_,

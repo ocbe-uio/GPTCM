@@ -1,9 +1,13 @@
 <div style="text-align: left;">
 
-## GPTCM 1.1.3 (2025-09-26) (GitHub Only)
+## GPTCM 1.1.3 (2025-10-01) (GitHub Only)
 
-* Update results in vignette
+* TODO: update results in vignette
+
 * Remove redundant variables `logPosteriorZeta` and `logPosteriorBeta` in cpp files
+* Remove partial likelihood `loglikelihood0()`, and always use joint likelihood
+* Pass more references and using more `const` keyword in functions
+* Update `simData()` by changing xi0 to simulate survival data with censoring rate 0.2
 
 ## GPTCM 1.1.2 (2025-09-26)
 

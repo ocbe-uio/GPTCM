@@ -5,6 +5,7 @@
 .DS_Store
 
 test_build.R
+results
 src/Makevars
 src/*.o
 src/*.so

@@ -95,6 +95,7 @@ public:
         //arma::vec& loglik0 // log-density of survival data
     );
 
+    /*
     // log-density of survival data
     static void loglikelihood0(
         const arma::vec& xi,
@@ -106,6 +107,7 @@ public:
         const DataClass &dataclass,
         arma::vec& loglik
     );
+    */
 
     static void sampleGamma(
         arma::umat& gammas_,
@@ -122,7 +124,7 @@ public:
         // bool simple,
         // double convex,
         // int npoint,
-        const armsParmClass armsPar,
+        const armsParmClass& armsPar,
         void *hyperpar_,
 
         const arma::vec& xi_,
@@ -130,7 +132,7 @@ public:
         arma::mat& betas_,
         double kappa_,
         double tau0Sq_,
-        arma::vec tauSq_,
+        const arma::vec& tauSq_,
         double pi0,
 
         bool proportion_model,
@@ -138,8 +140,8 @@ public:
         // double& logPosteriorBeta,
         arma::mat& datProportion,
         arma::vec& datTheta,
-        arma::mat datMu,
-        arma::mat weibullS,
+        const arma::mat& datMu,
+        const arma::mat& weibullS,
         const DataClass &dataclass
     );
 
@@ -151,7 +153,7 @@ public:
         unsigned int& eta_acc_count_,
         arma::vec& log_likelihood_,
 
-        const armsParmClass armsPar,
+        const armsParmClass& armsPar,
         void *hyperpar_,
         arma::mat& zetas_,
         const arma::mat& betas_,
@@ -165,8 +167,8 @@ public:
 
         // double& logPosteriorZeta,
         arma::vec& datTheta,
-        arma::mat weibullS,
-        arma::mat weibullLambda,
+        const arma::mat& weibullS,
+        arma::mat& weibullLambda,
         const DataClass &dataclass
     );
 

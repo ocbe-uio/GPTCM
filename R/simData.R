@@ -146,7 +146,7 @@ simData <- function(n = 200, p = 10, L = 3,
   # mandatory covariates for cured fraction
   x0 <- cbind(1, x01, x02) 
   # effects of mandatory covariates for cured fraction
-  xi <- c(0.5, 0.6, -1)
+  xi <- c(0.9, 0.6, -1)
 
   # censoring function
   # - follow-up time 1 to 3 years

@@ -14,7 +14,7 @@ GPTCM(
   dirichlet = TRUE,
   hyperpar = NULL,
   BVS = TRUE,
-  kappaIGamma = TRUE,
+  kappaIGamma = FALSE,
   kappaSampler = "arms",
   gammaPrior = "bernoulli",
   gammaSampler = "MC3",

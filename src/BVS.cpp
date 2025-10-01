@@ -90,8 +90,9 @@ void BVS_Sampler::loglikelihood(
     //return loglik;
 }
 
-// TODO: Perhaps we will exclude loglikelihood0(), since we do not intend to compare e.g. GPTCM-Ber1 and GPTCM-Ber2
+// NO NEED 'loglikelihood0()', SINCE ALL ARE BASED ON JOINT LIKELIHOOD 'loglikelihood()'
 // log-density for survival data only
+/*
 void BVS_Sampler::loglikelihood0(
     const arma::vec& xi,
     const arma::mat& zetas,
@@ -168,6 +169,7 @@ void BVS_Sampler::loglikelihood0(
 
     //return loglik;
 }
+*/
 
 void BVS_Sampler::sampleGamma(
     arma::umat& gammas_,
@@ -177,7 +179,7 @@ void BVS_Sampler::sampleGamma(
     unsigned int& gamma_acc_count_,
     arma::vec& log_likelihood_,
 
-    const armsParmClass armsPar,
+    const armsParmClass& armsPar,
     void *hyperpar_,
 
     const arma::vec& xi_,
@@ -185,7 +187,7 @@ void BVS_Sampler::sampleGamma(
     arma::mat& betas_,
     double kappa_,
     double tau0Sq_,
-    arma::vec tauSq_,
+    const arma::vec& tauSq_,
     double pi0,
 
     bool proportion_model,
@@ -193,8 +195,8 @@ void BVS_Sampler::sampleGamma(
     // double& logPosteriorBeta,
     arma::mat& datProportion,
     arma::vec& datTheta,
-    arma::mat datMu,
-    arma::mat weibullS,
+    const arma::mat& datMu,
+    const arma::mat& weibullS,
     const DataClass &dataclass)
 {
 
@@ -605,7 +607,7 @@ void BVS_Sampler::sampleEta(
     unsigned int& eta_acc_count_,
     arma::vec& log_likelihood_,
 
-    const armsParmClass armsPar,
+    const armsParmClass& armsPar,
     void *hyperpar_,
     arma::mat& zetas_,
     const arma::mat& betas_,
@@ -619,8 +621,8 @@ void BVS_Sampler::sampleEta(
 
     // double& logPosteriorZeta,
     arma::vec& datTheta,
-    arma::mat weibullS,
-    arma::mat weibullLambda,
+    const arma::mat& weibullS,
+    arma::mat& weibullLambda,
     const DataClass &dataclass)
 {
 
