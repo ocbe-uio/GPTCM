@@ -14,6 +14,7 @@ GPTCM(
   dirichlet = TRUE,
   hyperpar = NULL,
   BVS = TRUE,
+  maxThreads = 1,
   kappaIGamma = FALSE,
   kappaSampler = "arms",
   gammaPrior = "bernoulli",
@@ -50,7 +51,9 @@ parametrization of the Dirichlet regression model}
 
 \item{hyperpar}{a list of relevant hyperparameters}
 
-\item{BVS}{logical value for implementing Bayesian variable selection}
+\item{BVS}{logical value for implementing Bayesian variable selection//'}
+
+\item{maxThreads}{maximum threads used for parallelization. Default is 1}
 
 \item{kappaIGamma}{logical value for using inverse-gamma prior (\code{TRUE})
 or gamma prior (\code{FALSE}) for Weibull's shape parameter

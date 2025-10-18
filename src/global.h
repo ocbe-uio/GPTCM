@@ -3,6 +3,12 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#include <random>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include <RcppArmadillo.h>
 
 // Define constants for bounds

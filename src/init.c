@@ -8,10 +8,10 @@
 */
 
 /* .Call calls */
-extern SEXP _GPTCM_run_mcmc(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP _GPTCM_run_mcmc(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_GPTCM_run_mcmc", (DL_FUNC) &_GPTCM_run_mcmc, 24},
+    {"_GPTCM_run_mcmc", (DL_FUNC) &_GPTCM_run_mcmc, 25},
     {NULL, NULL, 0}
 };
 

@@ -28,6 +28,10 @@ void BVS_Sampler::loglikelihood(
     arma::vec alphas_Rowsum;
     if(proportion_model)
     {
+        #ifdef _OPENMP
+        #pragma omp parallel for
+        #endif
+
         for(unsigned int l=0; l<L; ++l)
         {
             alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetas.submat(1, l, p, l) );
@@ -310,6 +314,10 @@ void BVS_Sampler::sampleGamma(
                 }
             }
             */
+            #ifdef _OPENMP
+            #pragma omp parallel for default(shared) reduction(+:logProposalGammaRatio)
+            #endif
+
             for(unsigned int i=0; i<hyperpar->mrfG_edge_n; ++i)
             {
                 if( mrfG(i, 0) != mrfG(i, 1))
@@ -741,6 +749,10 @@ void BVS_Sampler::sampleEta(
 
         if((updateIdxMRF_common.n_elem > 0) && (hyperpar->mrfB_prop > 0))
         {
+            #ifdef _OPENMP
+            #pragma omp parallel for default(shared) reduction(+:logProposalEtaRatio)
+            #endif
+
             for(unsigned int i=0; i<hyperpar->mrfG_prop_edge_n; ++i)
             {
                 if( mrfG(i, 0) != mrfG(i, 1))

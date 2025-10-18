@@ -73,6 +73,11 @@ void ARMS_Gibbs::arms_gibbs_xi(
     // for (int i = 0; i < armsPar.n; ++i)
     // {
     // Gibbs sampling
+
+    #ifdef _OPENMP
+    #pragma omp parallel for 
+    #endif
+
     for (unsigned int j = 0; j < p; ++j)
     {
         mydata->jj = j;
@@ -246,6 +251,7 @@ void ARMS_Gibbs::arms_gibbs_beta(
 
     // arma::vec tauSq_tmp = arma::ones<arma::vec>(L);
 
+    // not easy to parallize the following for-loop due to data dependencies
     for (unsigned int l = 0; l < L; ++l)
     {
         // Gibbs sampling
