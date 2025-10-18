@@ -41,12 +41,12 @@ void ARMS_Gibbs::arms_gibbs_xi(
 
     // // double xinit[armsPar.ninit];
     std::vector<double> xinit(armsPar.ninit); // Use std::vector instead of VLA to avoid warning about varying length of array
-    if (!armsPar.simple)
-    {
-        arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
-        for (unsigned int i = 0; i < armsPar.ninit; ++i)
-            xinit[i] = xinit0[i];
-    }
+    // if (!armsPar.simple)
+    // {
+    // }
+    arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
+    for (unsigned int i = 0; i < armsPar.ninit; ++i)
+        xinit[i] = xinit0[i];
 
     //dataS *mydata = create_mydata(currentPars, j, vA, vB, datX0, datProportion, datEvent, weibullS);
     dataS *mydata = (dataS *)malloc(sizeof (dataS));
@@ -216,12 +216,12 @@ void ARMS_Gibbs::arms_gibbs_beta(
 
     // double xinit[armsPar.ninit];
     std::vector<double> xinit(armsPar.ninit); // Use std::vector instead of VLA
-    if (!armsPar.simple)
-    {
-        arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
-        for (unsigned int i = 0; i < armsPar.ninit; ++i)
-            xinit[i] = xinit0[i];
-    }
+    // if (!armsPar.simple)
+    // {
+    // }
+    arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
+    for (unsigned int i = 0; i < armsPar.ninit; ++i)
+        xinit[i] = xinit0[i];  
 
     dataS *mydata = (dataS *)malloc(sizeof (dataS));
 
@@ -298,23 +298,23 @@ void ARMS_Gibbs::arms_gibbs_beta(
                 int neval, ncent = 0;
 
                 int err;
-                if (armsPar.simple)
-                {
-                    err = ARMS::arms_simple (
-                              armsPar.ninit, &minD, &maxD,
-                              EvalFunction::log_dens_betas, mydata,
-                              armsPar.metropolis, &xprev, xsamp.data());
-                }
-                else
-                {
-                    double convex = armsPar.convex;
+                // if (armsPar.simple)
+                // {
+                //     err = ARMS::arms_simple (
+                //               armsPar.ninit, &minD, &maxD,
+                //               EvalFunction::log_dens_betas, mydata,
+                //               armsPar.metropolis, &xprev, xsamp.data());
+                // }
+                // else
+                // {
+                // }
+                double convex = armsPar.convex;
                     err = ARMS::arms (
                               xinit.data(), armsPar.ninit, &minD, &maxD,
                               EvalFunction::log_dens_betas, mydata,
                               &convex, armsPar.npoint,
                               armsPar.metropolis, &xprev, xsamp.data(),
                               armsPar.nsamp, qcent, xcent, ncent, &neval);
-                }
 
                 // check ARMS validity
                 if (err > 0)
@@ -389,12 +389,12 @@ void ARMS_Gibbs::arms_gibbs_betaK(
     double maxD = armsPar.betaMax;
 
     std::vector<double> xinit(armsPar.ninit); // Use std::vector instead of VLA
-    if (!armsPar.simple)
-    {
-        arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
-        for (unsigned int i = 0; i < armsPar.ninit; ++i)
-            xinit[i] = xinit0[i];
-    }
+    // if (!armsPar.simple)
+    // {
+    // }
+    arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
+    for (unsigned int i = 0; i < armsPar.ninit; ++i)
+        xinit[i] = xinit0[i];
 
     dataS *mydata = (dataS *)malloc(sizeof (dataS));
 
@@ -441,23 +441,23 @@ void ARMS_Gibbs::arms_gibbs_betaK(
             int neval, ncent = 0;
 
             int err;
-            if (armsPar.simple)
-            {
-                err = ARMS::arms_simple (
-                          armsPar.ninit, &minD, &maxD,
-                          EvalFunction::log_dens_betas, mydata,
-                          armsPar.metropolis, &xprev, xsamp.data());
-            }
-            else
-            {
-                double convex = armsPar.convex;
-                err = ARMS::arms (
+            // if (armsPar.simple)
+            // {
+            //     err = ARMS::arms_simple (
+            //               armsPar.ninit, &minD, &maxD,
+            //               EvalFunction::log_dens_betas, mydata,
+            //               armsPar.metropolis, &xprev, xsamp.data());
+            // }
+            // else
+            // {
+            // }
+            double convex = armsPar.convex;
+            err = ARMS::arms (
                           xinit.data(), armsPar.ninit, &minD, &maxD,
                           EvalFunction::log_dens_betas, mydata,
                           &convex, armsPar.npoint,
                           armsPar.metropolis, &xprev, xsamp.data(),
                           armsPar.nsamp, qcent, xcent, ncent, &neval);
-            }
 
             // check ARMS validity
             if (err > 0)
@@ -532,12 +532,12 @@ void ARMS_Gibbs::arms_gibbs_zeta(
 
     // double xinit[armsPar.ninit];
     std::vector<double> xinit(armsPar.ninit); // Use std::vector instead of VLA
-    if (!armsPar.simple)
-    {
-        arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
-        for (unsigned int i = 0; i < armsPar.ninit; ++i)
-            xinit[i] = xinit0[i];
-    }
+    // if (!armsPar.simple)
+    // {
+    // }
+    arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
+    for (unsigned int i = 0; i < armsPar.ninit; ++i)
+        xinit[i] = xinit0[i];
 
     if (!dirichlet)
         Rprintf("Warning: In arms_gibbs_zeta(), Dirichlet modeling with logit/alr-link is not implement!\n");
@@ -599,23 +599,23 @@ void ARMS_Gibbs::arms_gibbs_zeta(
                 int neval, ncent = 0;
 
                 int err;
-                if (armsPar.simple)
-                {
-                    err = ARMS::arms_simple (
-                              armsPar.ninit, &minD, &maxD,
-                              EvalFunction::log_dens_zetas, mydata,
-                              armsPar.metropolis, &xprev, xsamp.data());
-                }
-                else
-                {
-                    double convex = armsPar.convex;
-                    err = ARMS::arms (
+                // if (armsPar.simple)
+                // {
+                //     err = ARMS::arms_simple (
+                //               armsPar.ninit, &minD, &maxD,
+                //               EvalFunction::log_dens_zetas, mydata,
+                //               armsPar.metropolis, &xprev, xsamp.data());
+                // }
+                // else
+                // {
+                // }
+                double convex = armsPar.convex;
+                err = ARMS::arms (
                               xinit.data(), armsPar.ninit, &minD, &maxD,
                               EvalFunction::log_dens_zetas, mydata,
                               &convex, armsPar.npoint,
                               armsPar.metropolis, &xprev, xsamp.data(),
                               armsPar.nsamp, qcent, xcent, ncent, &neval);
-                }
 
                 // check ARMS validity
                 if (err > 0)
@@ -689,12 +689,12 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
     double maxD = armsPar.zetaMax;
 
     std::vector<double> xinit(armsPar.ninit); // Use std::vector instead of VLA
-    if (!armsPar.simple)
-    {
-        arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
-        for (unsigned int i = 0; i < armsPar.ninit; ++i)
-            xinit[i] = xinit0[i];
-    }
+    // if (!armsPar.simple)
+    // {
+    // }
+    arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
+    for (unsigned int i = 0; i < armsPar.ninit; ++i)
+        xinit[i] = xinit0[i];
 
     if (!dirichlet)
         Rprintf("Warning: In arms_gibbs_zeta(), Dirichlet modeling with logit/alr-link is not implement!\n");
@@ -734,23 +734,23 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
             int neval, ncent = 0;
 
             int err;
-            if (armsPar.simple)
-            {
-                err = ARMS::arms_simple (
-                          armsPar.ninit, &minD, &maxD,
-                          EvalFunction::log_dens_zetas, mydata,
-                          armsPar.metropolis, &xprev, xsamp.data());
-            }
-            else
-            {
-                double convex = armsPar.convex;
-                err = ARMS::arms (
+            // if (armsPar.simple)
+            // {
+            //     err = ARMS::arms_simple (
+            //               armsPar.ninit, &minD, &maxD,
+            //               EvalFunction::log_dens_zetas, mydata,
+            //               armsPar.metropolis, &xprev, xsamp.data());
+            // }
+            // else
+            // {
+            // }
+            double convex = armsPar.convex;
+            err = ARMS::arms (
                           xinit.data(), armsPar.ninit, &minD, &maxD,
                           EvalFunction::log_dens_zetas, mydata,
                           &convex, armsPar.npoint,
                           armsPar.metropolis, &xprev, xsamp.data(),
                           armsPar.nsamp, qcent, xcent, ncent, &neval);
-            }
 
             // check ARMS validity
             if (err > 0)
@@ -805,12 +805,12 @@ void ARMS_Gibbs::arms_kappa(
 
     // double xinit[armsPar.ninit];
     std::vector<double> xinit(armsPar.ninit); // Use std::vector instead of VLA
-    if (!armsPar.simple)
-    {
-        arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
-        for (unsigned int i = 0; i < armsPar.ninit; ++i)
-            xinit[i] = xinit0[i];
-    }
+    // if (!armsPar.simple)
+    // {
+    // }
+    arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
+    for (unsigned int i = 0; i < armsPar.ninit; ++i)
+        xinit[i] = xinit0[i];
 
     dataS *mydata = (dataS *)malloc(sizeof (dataS));
     //mydata->currentPars = &currentPars;

@@ -11,10 +11,6 @@ extern "C" {
 namespace ARMS
 {
 
-int arms_simple (int ninit, double *xl, double *xr,
-                 double (*myfunc)(double x, void *mydata), void *mydata,
-                 int dometrop, double *xprev, double *xsamp);
-
 int arms (double *xinit, int ninit, double *xl, double *xr,
           double (*myfunc)(double x, void *mydata), void *mydata,
           double *convex, int npoint, int dometrop, double *xprev, double *xsamp,

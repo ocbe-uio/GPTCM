@@ -75,10 +75,6 @@ typedef struct metropolis   /* for metropolis step */
 
 /* declarations for functions defined in this file */
 
-int arms_simple (int ninit, double *xl, double *xr,
-                 double (*myfunc)(double x, void *mydata), void *mydata,
-                 int dometrop, double *xprev, double *xsamp);
-
 int arms (double *xinit, int ninit, double *xl, double *xr,
           double (*myfunc)(double x, void *mydata), void *mydata,
           double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
@@ -113,39 +109,6 @@ void display(FILE *f, ENVELOPE *env);
 
 double u_random();
 
-/* *********************************************************************** */
-
-int arms_simple (int ninit, double *xl, double *xr,
-                 double (*myfunc)(double x, void *mydata), void *mydata,
-                 int dometrop, double *xprev, double *xsamp)
-
-/* adaptive rejection metropolis sampling - simplified argument list */
-/* ninit        : number of starting values to be used */
-/* *xl          : left bound */
-/* *xr          : right bound */
-/* *myfunc      : function to evaluate log-density */
-/* *mydata      : data required by *myfunc */
-/* dometrop     : whether metropolis step is required */
-/* *xprev       : current value from markov chain */
-/* *xsamp       : to store sampled value */
-
-{
-    // double xinit[ninit];
-    std::vector<double> xinit(ninit); // Use std::vector instead of VLA
-    double convex=1.0, qcent, xcent;
-    int err, i, npoint=100, nsamp=1, ncent=0, neval;
-
-    /* set up starting values */
-    for(i=0; i<ninit; i++)
-    {
-        xinit[i] = *xl + (i + 1.0) * (*xr - *xl)/(ninit + 1.0);
-    }
-
-    err = arms(xinit.data(),ninit,xl,xr,myfunc,mydata,&convex,npoint,dometrop,xprev,xsamp,
-               nsamp,&qcent,&xcent,ncent,&neval);
-
-    return err;
-}
 
 /* *********************************************************************** */
 

@@ -12,7 +12,6 @@ run_mcmc(
   nsamp,
   ninit,
   metropolis,
-  simple,
   convex,
   npoint,
   dirichlet,
@@ -46,8 +45,6 @@ run_mcmc(
 \item{ninit}{number of initials as meshgrid values for envelop search}
 
 \item{metropolis}{value 0/1 for metropolis step or not}
-
-\item{simple}{logical value for implementing a simple arms algorithm}
 
 \item{convex}{adjustment for convexity (non-negative value, default 1.0)}
 

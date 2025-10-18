@@ -112,11 +112,9 @@ GPTCM <- function(dat,
       nsamp = 1,
       ninit = 10,
       metropolis = 1,
-      arms.simple = FALSE,
       convex = 1,
       npoint = 100
     )
-    # arms.simple: logical value; should the "adaptive rejection metropolis
     # sampling" or the "derivative-free adaptive rejection sampling with
     # metropolis step" (default) is used
   }
@@ -314,7 +312,6 @@ GPTCM <- function(dat,
     arms.list$nsamp, # nsamp: number of MCMC for generating each ARMS sample, only keeping the last one
     arms.list$ninit, # ninit: number of initials as meshgrid values for envelop search
     arms.list$metropolis, # metropolis: 0/1 metropolis step or not
-    arms.list$arms.simple,
     arms.list$convex, # convex: adjustment for convexity
     arms.list$npoint, # npoint: maximum number of envelope points
     dirichlet,

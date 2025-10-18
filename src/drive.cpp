@@ -29,7 +29,6 @@
 //' @param nsamp how many samples to draw for generating each sample; only the last draw will be kept
 //' @param ninit number of initials as meshgrid values for envelop search
 //' @param metropolis value 0/1 for metropolis step or not
-//' @param simple logical value for implementing a simple arms algorithm
 //' @param convex adjustment for convexity (non-negative value, default 1.0)
 //' @param npoint maximum number of envelope points
 //' @param dirichlet not yet implemented
@@ -58,7 +57,6 @@ Rcpp::List run_mcmc(
     int nsamp,
     int ninit,
     int metropolis,
-    bool simple,
     double convex,
     int npoint,
     bool dirichlet,
@@ -105,7 +103,7 @@ Rcpp::List run_mcmc(
     // datProportionConst.clear();
 
     // arms parameters in a class
-    armsParmClass armsPar(n, nsamp, ninit, metropolis, simple, convex, npoint,
+    armsParmClass armsPar(n, nsamp, ninit, metropolis, convex, npoint,
                           Rcpp::as<double>(rangeList["xiMin"]),
                           Rcpp::as<double>(rangeList["xiMax"]),
                           Rcpp::as<double>(rangeList["zetaMin"]),

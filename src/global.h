@@ -83,7 +83,6 @@ public:
     const int nsamp;
     const int ninit;
     const int metropolis;
-    const bool simple;
     const double convex;
     const int npoint;
 
@@ -103,7 +102,6 @@ public:
         int nsamp_,
         int ninit_,
         int metropolis_,
-        bool simple_,
         double convex_,
         int npoint_,
 
@@ -120,7 +118,6 @@ public:
         nsamp(nsamp_),
         ninit(ninit_),
         metropolis(metropolis_),
-        simple(simple_),
         convex(convex_),
         npoint(npoint_),
 
