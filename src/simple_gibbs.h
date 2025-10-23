@@ -8,34 +8,34 @@
 
 
 double sampleV(
-    const double& vA,
-    const double& vB,
+    const double a,
+    const double b,
     const arma::vec& xi
 );
 
 double sampleV0(
-    const double& v0A,
-    const double& v0B,
-    const double& xi0
+    const double a,
+    const double b,
+    const double xi0
 );
 
-double sampleW(
-    const double& wA,
-    const double& wB,
-    const arma::vec& zetas
-);
+// double sampleW(
+//     const double a,
+//     const double b,
+//     const arma::vec& zetas
+// );
 
-double sampleW0(
-    const double& wA,
-    const double& wB,
-    const double& zeta0//arma::rowvec& zeta0
-);
+// double sampleW0(
+//     const double a,
+//     const double b,
+//     const double zeta0//arma::rowvec& zeta0
+// );
 
-double sampleTau(
-    const double& tauA,
-    const double& tauB,
-    // const arma::vec& betas
-    const arma::mat& betas
-);
+// double sampleTau(
+//     const double a,
+//     const double b,
+//     // const arma::vec& betas
+//     const arma::mat& betas
+// );
 
 #endif
