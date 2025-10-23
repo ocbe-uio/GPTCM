@@ -17,7 +17,7 @@ run_mcmc(
   dirichlet,
   proportion_model,
   BVS,
-  maxThreads,
+  nThread,
   gamma_prior,
   gamma_sampler,
   eta_prior,
@@ -57,7 +57,7 @@ run_mcmc(
 
 \item{BVS}{logical value for implementing Bayesian variable selection}
 
-\item{maxThreads}{maximum threads used for parallelization. Default is 1}
+\item{nThread}{maximum threads used for parallelization. Default is 1}
 
 \item{gamma_prior}{one of \code{c("bernoulli", "MRF")}}
 

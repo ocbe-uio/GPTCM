@@ -10,6 +10,7 @@
 * Update `simData()` by changing xi0 to simulate survival data with censoring rate 0.2
 * Remove `arms_simple`
 * Use `openmp` to parallelize some for-loop
+* TODO: decide whether keep `kappaIGamma=TRUE` or not
 
 ## GPTCM 1.1.2 (2025-09-26)
 

@@ -34,7 +34,7 @@
 //' @param dirichlet not yet implemented
 //' @param proportion_model logical value for modeling the proportions data
 //' @param BVS logical value for implementing Bayesian variable selection
-//' @param maxThreads maximum threads used for parallelization. Default is 1
+//' @param nThread maximum threads used for parallelization. Default is 1
 //' @param gamma_prior one of \code{c("bernoulli", "MRF")}
 //' @param gamma_sampler one of \code{c("mc3", "bandit")}
 //' @param eta_prior one of \code{c("bernoulli", "MRF")}
@@ -63,7 +63,7 @@ Rcpp::List run_mcmc(
     bool dirichlet,
     bool proportion_model,
     bool BVS,
-    int maxThreads,
+    int nThread,
     const std::string& gamma_prior,
     const std::string& gamma_sampler,
     const std::string& eta_prior,
@@ -82,14 +82,14 @@ Rcpp::List run_mcmc(
     #ifdef _OPENMP
         // omp_set_nested( 0 );
         // omp_set_num_threads( 1 );
-    if( maxThreads == 1 ){
+    if( nThread == 1 ){
         omp_set_nested( 0 );
         omp_set_num_threads( 1 );
     } else {
             omp_init_lock(&RNGlock);  // init RNG lock for the parallel part
         
             omp_set_nested(0); // 1=enable, 0=disable nested parallelism (e.g. compute likelihoods in parallel at least wrt to outcomes + wrt to individuals)
-            omp_set_num_threads( maxThreads ); // TODO: 'maxThreads' seems not faster always 
+            omp_set_num_threads( nThread ); // TODO: 'nThread' seems not faster always 
     }
     #endif
 
