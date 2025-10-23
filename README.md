@@ -111,7 +111,7 @@ $$
 $$
 -->
 
-After fitting GPTCM-Ber2, we compare its the survival prediction performance with other approaches (i.e. Kaplan-Meier method without covariates, classic Cox model with two clinical covariates (Cox.clin), Cox model with mean aggregate covariates (Cox.X.mean), Cox model with median aggregate covariates (Cox.X.median), Cox model with clinical and mean aggregate covariates (Cox.clin.X.mean), and frequentist semiparametric promotion time cure model with clinical variables (PTCM.clin)). 
+After fitting GPTCM-Ber2, we compare its the survival prediction performance with other approaches (i.e. Kaplan-Meier method without covariates, classic Cox model with two clinical covariates (Cox-X0), Cox model with mean aggregate covariates (Cox-Xmean), Cox model with median aggregate covariates (Cox-Xmedian), Cox model with clinical and mean aggregate covariates (Cox-X0-Xmean), and frequentist semiparametric promotion time cure model with clinical variables (PTCM-X0)). 
 The follow figure shows the prediction performance of time-dependent Brier scores. 
 It is clear that our GPTCM has much better survival prognosis than other approaches. 
 
