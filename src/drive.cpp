@@ -28,13 +28,12 @@
 //' @param n number of samples to draw
 //' @param nsamp how many samples to draw for generating each sample; only the last draw will be kept
 //' @param ninit number of initials as meshgrid values for envelop search
-//' @param metropolis value 0/1 for metropolis step or not
 //' @param convex adjustment for convexity (non-negative value, default 1.0)
 //' @param npoint maximum number of envelope points
 //' @param dirichlet not yet implemented
 //' @param proportion_model logical value for modeling the proportions data
 //' @param BVS logical value for implementing Bayesian variable selection
-//' @param nThread maximum threads used for parallelization. Default is 1
+//' @param threads maximum threads used for parallelization. Default is 1
 //' @param gamma_prior one of \code{c("bernoulli", "MRF")}
 //' @param gamma_sampler one of \code{c("mc3", "bandit")}
 //' @param eta_prior one of \code{c("bernoulli", "MRF")}
@@ -57,13 +56,12 @@ Rcpp::List run_mcmc(
     unsigned int n,
     int nsamp,
     int ninit,
-    int metropolis,
     double convex,
     int npoint,
     bool dirichlet,
     bool proportion_model,
     bool BVS,
-    int nThread,
+    int threads,
     const std::string& gamma_prior,
     const std::string& gamma_sampler,
     const std::string& eta_prior,
@@ -82,14 +80,14 @@ Rcpp::List run_mcmc(
     #ifdef _OPENMP
         // omp_set_nested( 0 );
         // omp_set_num_threads( 1 );
-    if( nThread == 1 ){
+    if( threads == 1 ){
         omp_set_nested( 0 );
         omp_set_num_threads( 1 );
     } else {
             omp_init_lock(&RNGlock);  // init RNG lock for the parallel part
         
             omp_set_nested(0); // 1=enable, 0=disable nested parallelism (e.g. compute likelihoods in parallel at least wrt to outcomes + wrt to individuals)
-            omp_set_num_threads( nThread ); // TODO: 'nThread' seems not faster always 
+            omp_set_num_threads( threads ); // TODO: 'threads' seems not faster always 
     }
     #endif
 
@@ -114,6 +112,7 @@ Rcpp::List run_mcmc(
     // datProportionConst.clear();
 
     // arms parameters in a class
+    int metropolis = 1; // this is fixed, since arms.simple without metropolis step seems useless.
     armsParmClass armsPar(n, nsamp, ninit, metropolis, convex, npoint,
                           Rcpp::as<double>(rangeList["xiMin"]),
                           Rcpp::as<double>(rangeList["xiMax"]),
@@ -126,7 +125,7 @@ Rcpp::List run_mcmc(
     // rangeList = Rcpp::List();  // Clear it by creating a new empty List
 
     // hyperparameters
-    // NOTE: Do not change try to change the struct hyperparS to a C++ class until I become a super expert in C++,
+    // NOTE: Do not try to change the struct hyperparS to a C++ class now,
     // because that will change a lot the related code toward the original arms C code in change C++ class does not fit well.
     hyperparS *hyperpar = (hyperparS *)malloc(sizeof (hyperparS));
 

@@ -260,7 +260,7 @@ void BVS_Sampler::sampleGamma(
         double pi = pi0;
         for(auto i: updateIdx)
         {
-            if(pi0 == 0.)
+            if(pi0 == 0.) // this is to control if using pre-defined constant pi0 or hyperprior
             {
                 //// feature-specific Bernoulli probability
                 pi = R::rbeta(hyperpar->piA + (double)(proposedGamma(i,componentUpdateIdx)),

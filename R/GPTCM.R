@@ -27,7 +27,7 @@
 #' parametrization of the Dirichlet regression model
 #' @param hyperpar a list of relevant hyperparameters
 #' @param BVS logical value for implementing Bayesian variable selection//' 
-#' @param nThread maximum threads used for parallelization. Default is 1
+#' @param threads maximum threads used for parallelization. Default is 1
 #' @param kappaIGamma logical value for using inverse-gamma prior (\code{TRUE})
 #' or gamma prior (\code{FALSE}) for Weibull's shape parameter
 #' shape parameter
@@ -90,7 +90,7 @@ GPTCM <- function(dat,
                   dirichlet = TRUE,
                   hyperpar = NULL,
                   BVS = TRUE,
-                  nThread = 1,
+                  threads = 1,
                   kappaIGamma = FALSE,
                   kappaSampler = "arms",
                   gammaPrior = "bernoulli",
@@ -113,7 +113,6 @@ GPTCM <- function(dat,
       n = 1, # This should always be n=1 with the current code
       nsamp = 1,
       ninit = 10,
-      metropolis = 1,
       convex = 1,
       npoint = 100
     )
@@ -313,13 +312,12 @@ GPTCM <- function(dat,
     arms.list$n, # n: number of samples to draw, now only 1
     arms.list$nsamp, # nsamp: number of MCMC for generating each ARMS sample, only keeping the last one
     arms.list$ninit, # ninit: number of initials as meshgrid values for envelop search
-    arms.list$metropolis, # metropolis: 0/1 metropolis step or not
     arms.list$convex, # convex: adjustment for convexity
     arms.list$npoint, # npoint: maximum number of envelope points
     dirichlet,
     proportion.model,
     BVS,
-    nThread,
+    threads,
     gammaPrior,
     gammaSampler,
     etaPrior,
