@@ -482,13 +482,11 @@ Rcpp::List run_mcmc(
                         "] " << (int)((m + 1.) / nIter * 100.0) << "%\r";             // printing percentage
 
 
-        // update \beta's and \zeta's variacnes tau0Sq, tauSq, w0Sq, wSq
+        // update \beta's variacnes tau0Sq, tauSq
         tau0Sq = sampleV(hyperpar->tau0A, hyperpar->tau0B, betas.row(0).t());
-        w0Sq = sampleV(hyperpar->w0A, hyperpar->w0B, zetas.row(0).t());
         for (unsigned int l=0; l<L; ++l)
         {
             tauSq[l] = sampleV(hyperpar->tauA, hyperpar->tauB, betas.submat(1,l,p,l));
-            wSq[l] = sampleV(hyperpar->wA, hyperpar->wB, zetas.submat(1,l,p,l));
         }
 
         // update \xi's variance vSq
@@ -546,6 +544,12 @@ Rcpp::List run_mcmc(
                 // Here both etas and zetas are updated inside due to passing their addresses
                 if(BVS)
                 {
+                    // update \zeta's variacnes w0Sq, wSq
+                    w0Sq = sampleV(hyperpar->w0A, hyperpar->w0B, zetas.row(0).t());
+                    for (unsigned int l=0; l<L; ++l)
+                    {
+                        wSq[l] = sampleV(hyperpar->wA, hyperpar->wB, zetas.submat(1,l,p,l));
+                    }
                     //// update cluster-specific Bernoulli probability via Gibbs
                     // arma::vec rho = arma::zeros<arma::vec>(L); 
                     // for (unsigned int l=0; l<L; ++l)
