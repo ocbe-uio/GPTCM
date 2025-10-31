@@ -10,9 +10,9 @@
 * Update `simData()` by changing xi0 to simulate survival data with censoring rate 0.2
 * Remove `arms_simple`
 * Use `openmp` to parallelize some for-loop
-* TODO: remove ´arms.metropolis=false´
+
 * TODO: decide whether keep `kappaIGamma=TRUE` or not
-* TODO: move 'sampleTau()' or similar out of 'arms_gibbs_*()', since ARMS MH sampling should use fixed variances for original and proposed parameters, similar for sampleW()
+* TODO: remove redundant arguments "tauSq" and "wSq" after bringing them out of ARMS files
 * TODO: bug for posterior pi_{jl}
 
 ## GPTCM 1.1.2 (2025-09-26)

@@ -51,7 +51,7 @@ parametrization of the Dirichlet regression model}
 
 \item{hyperpar}{a list of relevant hyperparameters}
 
-\item{BVS}{logical value for implementing Bayesian variable selection//'}
+\item{BVS}{logical value for implementing Bayesian variable selection}
 
 \item{threads}{maximum threads used for parallelization. Default is 1}
 

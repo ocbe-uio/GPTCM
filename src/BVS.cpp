@@ -263,15 +263,15 @@ void BVS_Sampler::sampleGamma(
             if(pi0 == 0.) // this is to control if using pre-defined constant pi0 or hyperprior
             {
                 //// feature-specific Bernoulli probability
-                pi = R::rbeta(hyperpar->piA + (double)(proposedGamma(i,componentUpdateIdx)),
-                                hyperpar->piB + (double)(p) - (double)(proposedGamma(i,componentUpdateIdx)));
+                // pi = R::rbeta(hyperpar->piA + (double)(proposedGamma(i,componentUpdateIdx)),
+                //                 hyperpar->piB + 1.0 - (double)(proposedGamma(i,componentUpdateIdx)));
                 //// column-specific Bernoulli probability
                 // pi = R::rbeta(hyperpar->piA + (double)(arma::sum(proposedGamma.col(componentUpdateIdx))),
                 //                 hyperpar->piB + (double)(p) - (double)(arma::sum(proposedGamma.col(componentUpdateIdx))));
+                //// row-specific Bernoulli probability
+                double pi = R::rbeta(hyperpar->piA + (double)(arma::accu(gammas_.row(i))),
+                                    hyperpar->piB + (double)(L) - (double)(arma::accu(gammas_.row(i))));
             }
-            //// row-specific Bernoulli probability
-            // double pi = R::rbeta(hyperpar->piA + (double)(arma::accu(proposedGamma.row(i))),
-            //                     hyperpar->piB + (double)(L) - (double)(arma::accu(proposedGamma.row(i))));
             // logProposalGammaRatio += logPDFBernoulli( proposedGamma(i,componentUpdateIdx), pi_proposed ) - logPDFBernoulli( gammas_(i,componentUpdateIdx), pi[componentUpdateIdx] );
             proposedGammaPrior(i,componentUpdateIdx) = logPDFBernoulli( proposedGamma(i,componentUpdateIdx), pi );
             logProposalGammaRatio +=  proposedGammaPrior(i, componentUpdateIdx) - logP_gamma_(i, componentUpdateIdx);
@@ -692,11 +692,14 @@ void BVS_Sampler::sampleEta(
             if(rho0 == 0.)
             {
                 //// feature-specific Bernoulli probablity
-                rho = R::rbeta(hyperpar->rhoA + (double)(proposedEta(i,componentUpdateIdx)),
-                                hyperpar->rhoB + (double)(p) - (double)(proposedEta(i,componentUpdateIdx)));
+                // rho = R::rbeta(hyperpar->rhoA + (double)(proposedEta(i,componentUpdateIdx)),
+                //                 hyperpar->rhoB + 1.0 - (double)(proposedEta(i,componentUpdateIdx)));
                 //// column-specific Bernoulli probability
                 // rho = R::rbeta(hyperpar->rhoA + (double)(arma::sum(proposedEta.col(componentUpdateIdx))),
                 //                 hyperpar->rhoB + (double)(p) - (double)(arma::sum(proposedEta.col(componentUpdateIdx))));
+                //// row-specific Bernoulli probablity
+                rho = R::rbeta(hyperpar->rhoA + (double)(arma::accu(etas_.row(i))),
+                                    hyperpar->rhoB + (double)(L) - (double)(arma::accu(etas_.row(i))));
             }
             //// the following random-walk MH sampler result in increasing rho 
             // double proposedRho = std::exp( std::log( rho(i, componentUpdateIdx) ) + R::rnorm(0.0, 1.0) );
@@ -718,9 +721,6 @@ void BVS_Sampler::sampleEta(
             //         logP_eta_(i, componentUpdateIdx) = proposedEtaPrior0;
             //     }
             // }
-            //// row-specific Bernoulli probablity
-            // double rho = R::rbeta(hyperpar->rhoA + (double)(arma::accu(proposedEta.row(i))),
-            //                     hyperpar->rhoB + (double)(L) - (double)(arma::accu(proposedEta.row(i))));
             // logProposalEtaRatio += logPDFBernoulli( proposedEta(i,componentUpdateIdx), rho_proposed ) - logPDFBernoulli( etas_(i,componentUpdateIdx), rho[componentUpdateIdx] );
             proposedEtaPrior(i,componentUpdateIdx) = logPDFBernoulli( proposedEta(i,componentUpdateIdx), rho );
             logProposalEtaRatio +=  proposedEtaPrior(i, componentUpdateIdx) - logP_eta_(i, componentUpdateIdx);
