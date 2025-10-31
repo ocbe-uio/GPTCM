@@ -26,7 +26,7 @@
 #' common (\code{dirichlet = TRUE}) or alternative (\code{dirichlet = FALSE})
 #' parametrization of the Dirichlet regression model
 #' @param hyperpar a list of relevant hyperparameters
-#' @param BVS logical value for implementing Bayesian variable selection//' 
+#' @param BVS logical value for implementing Bayesian variable selection
 #' @param threads maximum threads used for parallelization. Default is 1
 #' @param kappaIGamma logical value for using inverse-gamma prior (\code{TRUE})
 #' or gamma prior (\code{FALSE}) for Weibull's shape parameter

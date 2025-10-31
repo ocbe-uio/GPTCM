@@ -240,7 +240,7 @@ void ARMS_Gibbs::arms_gibbs_beta(
     // mydata->xr = xr;
     // mydata->vA = vA;
     // mydata->vB = vB;
-    // mydata->tauSq = tauSq;
+    mydata->tau0Sq = tau0Sq;
     mydata->kappa = kappa;
     mydata->datTheta = datTheta.memptr();
     mydata->datMu = datMu.memptr();
@@ -257,10 +257,7 @@ void ARMS_Gibbs::arms_gibbs_beta(
         // Gibbs sampling
         // mydata->tauSq = sampleW(tauA, tauB, currentPars.col(l));
         // mydata->tau0Sq = sampleW0(tauA, tauB, currentPars(0,l));
-        
-        tau0Sq = sampleV(tau0A, tau0B, currentPars.row(0).t());
-        mydata->tau0Sq = tau0Sq;
-        tauSq[l] = sampleV(tauA, tauB, currentPars.submat(1,l,p,l));
+
         mydata->tauSq = tauSq[l];
         // tauSq_tmp[l] = sampleW(tauA, tauB, currentPars.col(l));
         // mydata->tauSq = tauSq_tmp[l];
@@ -556,7 +553,7 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     mydata->p = p;
     mydata->L = L;
     mydata->N = N;
-    // mydata->w0Sq = w0Sq;
+    mydata->w0Sq = w0Sq;
     // mydata->wSq = wSq;
     //mydata->phi = phi;
     //mydata->dirichlet = dirichlet,
@@ -576,9 +573,6 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     {
         // Gibbs sampling
         // mydata->w0Sq = sampleW0(w0A, w0B, currentPars(0,l));
-        w0Sq = sampleV(w0A, w0B, currentPars.row(0).t());
-        mydata->w0Sq = w0Sq;
-        wSq[l] = sampleV(wA, wB, currentPars.submat(1,l,p,l));
         mydata->wSq = wSq[l];
         // wSq_tmp[l] = sampleW(wA, wB, currentPars.submat(1,l,p,l));
         // mydata->wSq = wSq_tmp[l];

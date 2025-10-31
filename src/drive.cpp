@@ -481,6 +481,16 @@ Rcpp::List run_mcmc(
                         std::string(cTotalLength * (1. - (m + 1.) / nIter), '-') << // printing empty part
                         "] " << (int)((m + 1.) / nIter * 100.0) << "%\r";             // printing percentage
 
+
+        // update \beta's and \zeta's variacnes tau0Sq, tauSq, w0Sq, wSq
+        tau0Sq = sampleV(hyperpar->tau0A, hyperpar->tau0B, betas.row(0).t());
+        w0Sq = sampleV(hyperpar->w0A, hyperpar->w0B, zetas.row(0).t());
+        for (unsigned int l=0; l<L; ++l)
+        {
+            tauSq[l] = sampleV(hyperpar->tauA, hyperpar->tauB, betas.submat(1,l,p,l));
+            wSq[l] = sampleV(hyperpar->wA, hyperpar->wB, zetas.submat(1,l,p,l));
+        }
+
         // update \xi's variance vSq
         v0Sq = sampleV0(hyperpar->v0A, hyperpar->v0B, xi[0]);
         // hyperpar->v0Sq = v0Sq;
