@@ -2,8 +2,6 @@
 
 ### GPTCM 1.1.3 (2025-10-31)
 
-* TODO: update results in vignette
-
 * Remove redundant variables `logPosteriorZeta` and `logPosteriorBeta` in cpp files
 * Remove partial likelihood `loglikelihood0()`, and always use joint likelihood
 * Remove useless func `arms_simple()`
@@ -11,8 +9,6 @@
 * Update `simData()` by changing xi0 to simulate survival data with censoring rate 0.2
 * Use `openmp` to parallelize some for-loop
 * Update vignette
-
-* TODO: decide whether keep `kappaIGamma=TRUE` or not
 
 ### GPTCM 1.1.2 (2025-09-26)
 
