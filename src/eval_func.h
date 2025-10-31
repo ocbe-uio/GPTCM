@@ -23,8 +23,8 @@ typedef struct common_data
 
     double v0Sq;
     double vSq;
-    double vA;
-    double vB;
+    // double vA;
+    // double vB;
     double tau0Sq;
     double tauSq;
     double w0Sq;

@@ -599,15 +599,8 @@ Rcpp::List run_mcmc(
                 ARMS_Gibbs::arms_gibbs_zeta(
                     armsPar,
                     zetas,
-                    // hyperpar->w0Sq,
-                    // hyperpar->wSq,
                     w0Sq,
                     wSq,
-                    // hyperpar->w0IGamma,
-                    hyperpar->w0A,
-                    hyperpar->w0B,
-                    hyperpar->wA,
-                    hyperpar->wB,
                     etas,
 
                     kappa,
@@ -712,10 +705,6 @@ Rcpp::List run_mcmc(
             // hyperpar->tauSq,
             tauSq,
             tau0Sq,
-            hyperpar->tauA,
-            hyperpar->tauB,
-            hyperpar->tau0A,
-            hyperpar->tau0B,
 
             gammas,
 

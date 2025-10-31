@@ -6,6 +6,7 @@
 
 #include <cstdio>
 
+/*
 typedef struct HyperparData
 {
     // members
@@ -50,7 +51,6 @@ typedef struct HyperparData
     const double kappaB;
 } hyperparS;
 
-/*
 typedef struct key_parameters
 {
     // members

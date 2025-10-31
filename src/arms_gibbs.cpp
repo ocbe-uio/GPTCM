@@ -17,8 +17,6 @@ void ARMS_Gibbs::arms_gibbs_xi(
     arma::vec& currentPars,
     double v0Sq,
     double vSq,
-    // double vA,
-    // double vB,
     arma::mat datProportion,
     arma::mat weibullS,
     const DataClass &dataclass)
@@ -178,10 +176,6 @@ void ARMS_Gibbs::arms_gibbs_beta(
     arma::mat& currentPars,
     arma::vec& tauSq,
     double& tau0Sq,
-    double tauA,
-    double tauB,
-    double tau0A,
-    double tau0B,
 
     // const arma::umat& gammas,
     arma::umat gammas,
@@ -363,8 +357,6 @@ void ARMS_Gibbs::arms_gibbs_betaK(
     arma::mat& currentPars,
     double tau0Sq,
     double tauSqK,
-    double tauA,
-    double tauB,
 
     // const arma::umat& gammas,
     arma::umat gammas,
@@ -494,11 +486,6 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     arma::mat& currentPars,
     double& w0Sq,
     arma::vec& wSq,
-    // bool w0IGamma,
-    double w0A,
-    double w0B,
-    double wA,
-    double wB,
 
     arma::umat etas,
 
@@ -659,11 +646,6 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
     arma::mat& currentPars,
     double w0Sq,
     double wSqK,
-    // bool w0IGamma,
-    // double w0A,
-    // double w0B,
-    double wA,
-    double wB,
 
     arma::umat etas,
 

@@ -269,7 +269,7 @@ void BVS_Sampler::sampleGamma(
                 // pi = R::rbeta(hyperpar->piA + (double)(arma::sum(proposedGamma.col(componentUpdateIdx))),
                 //                 hyperpar->piB + (double)(p) - (double)(arma::sum(proposedGamma.col(componentUpdateIdx))));
                 //// row-specific Bernoulli probability
-                double pi = R::rbeta(hyperpar->piA + (double)(arma::accu(gammas_.row(i))),
+                pi = R::rbeta(hyperpar->piA + (double)(arma::accu(gammas_.row(i))),
                                     hyperpar->piB + (double)(L) - (double)(arma::accu(gammas_.row(i))));
             }
             // logProposalGammaRatio += logPDFBernoulli( proposedGamma(i,componentUpdateIdx), pi_proposed ) - logPDFBernoulli( gammas_(i,componentUpdateIdx), pi[componentUpdateIdx] );
@@ -389,8 +389,6 @@ void BVS_Sampler::sampleGamma(
         betas_proposal,
         tau0Sq_,
         tauSq_[componentUpdateIdx],
-        hyperpar->tauA,
-        hyperpar->tauB,
 
         proposedGamma,
 
@@ -814,10 +812,6 @@ void BVS_Sampler::sampleEta(
         zetas_proposal, // This is different from 'zetas_' in previous arms_gibbs_zeta()
         w0Sq_,
         wSq_[componentUpdateIdx],
-        // hyperpar->w0A,
-        // hyperpar->w0B,
-        hyperpar->wA,
-        hyperpar->wB,
         proposedEta, // This is different from 'etas_' in previous arms_gibbs_zeta()
 
         kappa_,
