@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // run_mcmc
-Rcpp::List run_mcmc(unsigned int nIter, unsigned int burnin, unsigned int thin, unsigned int n, int nsamp, int ninit, int metropolis, double convex, int npoint, bool dirichlet, bool proportion_model, bool BVS, int threads, const std::string& gamma_prior, const std::string& gamma_sampler, const std::string& eta_prior, const std::string& eta_sampler, const Rcpp::List& initList, const Rcpp::List& rangeList, const Rcpp::List& hyperparList, const arma::uvec& datEvent, const arma::vec& datTime, const arma::cube& datX, const arma::mat& datX0, const arma::mat& datProportionConst);
-RcppExport SEXP _GPTCM_run_mcmc(SEXP nIterSEXP, SEXP burninSEXP, SEXP thinSEXP, SEXP nSEXP, SEXP nsampSEXP, SEXP ninitSEXP, SEXP metropolisSEXP, SEXP convexSEXP, SEXP npointSEXP, SEXP dirichletSEXP, SEXP proportion_modelSEXP, SEXP BVSSEXP, SEXP threadsSEXP, SEXP gamma_priorSEXP, SEXP gamma_samplerSEXP, SEXP eta_priorSEXP, SEXP eta_samplerSEXP, SEXP initListSEXP, SEXP rangeListSEXP, SEXP hyperparListSEXP, SEXP datEventSEXP, SEXP datTimeSEXP, SEXP datXSEXP, SEXP datX0SEXP, SEXP datProportionConstSEXP) {
+Rcpp::List run_mcmc(unsigned int nIter, unsigned int burnin, unsigned int thin, unsigned int n, int nsamp, int ninit, double convex, int npoint, bool dirichlet, bool proportion_model, bool BVS, int threads, const std::string& gamma_prior, const std::string& gamma_sampler, const std::string& eta_prior, const std::string& eta_sampler, const Rcpp::List& initList, const Rcpp::List& rangeList, const Rcpp::List& hyperparList, const arma::uvec& datEvent, const arma::vec& datTime, const arma::cube& datX, const arma::mat& datX0, const arma::mat& datProportionConst);
+RcppExport SEXP _GPTCM_run_mcmc(SEXP nIterSEXP, SEXP burninSEXP, SEXP thinSEXP, SEXP nSEXP, SEXP nsampSEXP, SEXP ninitSEXP, SEXP convexSEXP, SEXP npointSEXP, SEXP dirichletSEXP, SEXP proportion_modelSEXP, SEXP BVSSEXP, SEXP threadsSEXP, SEXP gamma_priorSEXP, SEXP gamma_samplerSEXP, SEXP eta_priorSEXP, SEXP eta_samplerSEXP, SEXP initListSEXP, SEXP rangeListSEXP, SEXP hyperparListSEXP, SEXP datEventSEXP, SEXP datTimeSEXP, SEXP datXSEXP, SEXP datX0SEXP, SEXP datProportionConstSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -23,7 +23,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< unsigned int >::type n(nSEXP);
     Rcpp::traits::input_parameter< int >::type nsamp(nsampSEXP);
     Rcpp::traits::input_parameter< int >::type ninit(ninitSEXP);
-    Rcpp::traits::input_parameter< int >::type metropolis(metropolisSEXP);
     Rcpp::traits::input_parameter< double >::type convex(convexSEXP);
     Rcpp::traits::input_parameter< int >::type npoint(npointSEXP);
     Rcpp::traits::input_parameter< bool >::type dirichlet(dirichletSEXP);
@@ -42,7 +41,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::cube& >::type datX(datXSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type datX0(datX0SEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type datProportionConst(datProportionConstSEXP);
-    rcpp_result_gen = Rcpp::wrap(run_mcmc(nIter, burnin, thin, n, nsamp, ninit, metropolis, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst));
+    rcpp_result_gen = Rcpp::wrap(run_mcmc(nIter, burnin, thin, n, nsamp, ninit, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst));
     return rcpp_result_gen;
 END_RCPP
+}
+
+static const R_CallMethodDef CallEntries[] = {
+    {"_GPTCM_run_mcmc", (DL_FUNC) &_GPTCM_run_mcmc, 24},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_GPTCM(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

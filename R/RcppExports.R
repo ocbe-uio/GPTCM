@@ -11,7 +11,6 @@
 #' @param n number of samples to draw
 #' @param nsamp how many samples to draw for generating each sample; only the last draw will be kept
 #' @param ninit number of initials as meshgrid values for envelop search
-#' @param metropolis value 0/1 for metropolis step or not
 #' @param convex adjustment for convexity (non-negative value, default 1.0)
 #' @param npoint maximum number of envelope points
 #' @param dirichlet not yet implemented
@@ -31,7 +30,7 @@
 #' @param datX0 a matrix of mandatory variables
 #' @param datProportionConst an array of cluster-specific proportions
 #'
-run_mcmc <- function(nIter, burnin, thin, n, nsamp, ninit, metropolis, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst) {
-    .Call(`_GPTCM_run_mcmc`, nIter, burnin, thin, n, nsamp, ninit, metropolis, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst)
+run_mcmc <- function(nIter, burnin, thin, n, nsamp, ninit, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst) {
+    .Call(`_GPTCM_run_mcmc`, nIter, burnin, thin, n, nsamp, ninit, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst)
 }
 

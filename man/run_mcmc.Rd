@@ -11,7 +11,6 @@ run_mcmc(
   n,
   nsamp,
   ninit,
-  metropolis,
   convex,
   npoint,
   dirichlet,
@@ -44,8 +43,6 @@ run_mcmc(
 \item{nsamp}{how many samples to draw for generating each sample; only the last draw will be kept}
 
 \item{ninit}{number of initials as meshgrid values for envelop search}
-
-\item{metropolis}{value 0/1 for metropolis step or not}
 
 \item{convex}{adjustment for convexity (non-negative value, default 1.0)}
 
