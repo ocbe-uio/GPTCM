@@ -50,7 +50,7 @@ n <- 200 # subjects
 p <- 10 # variable selection predictors
 L <- 3 # cell types
 library(GPTCM)
-set.seed(123)
+set.seed(1234)
 dat <- simData(n, p, L)
 
 # KM curve
