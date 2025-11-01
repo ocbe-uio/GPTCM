@@ -174,8 +174,8 @@ void ARMS_Gibbs::arms_gibbs_xi(
 void ARMS_Gibbs::arms_gibbs_beta(
     const armsParmClass& armsPar,
     arma::mat& currentPars,
-    arma::vec& tauSq,
     double& tau0Sq,
+    arma::vec& tauSq,
 
     // const arma::umat& gammas,
     arma::umat gammas,

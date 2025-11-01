@@ -702,9 +702,8 @@ Rcpp::List run_mcmc(
         ARMS_Gibbs::arms_gibbs_beta(
             armsPar,
             betas,
-            // hyperpar->tauSq,
-            tauSq,
             tau0Sq,
+            tauSq,
 
             gammas,
 

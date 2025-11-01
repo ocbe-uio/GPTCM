@@ -34,8 +34,8 @@ public:
     static void arms_gibbs_beta(
         const armsParmClass& armsPar,
         arma::mat& currentPars,
-        arma::vec& tauSq,
         double& tau0Sq,
+        arma::vec& tauSq,
 
         // const arma::umat& gammas,
         arma::umat gammas,

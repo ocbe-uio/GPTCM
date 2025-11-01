@@ -60,7 +60,7 @@ fit.km <- survival::survfit(Surv(time, event) ~ 1, data = dat$survObj)
 ggsurv <- survminer::ggsurvplot(fit.km,
                                 conf.int = TRUE, 
                                 xlab = "Follow-up time (year)",
-                                ylab = "Survival probability (%)",
+                                ylab = "Survival probability",
                                 legend = "none",
                                 risk.table = TRUE,
                                 cumevents = TRUE,

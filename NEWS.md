@@ -1,5 +1,9 @@
 <div style="text-align: left;">
 
+### GPTCM 1.1.4 (2025-10-31)
+
+* Update survival curve's ylab in vignette
+
 ### GPTCM 1.1.3 (2025-10-31)
 
 * Remove redundant variables `logPosteriorZeta` and `logPosteriorBeta` in cpp files
