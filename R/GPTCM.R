@@ -27,6 +27,8 @@
 #' parametrization of the Dirichlet regression model
 #' @param hyperpar a list of relevant hyperparameters
 #' @param BVS logical value for implementing Bayesian variable selection
+#' @param beta.proposal logical value to determine if betas' proposal is used in MH's proposal ratio for gammas
+#' @param zeta.proposal logical value to determine if zetas' proposal is used in MH's proposal ratio for etas
 #' @param threads maximum threads used for parallelization. Default is 1
 #' @param kappaIGamma logical value for using inverse-gamma prior (\code{TRUE})
 #' or gamma prior (\code{FALSE}) for Weibull's shape parameter
@@ -90,6 +92,8 @@ GPTCM <- function(dat,
                   dirichlet = TRUE,
                   hyperpar = NULL,
                   BVS = TRUE,
+                  beta.proposal = FALSE,
+                  zeta.proposal = FALSE,
                   threads = 1,
                   kappaIGamma = FALSE,
                   kappaSampler = "arms",
@@ -317,6 +321,8 @@ GPTCM <- function(dat,
     dirichlet,
     proportion.model,
     BVS,
+    beta.proposal,
+    zeta.proposal,
     threads,
     gammaPrior,
     gammaSampler,

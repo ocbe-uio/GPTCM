@@ -16,6 +16,8 @@ run_mcmc(
   dirichlet,
   proportion_model,
   BVS,
+  beta_proposal,
+  zeta_proposal,
   threads,
   gamma_prior,
   gamma_sampler,
@@ -53,6 +55,10 @@ run_mcmc(
 \item{proportion_model}{logical value for modeling the proportions data}
 
 \item{BVS}{logical value for implementing Bayesian variable selection}
+
+\item{beta_proposal}{logical value to determine if betas' proposal is used in MH's proposal ratio for gammas}
+
+\item{zeta_proposal}{logical value to determine if zetas' proposal is used in MH's proposal ratio for etas}
 
 \item{threads}{maximum threads used for parallelization. Default is 1}
 

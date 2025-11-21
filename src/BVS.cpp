@@ -182,6 +182,7 @@ void BVS_Sampler::sampleGamma(
     arma::mat& logP_gamma_,
     unsigned int& gamma_acc_count_,
     arma::vec& log_likelihood_,
+    bool beta_proposal,
 
     const armsParmClass& armsPar,
     void *hyperpar_,
@@ -276,7 +277,7 @@ void BVS_Sampler::sampleGamma(
             proposedGammaPrior(i,componentUpdateIdx) = logPDFBernoulli( proposedGamma(i,componentUpdateIdx), pi );
             logProposalGammaRatio +=  proposedGammaPrior(i, componentUpdateIdx) - logP_gamma_(i, componentUpdateIdx);
         }
-        // std::cout << "debug gamma - pi=" << pi << 
+        // // std::cout << "debug gamma - pi=" << pi << 
         // "; logProposalGammaRatio=" << logProposalGammaRatio <<
         // "; piA=" << hyperpar->piA << "; piA+=" << (double)(arma::accu(proposedGamma.col(componentUpdateIdx))) << 
         // "; piB=" << hyperpar->piB << "; piB+=" << (double)(p) - (double)(arma::accu(proposedGamma.col(componentUpdateIdx))) << 
@@ -301,7 +302,7 @@ void BVS_Sampler::sampleGamma(
         //arma::umat mrfG_idx = arma::conv_to<arma::umat>::from(mrfG);
         //mrfG_idx.shed_col(2);
         arma::uvec updateIdxMRF_common = arma::intersect(updateIdxGlobal, mrfG); //mrfG_idx);
-        // std::cout << "...debug4  updateIdxMRF_common=" << updateIdxMRF_common.t() << "\n";
+        // // std::cout << "...debug4  updateIdxMRF_common=" << updateIdxMRF_common.t() << "\n";
         if((updateIdxMRF_common.n_elem > 0) && (hyperpar->mrfB > 0))
         {
             /*
@@ -334,7 +335,7 @@ void BVS_Sampler::sampleGamma(
                 }
 
                 /*
-                    std::cout << "; logProposalGammaRatio21=" << logProposalGammaRatio <<
+                    // std::cout << "; logProposalGammaRatio21=" << logProposalGammaRatio <<
                     " (eq=" << eq <<
                     "; tmp=" << tmp <<
                     "; tmp1=" << hyperpar->mrfB * mrfG_weights(i) <<
@@ -402,36 +403,54 @@ void BVS_Sampler::sampleGamma(
     );
 
     // double logPriorBetaRatio = 0.; // perhaps no need in our Bayesian GPTCM??? >> We need!!!
-    // double logPriorBetaProposal = 0.;
-
+    double logProposalBetaRatio = 0.;
+    if(beta_proposal)
+    {
+        
     /// NO NEED TO CALCULATE logPriorBetaRatio & logProposalBetaRatio, SINCE THEY WILL BE CANCELLED OUT IN OUR MODEL.
     /// SEE MY NOTE ABOUT 'Metropolis-Hastings for variable selection with a spike-and-slab prior'.
-    // logPosteriorBeta = ARMS_Gibbs::logPbetaK(
-    //     componentUpdateIdx,
-    //     betas_,
-    //     hyperpar->tauSq,
-    //     kappa_,
-    //     datTheta,
-    //     datProportion,
-    //     dataclass
-    // );
-
-    // double logPriorBeta = 0.;
-    // // if (arma::accu(proposedGamma.submat(updateIdx, singleIdx_k)) > 0)
-    // // {
-    // arma::vec betas_proposal_tmp = betas_proposal.submat(arma::find(proposedGamma.submat(updateIdx, singleIdx_k)), singleIdx_k);
-    // logPriorBetaProposal = logPDFNormal(betas_proposal_tmp, hyperpar->tauSq);
-    // // }
-    // // if (arma::accu(gammas_.submat(updateIdx, singleIdx_k)) > 0)
-    // // {
-    // arma::vec betas_tmp = betas_.submat(arma::find(gammas_.submat(updateIdx, singleIdx_k)), singleIdx_k);
-    // logPriorBeta = logPDFNormal(betas_tmp, hyperpar->tauSq);
-    // // }
+// std::cout << "...debug - logP1\n";
+        logProposalRatio -= logPbetaK(
+            componentUpdateIdx,
+            betas_proposal,
+            tauSq_[componentUpdateIdx],
+            kappa_,
+            datTheta,
+            datProportion,
+            dataclass
+        );
+        // std::cout << "...debug - logP2\n";
+        logProposalRatio += logPbetaK(
+            componentUpdateIdx,
+            betas_,
+            tauSq_[componentUpdateIdx],
+            kappa_,
+            datTheta,
+            datProportion,
+            dataclass
+        );
+// std::cout << "...debug - logP3\n";
+        double proposedBetaPrior = 0.;
+        if (arma::accu(proposedGamma.submat(updateIdx, singleIdx_k)) > 0)
+        {
+            arma::vec betas_proposal_tmp = betas_proposal.submat(arma::find(proposedGamma.submat(updateIdx, singleIdx_k)), singleIdx_k);
+            proposedBetaPrior = logPDFNormal(betas_proposal_tmp, tauSq_[componentUpdateIdx]);
+        }
+        // std::cout << "...debug - logP4\n";
+        double logP_beta = 0.;
+        if (arma::accu(gammas_.submat(updateIdx, singleIdx_k)) > 0)
+        {
+            arma::vec betas_tmp = betas_.submat(arma::find(gammas_.submat(updateIdx, singleIdx_k)), singleIdx_k);
+            logP_beta = logPDFNormal(betas_tmp, tauSq_[componentUpdateIdx]);
+        }
+        // std::cout << "...debug - logP5\n";
     // logPriorBetaRatio = logPriorBetaProposal - logPriorBeta;
     // logProposalBetaRatio = logPosteriorBeta - logPosteriorBeta_proposal; // See https://github.com/mbant/BayesSUR/blob/541855bb213047ef89a87f76b95a0e3bc1e09c2c/BayesSUR/src/SUR_Chain.cpp#L3034C5-L3034C21
     // // Also see "11.6 \gamma sampling" Eq94 in Banterle-Lewin_2018_bioxiv.pdf
 
-    // std::cout << "debug BVS(): logProposalBetaRatio=" << logProposalBetaRatio << "; logPosteriorBeta=" << logPosteriorBeta <<
+        logProposalBetaRatio = proposedBetaPrior - logP_beta;
+    }
+    // // std::cout << "debug BVS(): logProposalBetaRatio=" << logProposalBetaRatio << "; logPosteriorBeta=" << logPosteriorBeta <<
     // "; logPosteriorBeta_proposal=" << logPosteriorBeta_proposal << "\n";
 
     /*
@@ -532,9 +551,9 @@ void BVS_Sampler::sampleGamma(
     double logAccProb = logProposalGammaRatio +
                         // logPriorBetaRatio +
                         logLikelihoodRatio +
-                        logProposalRatio;// + logProposalBetaRatio; // TODO: according to theory, it should be +logProposalBetaRatio, but not good results
+                        logProposalRatio + logProposalBetaRatio; // TODO: according to theory, it should be +logProposalBetaRatio, but not good results
     /*
-    std::cout << "...debug logAccProb=" <<  logAccProb <<
+    // std::cout << "...debug logAccProb=" <<  logAccProb <<
     "; logProposalGammaRatio=" << logProposalGammaRatio <<
     "; logPriorBetaRatio=" << logPriorBetaRatio <<
     "; logLikelihoodRatio=" << logLikelihoodRatio <<
@@ -544,7 +563,7 @@ void BVS_Sampler::sampleGamma(
     "; logPosteriorBeta_proposal=" << logPosteriorBeta_proposal <<
     "\n";
     if(logAccProb == 0.)
-        std::cout << "........updateIdx=" << updateIdx.t() <<
+        // std::cout << "........updateIdx=" << updateIdx.t() <<
     "; gammas(updateIdx, k)=" <<  gammas_.submat(updateIdx, singleIdx_k).t() <<
     "; proposedGamma(updateIdx, k)=" << proposedGamma.submat(updateIdx, singleIdx_k).t() <<
     "\n";
@@ -612,6 +631,7 @@ void BVS_Sampler::sampleEta(
     arma::mat& logP_eta_,
     unsigned int& eta_acc_count_,
     arma::vec& log_likelihood_,
+    bool zeta_proposal,
 
     const armsParmClass& armsPar,
     void *hyperpar_,
@@ -674,7 +694,7 @@ void BVS_Sampler::sampleEta(
     // update log probabilities
 
     double logProposalEtaRatio = 0.;
-    // std::cout << "BVS.cpp ... eta_prior=" << static_cast<std::underlying_type<Eta_Prior_Type>::type>(eta_prior)  << "\n";
+    // // std::cout << "BVS.cpp ... eta_prior=" << static_cast<std::underlying_type<Eta_Prior_Type>::type>(eta_prior)  << "\n";
     switch(eta_prior)
     {
     case Eta_Prior_Type::bernoulli:
@@ -723,7 +743,7 @@ void BVS_Sampler::sampleEta(
             proposedEtaPrior(i,componentUpdateIdx) = logPDFBernoulli( proposedEta(i,componentUpdateIdx), rho );
             logProposalEtaRatio +=  proposedEtaPrior(i, componentUpdateIdx) - logP_eta_(i, componentUpdateIdx);
         }
-        // std::cout << "debug eta - rho=" << rho << 
+        // // std::cout << "debug eta - rho=" << rho << 
         // "; logProposalEtaRatio=" << logProposalEtaRatio <<
         // "; rhoA=" << hyperpar->rhoA << "; rhoA+=" << (double)(arma::accu(proposedEta.col(componentUpdateIdx))) << 
         // "; rhoB=" << hyperpar->rhoB << "; rhoB+=" << (double)(p) - (double)(arma::accu(proposedEta.col(componentUpdateIdx))) << 
@@ -823,29 +843,51 @@ void BVS_Sampler::sampleEta(
         // logPosteriorZeta_proposal
     );
 
-    /// NO NEED TO CALCULATE logPriorZetaRatio & logProposalZetaRatio, SINCE THEY WILL BE CANCELLED OUT IN OUR MODEL.
-    /// SEE MY NOTE ABOUT 'Metropolis-Hastings for variable selection with a spike-and-slab prior'.
-    /*
-    logPosteriorZeta = ARMS_Gibbs::logPzetaK(
-        componentUpdateIdx,
-        zetas_,
-        hyperpar->wSq,
-        kappa_,
-        datTheta,
-        weibullS,
-        weibullLambda,
-        dataclass
-    );
-    double logPriorZetaRatio = 0.;
-    double logPriorZetaProposal = 0.;
-    double logPriorZeta = 0.;
-    arma::vec zetas_proposal_tmp = zetas_proposal.submat(1+arma::find(proposedEta.submat(updateIdx, singleIdx_k)), singleIdx_k); // add 1 due to intercept
-    logPriorZetaProposal = logPDFNormal(zetas_proposal_tmp, hyperpar->wSq);
-    arma::vec zetas_tmp = zetas_.submat(1+arma::find(etas_.submat(updateIdx, singleIdx_k)), singleIdx_k); // add 1 due to intercept
-    logPriorZeta = logPDFNormal(zetas_tmp, hyperpar->wSq);
-    logPriorZetaRatio = logPriorZetaProposal - logPriorZeta;
-    logProposalZetaRatio = logPosteriorZeta - logPosteriorZeta_proposal;
-    */
+    double logProposalZetaRatio = 0.;
+    if(zeta_proposal)
+    {
+        /// NO NEED TO CALCULATE logPriorZetaRatio & logProposalZetaRatio, SINCE THEY WILL BE CANCELLED OUT IN OUR MODEL.
+        /// SEE MY NOTE ABOUT 'Metropolis-Hastings for variable selection with a spike-and-slab prior'.
+        // std::cout << "...debug - logP6\n";
+        logProposalRatio -= logPzetaK(
+            componentUpdateIdx,
+            zetas_proposal,
+            wSq_[componentUpdateIdx],
+            kappa_,
+            datTheta,
+            weibullS,
+            weibullLambda,
+            dataclass
+        );
+        // std::cout << "...debug - logP7\n";
+        logProposalRatio += logPzetaK(
+            componentUpdateIdx,
+            zetas_,
+            wSq_[componentUpdateIdx],
+            kappa_,
+            datTheta,
+            weibullS,
+            weibullLambda,
+            dataclass
+        );
+// std::cout << "...debug - logP8\n";
+        double proposedZetaPrior = 0.;
+        if (arma::accu(proposedEta.submat(updateIdx, singleIdx_k)) > 0)
+        {
+            arma::vec zetas_proposal_tmp = zetas_proposal.submat(arma::find(proposedEta.submat(updateIdx, singleIdx_k)), singleIdx_k); // add 1 due to intercept
+            proposedZetaPrior = logPDFNormal(zetas_proposal_tmp, wSq_[componentUpdateIdx]);
+        }
+// std::cout << "...debug - logP9\n";
+        double logP_zeta = 0.;
+        if (arma::accu(etas_.submat(updateIdx, singleIdx_k)) > 0)
+        {
+            arma::vec zetas_tmp = zetas_.submat(arma::find(etas_.submat(updateIdx, singleIdx_k)), singleIdx_k); // add 1 due to intercept
+            logP_zeta = logPDFNormal(zetas_tmp, wSq_[componentUpdateIdx]);
+        }
+// std::cout << "...debug - logP10\n";
+        // logPriorZetaRatio = logPriorZetaProposal - logPriorZeta;
+        logProposalZetaRatio = proposedZetaPrior - logP_zeta;
+    }
 
     // compute logLikelihoodRatio, i.e. proposedLikelihood - log_likelihood
     arma::vec proposedLikelihood = log_likelihood_;
@@ -858,7 +900,7 @@ void BVS_Sampler::sampleEta(
     double logAccProb = logProposalEtaRatio +
                         // logPriorZetaRatio +
                         logLikelihoodRatio +
-                        logProposalRatio;// + logProposalZetaRatio; // TODO: double check this!
+                        logProposalRatio + logProposalZetaRatio; // TODO: double check this!
 
     if( std::log(R::runif(0,1)) < logAccProb )
     {
@@ -1165,6 +1207,109 @@ double BVS_Sampler::etaBanditProposal(
 
 }
 
+double BVS_Sampler::logPbetaK(
+    const unsigned int k,
+    const arma::mat& betas,
+
+    const double tauSq,
+    const double kappa,
+    const arma::vec& datTheta,
+    const arma::mat& datProportion,
+    const DataClass& dataclass)
+{
+    double logP = 0.;
+
+    // dimensions
+    unsigned int N = dataclass.datX.n_rows;
+    unsigned int p = dataclass.datX.n_cols;
+    unsigned int L = dataclass.datX.n_slices;
+
+    // compute log density
+    double logprior = - arma::sum(betas.col(k) % betas.col(k)) / tauSq / 2.;
+
+    arma::vec logpost_first = arma::zeros<arma::vec>(N);
+    // arma::vec logpost_second= arma::zeros<arma::vec>(N);
+    double logpost_second_sum = 0;
+    for(unsigned int l=0; l<L; ++l)
+    {
+        arma::vec logMu_l = betas(0,l) + dataclass.datX.slice(l) * betas.submat(1, l, p, l);
+        logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+        arma::vec weibull_lambdas_tmp = arma::exp(logMu_l) / std::tgamma(1. + 1./kappa);
+        arma::vec tmp = datProportion.col(l) %
+                        arma::exp( - arma::pow( dataclass.datTime / weibull_lambdas_tmp, kappa) );
+        logpost_first += tmp % (kappa / weibull_lambdas_tmp) %
+                         arma::pow(dataclass.datTime/weibull_lambdas_tmp, kappa - 1.0);
+
+        if(l == k)
+            logpost_second_sum = arma::sum(datTheta % tmp);
+    }
+
+    double logpost_first_sum = arma::sum( arma::log( logpost_first.elem(arma::find(dataclass.datEvent)) ) );
+
+    logP = logpost_first_sum + logpost_second_sum + logprior;
+
+    return logP;
+}
+
+double BVS_Sampler::logPzetaK(
+    const unsigned int k,
+    const arma::mat& zetas,
+    const double wSq,
+    const double kappa,
+
+    const arma::vec& datTheta,
+    const arma::mat& weibullS,
+    const arma::mat& weibullLambda,
+    const DataClass &dataclass)
+{
+    double logP = 0.;
+
+    // dimensions
+    unsigned int N = dataclass.datX.n_rows;
+    unsigned int p = dataclass.datX.n_cols;
+    unsigned int L = dataclass.datX.n_slices;
+
+    // update Dirichlet concentrations based on zetas
+    arma::mat alphas = arma::zeros<arma::mat>(N, L);
+
+    for(unsigned int l=0; l<L; ++l)
+    {
+        alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetas.submat(1, l, p, l) );
+    }
+    alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
+    alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+    arma::vec alphas_Rowsum = arma::sum(alphas, 1);
+
+    // compute log density. NOTE: Subtract intercept
+    double logprior = - (arma::accu(zetas.submat(1, k, p, k) % zetas.submat(1, k, p, k))) / wSq / 2.;
+
+    arma::vec logpost_first = arma::zeros<arma::vec>(N);
+    arma::vec logpost_second= arma::zeros<arma::vec>(N);
+    // double logpost_second_sum = 0;
+    for(unsigned int l=0; l<L; ++l)
+    {
+        arma::vec tmp = alphas.col(l) / alphas_Rowsum %  weibullS.col(l);
+        logpost_first += arma::pow(weibullLambda.col(l), - kappa) % tmp;
+        logpost_second += tmp;
+    }
+
+    double logpost_first_sum = 0.;
+    logpost_first_sum = arma::sum( arma::log( logpost_first.elem(arma::find(dataclass.datEvent)) ) );
+
+    double logpost_second_sum = 0.;
+    logpost_second_sum = arma::sum(datTheta % logpost_second);
+
+    double log_dirichlet_sum = 0.;
+    log_dirichlet_sum = arma::sum(
+                            arma::lgamma(alphas_Rowsum) - arma::sum(arma::lgamma(alphas), 1) +
+                            arma::sum( (alphas - 1.0) % arma::log(dataclass.datProportionConst), 1 )
+                        );
+
+    logP = logprior + logpost_first_sum + logpost_second_sum + log_dirichlet_sum;
+
+    return logP;
+}
+
 // subfunctions used for bandit proposal
 
 arma::uvec BVS_Sampler::randWeightedIndexSampleWithoutReplacement(
@@ -1285,7 +1430,7 @@ double BVS_Sampler::logPDFBeta(double x, double a, double b)
 		else
 			return -lBeta(a,b) + (a-1)*log(x) + (b-1)*log(1-x);
 }
-
+*/
 double BVS_Sampler::logPDFNormal(const arma::vec& x, const double& sigmaSq)  // zeroMean and independentVar
 {
     unsigned int k = x.n_elem;
@@ -1294,7 +1439,7 @@ double BVS_Sampler::logPDFNormal(const arma::vec& x, const double& sigmaSq)  // 
     return -0.5*(double)k*log(2.*M_PI) -0.5*tmp - 0.5 * arma::as_scalar( x.t() * x ) / sigmaSq;
 
 }
-*/
+
 /*
 double logPDFMRF(const arma::umat& externalGamma, const arma::mat& mrfG, double a, double b )
 {

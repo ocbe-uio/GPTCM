@@ -16,6 +16,8 @@
 #' @param dirichlet not yet implemented
 #' @param proportion_model logical value for modeling the proportions data
 #' @param BVS logical value for implementing Bayesian variable selection
+#' @param beta_proposal logical value to determine if betas' proposal is used in MH's proposal ratio for gammas
+#' @param zeta_proposal logical value to determine if zetas' proposal is used in MH's proposal ratio for etas
 #' @param threads maximum threads used for parallelization. Default is 1
 #' @param gamma_prior one of \code{c("bernoulli", "MRF")}
 #' @param gamma_sampler one of \code{c("mc3", "bandit")}
@@ -30,7 +32,7 @@
 #' @param datX0 a matrix of mandatory variables
 #' @param datProportionConst an array of cluster-specific proportions
 #'
-run_mcmc <- function(nIter, burnin, thin, n, nsamp, ninit, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst) {
-    .Call(`_GPTCM_run_mcmc`, nIter, burnin, thin, n, nsamp, ninit, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst)
+run_mcmc <- function(nIter, burnin, thin, n, nsamp, ninit, convex, npoint, dirichlet, proportion_model, BVS, beta_proposal, zeta_proposal, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst) {
+    .Call(`_GPTCM_run_mcmc`, nIter, burnin, thin, n, nsamp, ninit, convex, npoint, dirichlet, proportion_model, BVS, beta_proposal, zeta_proposal, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst)
 }
 

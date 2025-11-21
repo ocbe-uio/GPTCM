@@ -14,6 +14,8 @@ GPTCM(
   dirichlet = TRUE,
   hyperpar = NULL,
   BVS = TRUE,
+  beta.proposal = FALSE,
+  zeta.proposal = FALSE,
   threads = 1,
   kappaIGamma = FALSE,
   kappaSampler = "arms",
@@ -52,6 +54,10 @@ parametrization of the Dirichlet regression model}
 \item{hyperpar}{a list of relevant hyperparameters}
 
 \item{BVS}{logical value for implementing Bayesian variable selection}
+
+\item{beta.proposal}{logical value to determine if betas' proposal is used in MH's proposal ratio for gammas}
+
+\item{zeta.proposal}{logical value to determine if zetas' proposal is used in MH's proposal ratio for etas}
 
 \item{threads}{maximum threads used for parallelization. Default is 1}
 

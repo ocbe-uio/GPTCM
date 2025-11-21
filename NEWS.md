@@ -1,10 +1,11 @@
 <div style="text-align: left;">
 
-### GPTCM 1.1.4 (2025-10-31)
+### GPTCM 1.1.4 (2025-11-21)
 
 * Update survival curve's ylab in vignette
+* Add option for using coefficients' proposals in the MH's proposal ratio
 
-### GPTCM 1.1.3 (2025-10-31)
+### GPTCM 1.1.3 (2025-11-01)
 
 * Remove redundant variables `logPosteriorZeta` and `logPosteriorBeta` in cpp files
 * Remove partial likelihood `loglikelihood0()`, and always use joint likelihood

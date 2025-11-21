@@ -116,6 +116,7 @@ public:
         arma::mat& logP_gamma_,
         unsigned int& gamma_acc_count_,
         arma::vec& log_likelihood_,
+        bool beta_proposal,
 
         // int n,
         // int nsamp,
@@ -152,6 +153,7 @@ public:
         arma::mat& logP_eta_,
         unsigned int& eta_acc_count_,
         arma::vec& log_likelihood_,
+        bool zeta_proposal,
 
         const armsParmClass& armsPar,
         void *hyperpar_,
@@ -183,6 +185,31 @@ public:
 private:
     // HyperparData hyperpar_;
     DataClass dataclass_;
+
+    static double logPbetaK(
+        const unsigned int k,
+        const arma::mat& betas,
+
+        const double tauSq,
+        const double kappa,
+        const arma::vec& datTheta,
+        const arma::mat& datProportion,
+        const DataClass& dataclass
+    );
+
+    static double logPzetaK(
+        const unsigned int k,
+        const arma::mat& zetas,
+        const double wSq,
+        const double kappa,
+
+        const arma::vec& datTheta,
+        const arma::mat& weibullS,
+        const arma::mat& weibullLambda,
+        const DataClass& dataclass
+    );
+
+    static double logPDFNormal(const arma::vec& x, const double& sigmaSq);
 
     static double gammaMC3Proposal(
         unsigned int p,

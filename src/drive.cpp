@@ -33,6 +33,8 @@
 //' @param dirichlet not yet implemented
 //' @param proportion_model logical value for modeling the proportions data
 //' @param BVS logical value for implementing Bayesian variable selection
+//' @param beta_proposal logical value to determine if betas' proposal is used in MH's proposal ratio for gammas
+//' @param zeta_proposal logical value to determine if zetas' proposal is used in MH's proposal ratio for etas
 //' @param threads maximum threads used for parallelization. Default is 1
 //' @param gamma_prior one of \code{c("bernoulli", "MRF")}
 //' @param gamma_sampler one of \code{c("mc3", "bandit")}
@@ -61,6 +63,8 @@ Rcpp::List run_mcmc(
     bool dirichlet,
     bool proportion_model,
     bool BVS,
+    bool beta_proposal,
+    bool zeta_proposal,
     int threads,
     const std::string& gamma_prior,
     const std::string& gamma_sampler,
@@ -565,6 +569,7 @@ Rcpp::List run_mcmc(
                         logP_eta,
                         eta_acc_count,
                         log_likelihood,
+                        zeta_proposal,
 
                         armsPar,
                         hyperpar,
@@ -672,6 +677,7 @@ Rcpp::List run_mcmc(
                 logP_gamma,
                 gamma_acc_count,
                 log_likelihood,
+                beta_proposal,
 
                 armsPar,
                 hyperpar,
