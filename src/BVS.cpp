@@ -319,7 +319,7 @@ void BVS_Sampler::sampleGamma(
             }
             */
             #ifdef _OPENMP
-            #pragma omp parallel for default(shared) reduction(+:logProposalGammaRatio)
+            #pragma omp parallel for default(shared) reduction(+:logPriorGammaRatio)
             #endif
 
             for(unsigned int i=0; i<hyperpar->mrfG_edge_n; ++i)
@@ -688,7 +688,7 @@ void BVS_Sampler::sampleEta(
         if((updateIdxMRF_common.n_elem > 0) && (hyperpar->mrfB_prop > 0))
         {
             #ifdef _OPENMP
-            #pragma omp parallel for default(shared) reduction(+:logProposalEtaRatio)
+            #pragma omp parallel for default(shared) reduction(+:logPriorEtaRatio)
             #endif
 
             for(unsigned int i=0; i<hyperpar->mrfG_prop_edge_n; ++i)

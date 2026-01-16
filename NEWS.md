@@ -1,10 +1,11 @@
 <div style="text-align: left;">
 
-### GPTCM 1.1.4 (2025-12-05)
+### GPTCM 1.1.4 (2026-01-16)
 
 * Update survival curve's ylab in vignette
 * Add symmetric and MALA RW-MH for the gamma-beta move
 * TODO: ask chatGPT to check if all specified truncation with bounds are sufficient
+* TODO: update vignette
 
 ### GPTCM 1.1.3 (2025-11-01)
 
