@@ -16,13 +16,13 @@ run_mcmc(
   dirichlet,
   proportion_model,
   BVS,
-  beta_proposal,
-  zeta_proposal,
   threads,
   gamma_prior,
   gamma_sampler,
   eta_prior,
   eta_sampler,
+  rw_mh,
+  sigmaMH,
   initList,
   rangeList,
   hyperparList,
@@ -56,10 +56,6 @@ run_mcmc(
 
 \item{BVS}{logical value for implementing Bayesian variable selection}
 
-\item{beta_proposal}{logical value to determine if betas' proposal is used in MH's proposal ratio for gammas}
-
-\item{zeta_proposal}{logical value to determine if zetas' proposal is used in MH's proposal ratio for etas}
-
 \item{threads}{maximum threads used for parallelization. Default is 1}
 
 \item{gamma_prior}{one of \code{c("bernoulli", "MRF")}}
@@ -69,6 +65,10 @@ run_mcmc(
 \item{eta_prior}{one of \code{c("bernoulli", "MRF")}}
 
 \item{eta_sampler}{one of \code{c("mc3", "bandit")}}
+
+\item{rw_mh}{string indicating the type of random-walk variance in MH sampling for gamma-beta move}
+
+\item{sigmaMH}{a vector of two factors for the random-walk variances in MH sampling for gamma-beta and eta-zeta move}
 
 \item{initList}{a list of initial values for parameters "kappa", "xi", "betas", and "zetas"}
 

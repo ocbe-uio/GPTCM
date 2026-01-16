@@ -116,7 +116,8 @@ public:
         arma::mat& logP_gamma_,
         unsigned int& gamma_acc_count_,
         arma::vec& log_likelihood_,
-        bool beta_proposal,
+        const std::string& rw_mh,
+        double sigmaMH_beta,
 
         // int n,
         // int nsamp,
@@ -142,6 +143,7 @@ public:
         arma::mat& datProportion,
         arma::vec& datTheta,
         const arma::mat& datMu,
+        const arma::mat& weibullLambda,
         const arma::mat& weibullS,
         const DataClass &dataclass
     );
@@ -153,7 +155,8 @@ public:
         arma::mat& logP_eta_,
         unsigned int& eta_acc_count_,
         arma::vec& log_likelihood_,
-        bool zeta_proposal,
+        const std::string& rw_mh,
+        double sigmaMH_zeta,
 
         const armsParmClass& armsPar,
         void *hyperpar_,
@@ -262,6 +265,12 @@ private:
         double a,
         double b
     );
+
+    static arma::vec randMvNormal(
+        const arma::vec &m,
+        const arma::mat &Sigma
+    );
+    static arma::vec randVecNormal(const unsigned int n);
     /*
     static double logPDFNormal(
         const arma::vec& x,

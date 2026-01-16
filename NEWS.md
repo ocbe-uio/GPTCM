@@ -1,9 +1,10 @@
 <div style="text-align: left;">
 
-### GPTCM 1.1.4 (2025-11-21)
+### GPTCM 1.1.4 (2025-12-05)
 
 * Update survival curve's ylab in vignette
-* Add option for using coefficients' proposals in the MH's proposal ratio
+* Add symmetric and MALA RW-MH for the gamma-beta move
+* TODO: ask chatGPT to check if all specified truncation with bounds are sufficient
 
 ### GPTCM 1.1.3 (2025-11-01)
 

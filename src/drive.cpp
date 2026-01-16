@@ -33,13 +33,13 @@
 //' @param dirichlet not yet implemented
 //' @param proportion_model logical value for modeling the proportions data
 //' @param BVS logical value for implementing Bayesian variable selection
-//' @param beta_proposal logical value to determine if betas' proposal is used in MH's proposal ratio for gammas
-//' @param zeta_proposal logical value to determine if zetas' proposal is used in MH's proposal ratio for etas
 //' @param threads maximum threads used for parallelization. Default is 1
 //' @param gamma_prior one of \code{c("bernoulli", "MRF")}
 //' @param gamma_sampler one of \code{c("mc3", "bandit")}
 //' @param eta_prior one of \code{c("bernoulli", "MRF")}
 //' @param eta_sampler one of \code{c("mc3", "bandit")}
+//' @param rw_mh string indicating the type of random-walk variance in MH sampling for gamma-beta move
+//' @param sigmaMH a vector of two factors for the random-walk variances in MH sampling for gamma-beta and eta-zeta move
 //' @param initList a list of initial values for parameters "kappa", "xi", "betas", and "zetas"
 //' @param rangeList a list of ranges of initial values for parameters "kappa", "xi", "betas", and "zetas"
 //' @param hyperparList a list of relevant hyperparameters
@@ -63,13 +63,13 @@ Rcpp::List run_mcmc(
     bool dirichlet,
     bool proportion_model,
     bool BVS,
-    bool beta_proposal,
-    bool zeta_proposal,
     int threads,
     const std::string& gamma_prior,
     const std::string& gamma_sampler,
     const std::string& eta_prior,
     const std::string& eta_sampler,
+    const std::string& rw_mh,
+    const arma::vec& sigmaMH,
 
     const Rcpp::List& initList,
     const Rcpp::List& rangeList,
@@ -569,7 +569,8 @@ Rcpp::List run_mcmc(
                         logP_eta,
                         eta_acc_count,
                         log_likelihood,
-                        zeta_proposal,
+                        rw_mh,
+                        sigmaMH[1],
 
                         armsPar,
                         hyperpar,
@@ -657,6 +658,7 @@ Rcpp::List run_mcmc(
             weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
             weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
         }
+        weibullS.elem(arma::find(weibullS < lowerbound)).fill(lowerbound);
 
         // update \gammas -- variable selection indicators
         if(BVS)
@@ -677,7 +679,8 @@ Rcpp::List run_mcmc(
                 logP_gamma,
                 gamma_acc_count,
                 log_likelihood,
-                beta_proposal,
+                rw_mh,
+                sigmaMH[0],
 
                 armsPar,
                 hyperpar,
@@ -696,6 +699,7 @@ Rcpp::List run_mcmc(
                 datProportion,
                 datTheta,
                 datMu,
+                weibullLambda,
                 weibullS,
                 dataclass
             );
@@ -743,6 +747,7 @@ Rcpp::List run_mcmc(
             weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
             weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
         }
+        weibullS.elem(arma::find(weibullS < lowerbound)).fill(lowerbound);
 
         // save results for un-thinned posterior mean
         if(m >= burnin)

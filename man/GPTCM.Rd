@@ -14,8 +14,8 @@ GPTCM(
   dirichlet = TRUE,
   hyperpar = NULL,
   BVS = TRUE,
-  beta.proposal = FALSE,
-  zeta.proposal = FALSE,
+  RW.MH = "symmetric",
+  sigmaMH = c(1, 1),
   threads = 1,
   kappaIGamma = FALSE,
   kappaSampler = "arms",
@@ -55,9 +55,12 @@ parametrization of the Dirichlet regression model}
 
 \item{BVS}{logical value for implementing Bayesian variable selection}
 
-\item{beta.proposal}{logical value to determine if betas' proposal is used in MH's proposal ratio for gammas}
+\item{RW.MH}{string indicating the type of random-walk variance in MH 
+sampling for gamma-beta move, one of 
+\code{c("fisher", "adaptive", "symmetric")}}
 
-\item{zeta.proposal}{logical value to determine if zetas' proposal is used in MH's proposal ratio for etas}
+\item{sigmaMH}{a vector of two factors for the random-walk moving step for 
+gamma-beta and eta-zeta move}
 
 \item{threads}{maximum threads used for parallelization. Default is 1}
 
