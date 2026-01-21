@@ -14,7 +14,7 @@ GPTCM(
   dirichlet = TRUE,
   hyperpar = NULL,
   BVS = TRUE,
-  RW.MH = "symmetric",
+  RW.MH = "fisher",
   sigmaMH = c(1, 1),
   threads = 1,
   kappaIGamma = FALSE,

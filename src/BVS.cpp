@@ -363,6 +363,7 @@ void BVS_Sampler::sampleGamma(
     if (arma::as_scalar(arma::any(proposedGamma(updateIdx, singleIdx_k)))) 
     {
         arma::uvec updateIdx0 = arma::find(proposedGamma(updateIdx, singleIdx_k) == 1);
+        updateIdx0 = updateIdx(updateIdx0);
         unsigned int J = updateIdx0.n_elem;
         if (rw_mh != "symmetric")
         {
@@ -649,6 +650,7 @@ void BVS_Sampler::sampleEta(
     if (arma::as_scalar(arma::any(proposedEta(updateIdx, singleIdx_k))))
     {
         arma::uvec updateIdx0 = arma::find(proposedEta(updateIdx, singleIdx_k) == 1);
+        updateIdx0 = updateIdx(updateIdx0);
         if (rw_mh != "symmetric")
         {
             // double c = std::exp(a);
@@ -663,7 +665,7 @@ void BVS_Sampler::sampleEta(
 
         } else {//if( arma::any(etas_(updateIdx,singleIdx_k)) ) {
             // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2})
-            arma::vec u = Rcpp::rnorm( updateIdx.n_elem, 0., sigmaMH_zeta * 1. / std::sqrt(updateIdx.n_elem) ); 
+            arma::vec u = Rcpp::rnorm( updateIdx0.n_elem, 0., sigmaMH_zeta * 1. / std::sqrt(updateIdx0.n_elem) ); 
             proposedZeta(1+updateIdx0, singleIdx_k) += u;
         }
     }
