@@ -212,6 +212,70 @@ private:
         const DataClass& dataclass
     );
 
+    static double MALAbetas(
+        arma::mat& proposedBeta,
+        const arma::mat& betas_,
+        const arma::uvec& updateIdx0,
+        const arma::uvec& singleIdx_k,
+        unsigned int componentUpdateIdx,
+
+        const arma::vec& datTheta,
+        const arma::mat& datProportion,
+        const arma::mat& weibullS,
+        const arma::mat& weibullLambda,
+        double kappa_,
+        double tauSqK,
+        double eps,
+        const DataClass &dataclass
+    );
+
+    static double MALAlogPbetas(
+        const arma::mat& betas_,
+        const arma::mat& proposedBeta,
+        const arma::uvec& updateIdx0,
+        const arma::uvec& singleIdx_k,
+        unsigned int componentUpdateIdx,
+
+        const arma::vec& datTheta,
+        const arma::mat& datProportion,
+        double kappa_,
+        double tauSqK,
+        double eps,
+        const DataClass &dataclass
+    );
+
+    static double MALAzetas(
+        arma::mat& proposedZeta,
+        const arma::mat& zetas_,
+        const arma::uvec& updateIdx0,
+        const arma::uvec& singleIdx_k,
+        unsigned int componentUpdateIdx,
+
+        const arma::vec& datTheta,
+        const arma::mat& weibullS,
+        const arma::mat& weibullLambda,
+        double kappa_,
+        double wSqK,
+        double eps,
+        const DataClass &dataclass
+    );
+
+    static double MALAlogPzetas(
+        const arma::mat& zetas_,
+        const arma::mat& proposedZeta,
+        const arma::uvec& updateIdx0,
+        const arma::uvec& singleIdx_k,
+        unsigned int componentUpdateIdx,
+
+        const arma::vec& datTheta,
+        const arma::mat& weibullS,
+        const arma::mat& weibullLambda,
+        double kappa_,
+        double wSqK,
+        double eps,
+        const DataClass &dataclass
+    );
+
     static double logPDFNormal(const arma::vec& x, const double& sigmaSq);
 
     static double gammaMC3Proposal(
@@ -270,7 +334,14 @@ private:
         const arma::vec &m,
         const arma::mat &Sigma
     );
+
     static arma::vec randVecNormal(const unsigned int n);
+
+    static double logPDFNormal(
+        const arma::vec& x,
+        const arma::vec& m,
+        const arma::mat& Sigma
+    );
     /*
     static double logPDFNormal(
         const arma::vec& x,

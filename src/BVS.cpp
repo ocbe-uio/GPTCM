@@ -220,7 +220,7 @@ void BVS_Sampler::sampleGamma(
 
     unsigned int p = gammas_.n_rows;
     unsigned int L = gammas_.n_cols;
-    unsigned int n = datTheta.n_elem;
+    // unsigned int n = datTheta.n_elem;
 
     // define static variables for global updates for the use of bandit algorithm
     // initial value 0.5 here forces shrinkage toward 0 or 1
@@ -362,92 +362,22 @@ void BVS_Sampler::sampleGamma(
     // RW-MH
     if (arma::as_scalar(arma::any(proposedGamma(updateIdx, singleIdx_k)))) 
     {
-        unsigned int J = updateIdx.n_elem;
+        arma::uvec updateIdx0 = arma::find(proposedGamma(updateIdx, singleIdx_k) == 1);
+        unsigned int J = updateIdx0.n_elem;
         if (rw_mh != "symmetric")
         {
             // double c = std::exp(a);
 
-            // Precompute a and powers
-            arma::vec a = dataclass.datTime / weibullLambda.col(componentUpdateIdx);      // n-vector
-            arma::vec a_power_kappa = arma::pow(a, kappa_);                               // z_il^kappa
-
-            // s_l = κ / λ_il * (t_i/λ_il)^{κ-1} * p_il * S_l(t_i)
-            arma::vec s_l = (kappa_ / weibullLambda.col(componentUpdateIdx))
-                        % arma::pow(a, kappa_ - 1.0)
-                        % datProportion.col(componentUpdateIdx)
-                        % weibullS.col(componentUpdateIdx);
-
-            // S = sum over components of κ / λ * (t/λ)^{κ-1} * p * S(t)
-            arma::vec S(n, arma::fill::zeros);
-            for (unsigned int ll = 0; ll < L; ++ll) {
-                arma::vec a_tmp = dataclass.datTime / weibullLambda.col(ll);
-                S += (kappa_ / weibullLambda.col(ll))
-                % arma::pow(a_tmp, kappa_ - 1.0)
-                % datProportion.col(ll)
-                % weibullS.col(ll);
-            }
-
-            // Per-observation weights w_i (likelihood-only score part)
-            arma::vec w_i(n);
-
-            // Stabilize division s_l / S
-            const double eps_div = 1e-12;
-            arma::vec S_safe = S + eps_div;
-
-            // First term: −δ_i * (s_il / S_i) * (1 − z_il^κ)
-            w_i  = - dataclass.datEvent
-                % (s_l / S_safe)
-                % (1.0 - a_power_kappa);
-
-            // Second term: + θ_i * p_il * S_l(t_i) * z_il^κ
-            w_i += datTheta
-                % datProportion.col(componentUpdateIdx)
-                % weibullS.col(componentUpdateIdx)
-                % a_power_kappa;
-
-            // Design matrix and likelihood-only per-observation gradients
-            arma::mat X_l = dataclass.datX.slice(componentUpdateIdx).cols(updateIdx);     // n x d
-            const double G = std::tgamma(1.0 + 1.0 / kappa_);                              // Γ(1 + 1/κ)
-
-            // gradient_betaK_i0 = (κ / G) * X * w_i (likelihood-only)
-            arma::mat gradient_betaK_i0 = (kappa_ / G) * (X_l.each_col() % w_i);          // n x d
-
-            // Empirical Fisher (OPG) for the sum log-likelihood: H = sum_i s_i s_i^T
-            arma::mat H = gradient_betaK_i0.t() * gradient_betaK_i0;                       // d x d
-
-            // Metric Δ = H + prior precision + damping
-            arma::mat Delta_betaK = H;
-            double nu = 0.5;  // damping parameter
-            Delta_betaK.diag() += 1.0 / tauSq_[componentUpdateIdx] + nu;
-
-            // Enforce symmetry (numerical robustness)
-            Delta_betaK = 0.5 * (Delta_betaK + Delta_betaK.t());
-
-            // Invert to get the metric M ≈ (H + D^{-1} + ν I)^{-1}
-            arma::mat M;
-            if (!arma::inv_sympd(M, Delta_betaK)) {
-                arma::inv(M, Delta_betaK, arma::inv_opts::allow_approx);
-            }
-
-            // Full posterior gradient (sum-likelihood − prior): d-vector
-            arma::vec gradient_betaK = arma::sum(gradient_betaK_i0, 0).t();               // sum over i
-            gradient_betaK -= betas_(1 + updateIdx, singleIdx_k) / tauSq_[componentUpdateIdx];
-
-            // MALA mean and covariance
-            double eps = sigmaMH_beta;
-            arma::vec  m     = 0.5 * eps * eps * (M * gradient_betaK);
-            arma::mat  Sigma =        eps * eps * M;
-
-            // Draw MALA proposal increment u ~ N(m, Sigma)
-            arma::vec u = randMvNormal(m, Sigma);
-
-            // Update proposed parameters on the selected coordinates
-            proposedBeta(1 + updateIdx, singleIdx_k) += u;
+            // Update proposal ratio with beta part
+            logProposalRatio -= MALAbetas(proposedBeta, betas_, updateIdx0, singleIdx_k, componentUpdateIdx, 
+                datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
+            logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0, singleIdx_k, componentUpdateIdx, 
+                datTheta, datProportion, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
             
         } else {//if( arma::any(gammas_(updateIdx,singleIdx_k)) ) {
             // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2})
             arma::vec u = Rcpp::rnorm( J, 0., sigmaMH_beta * 1. / std::sqrt(J) ); 
-            proposedBeta(1+updateIdx, singleIdx_k) += u;
+            proposedBeta(1+updateIdx0, singleIdx_k) += u;
         }
     }
     proposedBeta(1+arma::find(proposedGamma.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
@@ -584,7 +514,7 @@ void BVS_Sampler::sampleEta(
 
     unsigned int p = etas_.n_rows;
     unsigned int L = etas_.n_cols;
-    unsigned int n = datTheta.n_elem;
+    // unsigned int n = datTheta.n_elem;
 
     // define static variables for global updates for the use of bandit algorithm
     static arma::mat banditAlpha2 = arma::mat(p, L, arma::fill::value(0.5));
@@ -718,94 +648,23 @@ void BVS_Sampler::sampleEta(
     // RW-MH
     if (arma::as_scalar(arma::any(proposedEta(updateIdx, singleIdx_k))))
     {
+        arma::uvec updateIdx0 = arma::find(proposedEta(updateIdx, singleIdx_k) == 1);
         if (rw_mh != "symmetric")
         {
             // double c = std::exp(a);
 
-            // Compute alphas: n x L
-            arma::mat alphas = arma::zeros<arma::mat>(n, L);
-            for (unsigned int j = 0; j < L; ++j) {
-                // zetas_: (p+1) x L: intercept zeta(0,j); coefficients zeta(1..p, j)
-                alphas.col(j) = arma::exp( zetas_(0, j) + dataclass.datX.slice(j) * zetas_.submat(1, j, p, j) );
-            }
-            arma::vec alpha0 = arma::sum(alphas, 1);  
+            // Update proposal ratio with beta part
+            // logProposalRatio -= logPDFNormal(proposedZeta(1 + updateIdx0, singleIdx_k), m, Sigma); 
+            // logProposalRatio += logPDFNormal(zetas_(1 + updateIdx0, singleIdx_k), m_mutant, Sigma_mutant);// TODO: use proposedZeta to repeat the above steps (wrap into a func) to obtain m_mutant & Sigma_mutant
+            logProposalRatio -= MALAzetas(proposedZeta, zetas_, updateIdx0, singleIdx_k, componentUpdateIdx, 
+                datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+            logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0, singleIdx_k, componentUpdateIdx, 
+                datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
 
-            const unsigned int l = componentUpdateIdx;  // current component index
-
-            // Weights and C for component l
-            arma::vec omega_l = alphas.col(l) / alpha0;
-            arma::vec C_l = arma::pow(weibullLambda.col(l), -kappa_) % weibullS.col(l);
-
-            // M_i = sum_j ω_ij C_ij and N_i = sum_j ω_ij S_j(t_i)
-            arma::vec M_i = arma::zeros<arma::vec>(n);
-            arma::vec N_i = arma::zeros<arma::vec>(n);
-            for (unsigned int j = 0; j < L; ++j) {
-                arma::vec omega_j = alphas.col(j) / alpha0;
-                arma::vec C_j = arma::pow(weibullLambda.col(j), -kappa_) % weibullS.col(j);
-                M_i += omega_j % C_j;
-                N_i += omega_j % weibullS.col(j);
-            }
-
-            // Per-observation scalar weights w_i (likelihood-only score part)
-            arma::vec w_i(n);
-
-            // Stabilize division C_l / M_i
-            const double eps_div = 1.0e-12;
-            arma::vec M_i_safe = M_i + eps_div;
-
-            w_i  = dataclass.datEvent % omega_l % (C_l / M_i_safe - 1.0);                 // δ_i * ω_il * (C_il/M_i - 1)
-            w_i += datTheta           % omega_l % (weibullS.col(l) - N_i);                 // θ_i * ω_il * (S_l - N_i)
-
-            // Digamma and Dirichlet-like terms
-            arma::vec digamma_alpha0  = Rcpp::digamma(Rcpp::wrap(alpha0));
-            arma::vec alpha_l         = alphas.col(l);
-            arma::vec digamma_alpha_l = Rcpp::digamma(Rcpp::wrap(alpha_l));
-
-            w_i += alpha_l % (digamma_alpha0 - digamma_alpha_l);                           // α_il [ψ(α_i0) − ψ(α_il)]
-            w_i += alpha_l % arma::log(dataclass.datProportionConst.col(l));               // α_il log p̃_il
-
-            // Design matrix for component l, restricted to updated coordinates
-            arma::mat X_l = dataclass.datX.slice(l).cols(updateIdx);                       // n x d (d = updateIdx.n_elem)
-
-            // Likelihood-only per-observation gradients: n x d
-            arma::mat gradient_zetaK_i0 = X_l.each_col() % w_i;
-
-            // Empirical Fisher (OPG) for the sum log-likelihood: d x d
-            arma::mat H = gradient_zetaK_i0.t() * gradient_zetaK_i0;
-
-            // Add prior precision and damping to the diagonal: Δ = H + D_l^{−1} + ν I
-            arma::mat Delta_zetaK = H;
-            double nu = 0.1;  // damping parameter to ensure positive definiteness
-            Delta_zetaK.diag() += 1.0 / wSq_[l] + nu;
-
-            // Enforce symmetry (numerical robustness)
-            Delta_zetaK = 0.5 * (Delta_zetaK + Delta_zetaK.t());
-
-            // Invert to get the metric M ≈ (H + D^{-1} + ν I)^{-1}
-            arma::mat M;
-            if (!arma::inv_sympd(M, Delta_zetaK)) {
-                arma::inv(M, Delta_zetaK, arma::inv_opts::allow_approx);
-            }
-
-            // Full posterior gradient (sum-likelihood − prior): d-vector
-            arma::vec gradient_zetaK = arma::sum(gradient_zetaK_i0, 0).t();                // sum over i
-            gradient_zetaK -= zetas_(1 + updateIdx, singleIdx_k) / wSq_[l];                // − ζ_l / w_l^2
-
-            // MALA mean and covariance
-            double eps = sigmaMH_zeta;                                                      // ε*
-            arma::vec  m     = 0.5 * eps * eps * (M * gradient_zetaK);
-            arma::mat  Sigma =        eps * eps * M;
-
-            // Draw MALA proposal increment u ~ N(m, Sigma)
-            arma::vec u = randMvNormal(m, Sigma);
-
-            // Update proposed parameters on the selected coordinates
-            proposedZeta(1 + updateIdx, singleIdx_k) += u;
-            
         } else {//if( arma::any(etas_(updateIdx,singleIdx_k)) ) {
             // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2})
             arma::vec u = Rcpp::rnorm( updateIdx.n_elem, 0., sigmaMH_zeta * 1. / std::sqrt(updateIdx.n_elem) ); 
-            proposedZeta(1+updateIdx, singleIdx_k) += u;
+            proposedZeta(1+updateIdx0, singleIdx_k) += u;
         }
     }
     proposedZeta(1+arma::find(proposedEta.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
@@ -1236,6 +1095,439 @@ double BVS_Sampler::logPzetaK(
     return logP;
 }
 
+// MALA for betaK proposal in RW-MH for (beta, gamma) sampling
+double BVS_Sampler::MALAbetas(
+    arma::mat& proposedBeta,
+    const arma::mat& betas_,
+    const arma::uvec& updateIdx0,
+    const arma::uvec& singleIdx_k,
+    unsigned int componentUpdateIdx,
+
+    const arma::vec& datTheta,
+    const arma::mat& datProportion,
+    const arma::mat& weibullS,
+    const arma::mat& weibullLambda,
+    double kappa_,
+    double tauSqK,
+    double eps,
+    const DataClass &dataclass)
+{
+    // dimensions
+    unsigned int n = dataclass.datX.n_rows;
+    unsigned int L = dataclass.datX.n_slices;
+
+    // Precompute a and powers
+    arma::vec a = dataclass.datTime / weibullLambda.col(componentUpdateIdx);      // n-vector
+    arma::vec a_power_kappa = arma::pow(a, kappa_);                               // z_il^kappa
+
+    // s_l = κ / λ_il * (t_i/λ_il)^{κ-1} * p_il * S_l(t_i)
+    arma::vec s_l = (kappa_ / weibullLambda.col(componentUpdateIdx))
+                % arma::pow(a, kappa_ - 1.0)
+                % datProportion.col(componentUpdateIdx)
+                % weibullS.col(componentUpdateIdx);
+
+    // S = sum over components of κ / λ * (t/λ)^{κ-1} * p * S(t)
+    arma::vec S(n, arma::fill::zeros);
+    for (unsigned int l = 0; l < L; ++l) {
+        arma::vec a_tmp = dataclass.datTime / weibullLambda.col(l);
+        S += (kappa_ / weibullLambda.col(l))
+        % arma::pow(a_tmp, kappa_ - 1.0)
+        % datProportion.col(l)
+        % weibullS.col(l);
+    }
+
+    // Per-observation weights w_i (likelihood-only score part)
+    arma::vec w_i(n);
+
+    // Stabilize division s_l / S
+    const double eps_div = 1e-12;
+    arma::vec S_safe = S + eps_div;
+
+    // First term: −δ_i * (s_il / S_i) * (1 − z_il^κ)
+    w_i  = - dataclass.datEvent
+        % (s_l / S_safe)
+        % (1.0 - a_power_kappa);
+
+    // Second term: + θ_i * p_il * S_l(t_i) * z_il^κ
+    w_i += datTheta
+        % datProportion.col(componentUpdateIdx)
+        % weibullS.col(componentUpdateIdx)
+        % a_power_kappa;
+
+    // Design matrix and likelihood-only per-observation gradients
+    arma::mat X_l = dataclass.datX.slice(componentUpdateIdx).cols(updateIdx0);     // n x p
+    const double G = std::tgamma(1.0 + 1.0 / kappa_);                              // Γ(1 + 1/κ)
+
+    // gradient_betaK_i0 = (κ / G) * X * w_i (likelihood-only)
+    arma::mat gradient_betaK_i0 = (kappa_ / G) * (X_l.each_col() % w_i);          // n x p
+
+    // Empirical Fisher (OPG) for the sum log-likelihood: H = sum_i s_i s_i^T
+    arma::mat H = gradient_betaK_i0.t() * gradient_betaK_i0;                       // p x p
+
+    // Metric Δ = H + prior precision + damping
+    arma::mat Delta_betaK = H;
+    double nu = 0.5;  // damping parameter
+    Delta_betaK.diag() += 1.0 / tauSqK + nu;
+
+    // Enforce symmetry (numerical robustness)
+    Delta_betaK = 0.5 * (Delta_betaK + Delta_betaK.t());
+
+    // Invert to get the metric M ≈ (H + D^{-1} + ν I)^{-1}
+    arma::mat M;
+    if (!arma::inv_sympd(M, Delta_betaK)) {
+        arma::inv(M, Delta_betaK, arma::inv_opts::allow_approx);
+    }
+
+    // Full posterior gradient (sum-likelihood − prior): d-vector
+    arma::vec gradient_betaK = arma::sum(gradient_betaK_i0, 0).t();               // sum over i
+    gradient_betaK -= betas_(1 + updateIdx0, singleIdx_k) / tauSqK;
+
+    // MALA mean and covariance
+    // double eps = sigmaMH_beta;
+    arma::vec  m     = 0.5 * eps * eps * (M * gradient_betaK);
+    arma::mat  Sigma =        eps * eps * M;
+
+    // Draw MALA proposal increment u ~ N(m, Sigma)
+    arma::vec u = randMvNormal(m, Sigma);
+
+    // Update proposed parameters on the selected coordinates
+    proposedBeta(1 + updateIdx0, singleIdx_k) += u;
+
+    double logP = logPDFNormal(proposedBeta(1 + updateIdx0, singleIdx_k), m, Sigma); 
+
+    return logP;
+}
+
+
+// MALA proposal density q(betas| proposedBeta) 
+double BVS_Sampler::MALAlogPbetas(
+    const arma::mat& betas_,
+    const arma::mat& proposedBeta,
+    const arma::uvec& updateIdx0,
+    const arma::uvec& singleIdx_k,
+    unsigned int componentUpdateIdx,
+
+    const arma::vec& datTheta,
+    const arma::mat& datProportion,
+    double kappa_,
+    double tauSqK,
+    double eps,
+    const DataClass &dataclass)
+{
+    // dimensions
+    unsigned int n = dataclass.datX.n_rows;
+    unsigned int p = dataclass.datX.n_cols;
+    unsigned int L = dataclass.datX.n_slices;
+
+    // Precompute a and powers
+    arma::vec a;                // n-vector
+    arma::vec a_power_kappa;    // z_il^kappa
+
+    // s_l = κ / λ_il * (t_i/λ_il)^{κ-1} * p_il * S_l(t_i)
+    arma::vec s_l; //= (kappa_ / weibullLambda.col(componentUpdateIdx)) % arma::pow(a, kappa_ - 1.0) % datProportion.col(componentUpdateIdx) % weibullS.col(componentUpdateIdx);
+    arma::vec weibullS_l;
+
+    // S = sum over components of κ / λ * (t/λ)^{κ-1} * p * S(t)
+    arma::vec S(n, arma::fill::zeros);
+    for (unsigned int l = 0; l < L; ++l) 
+    {
+        // Recompute quantities conditional on proposedBeta
+        arma::vec logMu_l = proposedBeta(0, l) + dataclass.datX.slice(l) * proposedBeta.submat(1, l, p, l);
+        logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+        arma::vec mu_l = arma::exp(logMu_l);
+        arma::vec weibull_lambdas_l = mu_l / std::tgamma(1. + 1./kappa_);
+        arma::vec weibullS_l_tmp = arma::exp( - arma::pow( dataclass.datTime / weibull_lambdas_l, kappa_) );
+
+        arma::vec a_tmp = dataclass.datTime / weibull_lambdas_l;
+        arma::vec s_tmp = (kappa_ / weibull_lambdas_l) % arma::pow(a_tmp, kappa_ - 1.0) % datProportion.col(l) % weibullS_l_tmp;
+        S += s_tmp;
+
+        // Save quantities w.r.t. componentUpdateIdx for later use
+        if(l == componentUpdateIdx) {
+            a = a_tmp;
+            a_power_kappa = arma::pow(a, kappa_);       
+            s_l = s_tmp;
+            weibullS_l = weibullS_l_tmp;
+        }
+    }
+
+    // Per-observation weights w_i (likelihood-only score part)
+    arma::vec w_i(n);
+
+    // Stabilize division s_l / S
+    const double eps_div = 1e-12;
+    arma::vec S_safe = S + eps_div;
+
+    // First term: −δ_i * (s_il / S_i) * (1 − z_il^κ)
+    w_i  = - dataclass.datEvent
+        % (s_l / S_safe)
+        % (1.0 - a_power_kappa);
+
+    // Second term: + θ_i * p_il * S_l(t_i) * z_il^κ
+    w_i += datTheta
+        % datProportion.col(componentUpdateIdx)
+        % weibullS_l
+        % a_power_kappa;
+
+    // Design matrix and likelihood-only per-observation gradients
+    arma::mat X_l = dataclass.datX.slice(componentUpdateIdx).cols(updateIdx0);     // n x p
+    const double G = std::tgamma(1.0 + 1.0 / kappa_);                              // Γ(1 + 1/κ)
+
+    // gradient_betaK_i0 = (κ / G) * X * w_i (likelihood-only)
+    arma::mat gradient_betaK_i0 = (kappa_ / G) * (X_l.each_col() % w_i);          // n x p
+
+    // Empirical Fisher (OPG) for the sum log-likelihood: H = sum_i s_i s_i^T
+    arma::mat H = gradient_betaK_i0.t() * gradient_betaK_i0;                       // p x p
+
+    // Metric Δ = H + prior precision + damping
+    arma::mat Delta_betaK = H;
+    double nu = 0.5;  // damping parameter
+    Delta_betaK.diag() += 1.0 / tauSqK + nu;
+
+    // Enforce symmetry (numerical robustness)
+    Delta_betaK = 0.5 * (Delta_betaK + Delta_betaK.t());
+
+    // Invert to get the metric M ≈ (H + D^{-1} + ν I)^{-1}
+    arma::mat M;
+    if (!arma::inv_sympd(M, Delta_betaK)) {
+        arma::inv(M, Delta_betaK, arma::inv_opts::allow_approx);
+    }
+
+    // Full posterior gradient (sum-likelihood − prior): d-vector
+    arma::vec gradient_betaK = arma::sum(gradient_betaK_i0, 0).t();               // sum over i
+    gradient_betaK -= betas_(1 + updateIdx0, singleIdx_k) / tauSqK;
+
+    // MALA mean and covariance
+    // double eps = sigmaMH_beta;
+    arma::vec  m     = 0.5 * eps * eps * (M * gradient_betaK);
+    arma::mat  Sigma =        eps * eps * M;
+
+    // Compute proposal density log q(betas| proposedBeta) 
+    double logP = logPDFNormal(betas_(1 + updateIdx0, singleIdx_k), m, Sigma); 
+
+    return logP;
+}
+
+
+// MALA for zetaK proposal in RW-MH for (zeta, eta) sampling
+double BVS_Sampler::MALAzetas(
+    arma::mat& proposedZeta,
+    const arma::mat& zetas_,
+    const arma::uvec& updateIdx0,
+    const arma::uvec& singleIdx_k,
+    unsigned int componentUpdateIdx,
+
+    const arma::vec& datTheta,
+    const arma::mat& weibullS,
+    const arma::mat& weibullLambda,
+    double kappa_,
+    double wSqK,
+    double eps,
+    const DataClass &dataclass)
+{
+
+    // dimensions
+    unsigned int n = dataclass.datX.n_rows;
+    unsigned int p = dataclass.datX.n_cols;
+    unsigned int L = dataclass.datX.n_slices;
+
+    // Compute alphas: n x L
+    arma::mat alphas = arma::zeros<arma::mat>(n, L);
+    for (unsigned int l = 0; l < L; ++l) {
+        // zetas_: (p+1) x L: intercept zeta(0,l); coefficients zeta(1..p, l)
+        alphas.col(l) = arma::exp( zetas_(0, l) + dataclass.datX.slice(l) * zetas_.submat(1, l, p, l) );
+    }
+    arma::vec alpha0 = arma::sum(alphas, 1);  
+
+    // Weights and C for component l
+    arma::vec omega_l; //= alphas.col(l) / alpha0;
+    arma::vec C_l; //= arma::pow(weibullLambda.col(l), -kappa_) % weibullS.col(l);
+
+    // M_i = sum_j ω_ij C_ij and N_i = sum_j ω_ij S_j(t_i)
+    arma::vec M_i = arma::zeros<arma::vec>(n);
+    arma::vec N_i = arma::zeros<arma::vec>(n);
+    for (unsigned int l = 0; l < L; ++l) 
+    {
+        arma::vec omega_l_tmp = alphas.col(l) / alpha0;
+        arma::vec C_l_tmp = arma::pow(weibullLambda.col(l), -kappa_) % weibullS.col(l);
+        M_i += omega_l_tmp % C_l_tmp;
+        N_i += omega_l_tmp % weibullS.col(l);
+
+        if (l == componentUpdateIdx) 
+        {
+            omega_l = omega_l_tmp;
+            C_l = C_l_tmp;
+        }
+    }
+
+    // Per-observation scalar weights w_i (likelihood-only score part)
+    arma::vec w_i(n);
+
+    // Stabilize division C_l / M_i
+    const double eps_div = 1.0e-12;
+    arma::vec M_i_safe = M_i + eps_div;
+
+    w_i  = dataclass.datEvent % omega_l % (C_l / M_i_safe - 1.0);                 // δ_i * ω_il * (C_il/M_i - 1)
+    w_i += datTheta           % omega_l % (weibullS.col(componentUpdateIdx) - N_i);                 // θ_i * ω_il * (S_l - N_i)
+
+    // Digamma and Dirichlet-like terms
+    arma::vec digamma_alpha0  = Rcpp::digamma(Rcpp::wrap(alpha0));
+    arma::vec alpha_l         = alphas.col(componentUpdateIdx);
+    arma::vec digamma_alpha_l = Rcpp::digamma(Rcpp::wrap(alpha_l));
+
+    w_i += alpha_l % (digamma_alpha0 - digamma_alpha_l);                           // α_il [ψ(α_i0) − ψ(α_il)]
+    w_i += alpha_l % arma::log(dataclass.datProportionConst.col(componentUpdateIdx));               // α_il log p̃_il
+
+    // Design matrix for component l, restricted to updated coordinates
+    arma::mat X_l = dataclass.datX.slice(componentUpdateIdx).cols(updateIdx0);                       // n x p (d = updateIdx.n_elem)
+
+    // Likelihood-only per-observation gradients: n x p
+    arma::mat gradient_zetaK_i0 = X_l.each_col() % w_i;
+
+    // Empirical Fisher (OPG) for the sum log-likelihood: p x p
+    arma::mat H = gradient_zetaK_i0.t() * gradient_zetaK_i0;
+
+    // Add prior precision and damping to the diagonal: Δ = H + D_l^{−1} + ν I
+    arma::mat Delta_zetaK = H;
+    double nu = 0.1;  // damping parameter to ensure positive definiteness
+    Delta_zetaK.diag() += 1.0 / wSqK + nu;
+
+    // Enforce symmetry (numerical robustness)
+    Delta_zetaK = 0.5 * (Delta_zetaK + Delta_zetaK.t());
+
+    // Invert to get the metric M ≈ (H + D^{-1} + ν I)^{-1}
+    arma::mat M;
+    if (!arma::inv_sympd(M, Delta_zetaK)) {
+        arma::inv(M, Delta_zetaK, arma::inv_opts::allow_approx);
+    }
+
+    // Full posterior gradient (sum-likelihood − prior): d-vector
+    arma::vec gradient_zetaK = arma::sum(gradient_zetaK_i0, 0).t();                // sum over i
+    gradient_zetaK -= zetas_(1 + updateIdx0, singleIdx_k) / wSqK;                // − ζ_l / w_l^2
+
+    // MALA mean and covariance
+    // double eps = sigmaMH_zeta;                                                      // ε*
+    arma::vec  m     = 0.5 * eps * eps * (M * gradient_zetaK);
+    arma::mat  Sigma =        eps * eps * M;
+
+    // Draw MALA proposal increment u ~ N(m, Sigma)
+    arma::vec u = randMvNormal(m, Sigma);
+
+    // Update proposed parameters on the selected coordinates
+    proposedZeta(1 + updateIdx0, singleIdx_k) += u;
+
+    double logP = logPDFNormal(proposedZeta(1 + updateIdx0, singleIdx_k), m, Sigma); 
+
+    return logP;
+}
+
+// MALA proposal density q(zetas| proposedZeta) 
+double BVS_Sampler::MALAlogPzetas(
+    const arma::mat& zetas_,
+    const arma::mat& proposedZeta,
+    const arma::uvec& updateIdx0,
+    const arma::uvec& singleIdx_k,
+    unsigned int componentUpdateIdx,
+
+    const arma::vec& datTheta,
+    const arma::mat& weibullS,
+    const arma::mat& weibullLambda,
+    double kappa_,
+    double wSqK,
+    double eps,
+    const DataClass &dataclass)
+{
+
+    // dimensions
+    unsigned int n = dataclass.datX.n_rows;
+    unsigned int p = dataclass.datX.n_cols;
+    unsigned int L = dataclass.datX.n_slices;
+
+    // Compute alphas: n x L
+    arma::mat alphas = arma::zeros<arma::mat>(n, L);
+    for (unsigned int l = 0; l < L; ++l) {
+        // zetas_: (p+1) x L: intercept zeta(0,j); coefficients zeta(1..p, j)
+        alphas.col(l) = arma::exp( proposedZeta(0, l) + dataclass.datX.slice(l) * proposedZeta.submat(1, l, p, l) );
+    }
+    arma::vec alpha0 = arma::sum(alphas, 1);  
+
+    // Weights and C for component l
+    arma::vec omega_l; //= alphas.col(l) / alpha0;
+    arma::vec C_l; //= arma::pow(weibullLambda.col(l), -kappa_) % weibullS.col(l);
+
+    // M_i = sum_j ω_ij C_ij and N_i = sum_j ω_ij S_j(t_i)
+    arma::vec M_i = arma::zeros<arma::vec>(n);
+    arma::vec N_i = arma::zeros<arma::vec>(n);
+    for (unsigned int l = 0; l < L; ++l) 
+    {
+        arma::vec omega_l_tmp = alphas.col(l) / alpha0;
+        arma::vec C_l_tmp = arma::pow(weibullLambda.col(l), -kappa_) % weibullS.col(l);
+        M_i += omega_l_tmp % C_l_tmp;
+        N_i += omega_l_tmp % weibullS.col(l);
+
+        if (l == componentUpdateIdx) 
+        {
+            omega_l = omega_l_tmp;
+            C_l = C_l_tmp;
+        }
+    }
+
+    // Per-observation scalar weights w_i (likelihood-only score part)
+    arma::vec w_i(n);
+
+    // Stabilize division C_l / M_i
+    const double eps_div = 1.0e-12;
+    arma::vec M_i_safe = M_i + eps_div;
+
+    w_i  = dataclass.datEvent % omega_l % (C_l / M_i_safe - 1.0);                 // δ_i * ω_il * (C_il/M_i - 1)
+    w_i += datTheta           % omega_l % (weibullS.col(componentUpdateIdx) - N_i);                 // θ_i * ω_il * (S_l - N_i)
+
+    // Digamma and Dirichlet-like terms
+    arma::vec digamma_alpha0  = Rcpp::digamma(Rcpp::wrap(alpha0));
+    arma::vec alpha_l         = alphas.col(componentUpdateIdx);
+    arma::vec digamma_alpha_l = Rcpp::digamma(Rcpp::wrap(alpha_l));
+
+    w_i += alpha_l % (digamma_alpha0 - digamma_alpha_l);                           // α_il [ψ(α_i0) − ψ(α_il)]
+    w_i += alpha_l % arma::log(dataclass.datProportionConst.col(componentUpdateIdx));               // α_il log p̃_il
+
+    // Design matrix for component l, restricted to updated coordinates
+    arma::mat X_l = dataclass.datX.slice(componentUpdateIdx).cols(updateIdx0);                       // n x p (d = updateIdx.n_elem)
+
+    // Likelihood-only per-observation gradients: n x p
+    arma::mat gradient_zetaK_i0 = X_l.each_col() % w_i;
+
+    // Empirical Fisher (OPG) for the sum log-likelihood: p x p
+    arma::mat H = gradient_zetaK_i0.t() * gradient_zetaK_i0;
+
+    // Add prior precision and damping to the diagonal: Δ = H + D_l^{−1} + ν I
+    arma::mat Delta_zetaK = H;
+    double nu = 0.1;  // damping parameter to ensure positive definiteness
+    Delta_zetaK.diag() += 1.0 / wSqK + nu;
+
+    // Enforce symmetry (numerical robustness)
+    Delta_zetaK = 0.5 * (Delta_zetaK + Delta_zetaK.t());
+
+    // Invert to get the metric M ≈ (H + D^{-1} + ν I)^{-1}
+    arma::mat M;
+    if (!arma::inv_sympd(M, Delta_zetaK)) {
+        arma::inv(M, Delta_zetaK, arma::inv_opts::allow_approx);
+    }
+
+    // Full posterior gradient (sum-likelihood − prior): d-vector
+    arma::vec gradient_zetaK = arma::sum(gradient_zetaK_i0, 0).t();                // sum over i
+    gradient_zetaK -= proposedZeta(1 + updateIdx0, singleIdx_k) / wSqK;                // − ζ_l / w_l^2
+
+    // MALA mean and covariance
+    // double eps = sigmaMH_zeta;                                                      // ε*
+    arma::vec  m     = 0.5 * eps * eps * (M * gradient_zetaK);
+    arma::mat  Sigma =        eps * eps * M;
+
+    // Compute proposal density log q(zetas| proposedZeta) 
+    double logP = logPDFNormal(zetas_(1 + updateIdx0, singleIdx_k), m, Sigma); 
+
+    return logP;
+}
+
 // subfunctions used for bandit proposal
 
 arma::uvec BVS_Sampler::randWeightedIndexSampleWithoutReplacement(
@@ -1413,6 +1705,19 @@ arma::vec BVS_Sampler::randVecNormal(const unsigned int n)
     return res;
 }
 
+double BVS_Sampler::logPDFNormal(
+    const arma::vec& x,
+    const arma::vec& m,
+    const arma::mat& Sigma)
+{
+    unsigned int k = Sigma.n_cols;
+
+    double sign, tmp;
+    arma::log_det(tmp, sign, Sigma ); //sign is not importantas det SHOULD be > 0 as for positive definiteness!
+
+    return -0.5*(double)k*log(2.*M_PI) -0.5*tmp -0.5* arma::as_scalar( (x-m).t() * arma::inv_sympd(Sigma) * (x-m) );
+
+}
 
 /*
 double logPDFMRF(const arma::umat& externalGamma, const arma::mat& mrfG, double a, double b )
