@@ -216,7 +216,6 @@ private:
         arma::mat& proposedBeta,
         const arma::mat& betas_,
         const arma::uvec& updateIdx0,
-        const arma::uvec& singleIdx_k,
         unsigned int componentUpdateIdx,
 
         const arma::vec& datTheta,
@@ -233,7 +232,6 @@ private:
         const arma::mat& betas_,
         const arma::mat& proposedBeta,
         const arma::uvec& updateIdx0,
-        const arma::uvec& singleIdx_k,
         unsigned int componentUpdateIdx,
 
         const arma::vec& datTheta,
@@ -248,7 +246,6 @@ private:
         arma::mat& proposedZeta,
         const arma::mat& zetas_,
         const arma::uvec& updateIdx0,
-        const arma::uvec& singleIdx_k,
         unsigned int componentUpdateIdx,
 
         const arma::vec& datTheta,
@@ -264,7 +261,6 @@ private:
         const arma::mat& zetas_,
         const arma::mat& proposedZeta,
         const arma::uvec& updateIdx0,
-        const arma::uvec& singleIdx_k,
         unsigned int componentUpdateIdx,
 
         const arma::vec& datTheta,

@@ -370,9 +370,9 @@ void BVS_Sampler::sampleGamma(
             // double c = std::exp(a);
 
             // Update proposal ratio with beta part
-            logProposalRatio -= MALAbetas(proposedBeta, betas_, updateIdx0, singleIdx_k, componentUpdateIdx, 
+            logProposalRatio -= MALAbetas(proposedBeta, betas_, updateIdx0, componentUpdateIdx, 
                 datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
-            logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0, singleIdx_k, componentUpdateIdx, 
+            logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0, componentUpdateIdx, 
                 datTheta, datProportion, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
             
         } else {//if( arma::any(gammas_(updateIdx,singleIdx_k)) ) {
@@ -658,9 +658,9 @@ void BVS_Sampler::sampleEta(
             // Update proposal ratio with beta part
             // logProposalRatio -= logPDFNormal(proposedZeta(1 + updateIdx0, singleIdx_k), m, Sigma); 
             // logProposalRatio += logPDFNormal(zetas_(1 + updateIdx0, singleIdx_k), m_mutant, Sigma_mutant);// TODO: use proposedZeta to repeat the above steps (wrap into a func) to obtain m_mutant & Sigma_mutant
-            logProposalRatio -= MALAzetas(proposedZeta, zetas_, updateIdx0, singleIdx_k, componentUpdateIdx, 
+            logProposalRatio -= MALAzetas(proposedZeta, zetas_, updateIdx0, componentUpdateIdx, 
                 datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
-            logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0, singleIdx_k, componentUpdateIdx, 
+            logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0, componentUpdateIdx, 
                 datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
 
         } else {//if( arma::any(etas_(updateIdx,singleIdx_k)) ) {
@@ -1102,7 +1102,6 @@ double BVS_Sampler::MALAbetas(
     arma::mat& proposedBeta,
     const arma::mat& betas_,
     const arma::uvec& updateIdx0,
-    const arma::uvec& singleIdx_k,
     unsigned int componentUpdateIdx,
 
     const arma::vec& datTheta,
@@ -1117,6 +1116,7 @@ double BVS_Sampler::MALAbetas(
     // dimensions
     unsigned int n = dataclass.datX.n_rows;
     unsigned int L = dataclass.datX.n_slices;
+    arma::uvec singleIdx_k = { componentUpdateIdx };
 
     // Precompute a and powers
     arma::vec a = dataclass.datTime / weibullLambda.col(componentUpdateIdx);      // n-vector
@@ -1138,15 +1138,13 @@ double BVS_Sampler::MALAbetas(
         % weibullS.col(l);
     }
 
-    // Per-observation weights w_i (likelihood-only score part)
-    arma::vec w_i(n);
-
     // Stabilize division s_l / S
     const double eps_div = 1e-12;
     arma::vec S_safe = S + eps_div;
 
+    // Per-observation weights w_i (likelihood-only score part)
     // First term: −δ_i * (s_il / S_i) * (1 − z_il^κ)
-    w_i  = - dataclass.datEvent
+     arma::vec w_i  = - dataclass.datEvent
         % (s_l / S_safe)
         % (1.0 - a_power_kappa);
 
@@ -1185,17 +1183,18 @@ double BVS_Sampler::MALAbetas(
     gradient_betaK -= betas_(1 + updateIdx0, singleIdx_k) / tauSqK;
 
     // MALA mean and covariance
-    // double eps = sigmaMH_beta;
-    arma::vec  m     = 0.5 * eps * eps * (M * gradient_betaK);
-    arma::mat  Sigma =        eps * eps * M;
+    // Posterior gradient at current (forward direction) already correct
+    arma::vec  m      = 0.5 * eps * eps * (M * gradient_betaK);
+    arma::mat  Sigma  =        eps * eps * M;
 
-    // Draw MALA proposal increment u ~ N(m, Sigma)
+    // Propose: u ~ N(m, Sigma), beta_new = beta_old + u
     arma::vec u = randMvNormal(m, Sigma);
-
-    // Update proposed parameters on the selected coordinates
     proposedBeta(1 + updateIdx0, singleIdx_k) += u;
 
-    double logP = logPDFNormal(proposedBeta(1 + updateIdx0, singleIdx_k), m, Sigma); 
+    // Forward log-proposal density q(proposed | current)
+    arma::vec mu_fwd = betas_(1 + updateIdx0, singleIdx_k) + m;
+    double logP = logPDFNormal(proposedBeta(1 + updateIdx0, singleIdx_k), mu_fwd, Sigma);
+
 
     return logP;
 }
@@ -1206,7 +1205,6 @@ double BVS_Sampler::MALAlogPbetas(
     const arma::mat& betas_,
     const arma::mat& proposedBeta,
     const arma::uvec& updateIdx0,
-    const arma::uvec& singleIdx_k,
     unsigned int componentUpdateIdx,
 
     const arma::vec& datTheta,
@@ -1220,6 +1218,7 @@ double BVS_Sampler::MALAlogPbetas(
     unsigned int n = dataclass.datX.n_rows;
     unsigned int p = dataclass.datX.n_cols;
     unsigned int L = dataclass.datX.n_slices;
+    arma::uvec singleIdx_k = { componentUpdateIdx };
 
     // Precompute a and powers
     arma::vec a;                // n-vector
@@ -1295,17 +1294,19 @@ double BVS_Sampler::MALAlogPbetas(
         arma::inv(M, Delta_betaK, arma::inv_opts::allow_approx);
     }
 
-    // Full posterior gradient (sum-likelihood − prior): d-vector
-    arma::vec gradient_betaK = arma::sum(gradient_betaK_i0, 0).t();               // sum over i
-    gradient_betaK -= betas_(1 + updateIdx0, singleIdx_k) / tauSqK;
-
     // MALA mean and covariance
-    // double eps = sigmaMH_beta;
-    arma::vec  m     = 0.5 * eps * eps * (M * gradient_betaK);
-    arma::mat  Sigma =        eps * eps * M;
+    // Prior gradient at proposed (reverse direction)
+    arma::vec gradient_betaK = arma::sum(gradient_betaK_i0, 0).t();
+    gradient_betaK -= proposedBeta(1 + updateIdx0, singleIdx_k) / tauSqK;
 
-    // Compute proposal density log q(betas| proposedBeta) 
-    double logP = logPDFNormal(betas_(1 + updateIdx0, singleIdx_k), m, Sigma); 
+    // MALA mean at proposed
+    arma::vec  m       = 0.5 * eps * eps * (M * gradient_betaK);
+    arma::mat  Sigma   =        eps * eps * M;
+    arma::vec  mu_rev  = proposedBeta(1 + updateIdx0, singleIdx_k) + m;
+
+    // Reverse log-proposal density q(current | proposed)
+    double logP = logPDFNormal(betas_(1 + updateIdx0, singleIdx_k), mu_rev, Sigma);
+
 
     return logP;
 }
@@ -1316,7 +1317,6 @@ double BVS_Sampler::MALAzetas(
     arma::mat& proposedZeta,
     const arma::mat& zetas_,
     const arma::uvec& updateIdx0,
-    const arma::uvec& singleIdx_k,
     unsigned int componentUpdateIdx,
 
     const arma::vec& datTheta,
@@ -1332,6 +1332,7 @@ double BVS_Sampler::MALAzetas(
     unsigned int n = dataclass.datX.n_rows;
     unsigned int p = dataclass.datX.n_cols;
     unsigned int L = dataclass.datX.n_slices;
+    arma::uvec singleIdx_k = { componentUpdateIdx };
 
     // Compute alphas: n x L
     arma::mat alphas = arma::zeros<arma::mat>(n, L);
@@ -1418,7 +1419,9 @@ double BVS_Sampler::MALAzetas(
     // Update proposed parameters on the selected coordinates
     proposedZeta(1 + updateIdx0, singleIdx_k) += u;
 
-    double logP = logPDFNormal(proposedZeta(1 + updateIdx0, singleIdx_k), m, Sigma); 
+    // forward log-density: mean = current + drift
+    arma::vec mu_fwd = zetas_(1 + updateIdx0, singleIdx_k) + m;
+    double logP = logPDFNormal(proposedZeta(1 + updateIdx0, singleIdx_k), mu_fwd, Sigma);
 
     return logP;
 }
@@ -1428,7 +1431,6 @@ double BVS_Sampler::MALAlogPzetas(
     const arma::mat& zetas_,
     const arma::mat& proposedZeta,
     const arma::uvec& updateIdx0,
-    const arma::uvec& singleIdx_k,
     unsigned int componentUpdateIdx,
 
     const arma::vec& datTheta,
@@ -1444,6 +1446,7 @@ double BVS_Sampler::MALAlogPzetas(
     unsigned int n = dataclass.datX.n_rows;
     unsigned int p = dataclass.datX.n_cols;
     unsigned int L = dataclass.datX.n_slices;
+    arma::uvec singleIdx_k = { componentUpdateIdx };
 
     // Compute alphas: n x L
     arma::mat alphas = arma::zeros<arma::mat>(n, L);
@@ -1524,8 +1527,10 @@ double BVS_Sampler::MALAlogPzetas(
     arma::vec  m     = 0.5 * eps * eps * (M * gradient_zetaK);
     arma::mat  Sigma =        eps * eps * M;
 
-    // Compute proposal density log q(zetas| proposedZeta) 
-    double logP = logPDFNormal(zetas_(1 + updateIdx0, singleIdx_k), m, Sigma); 
+    arma::vec  mu_rev = proposedZeta(1 + updateIdx0, singleIdx_k) + m;
+
+    // reverse log-density: q(current | proposed)
+    double logP = logPDFNormal(zetas_(1 + updateIdx0, singleIdx_k), mu_rev, Sigma);
 
     return logP;
 }
