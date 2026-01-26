@@ -215,6 +215,7 @@ private:
     static double HamiltonianBetas(
         unsigned int I,
         arma::mat& proposedBeta,
+        const arma::mat& betas_,    
         const arma::uvec& updateIdx0,
         unsigned int componentUpdateIdx,
 
@@ -243,6 +244,7 @@ private:
     static double HamiltonianZetas(
         unsigned int I,
         arma::mat& proposedZeta,
+        const arma::mat& zetas_,
         const arma::uvec& updateIdx0,
         unsigned int componentUpdateIdx,
 

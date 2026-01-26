@@ -396,14 +396,15 @@ void BVS_Sampler::sampleGamma(
                 // iterations for the leapfrog steps
                 unsigned int I = 3; 
                 // add ΔH contributing to the Hastings correction
-                logProposalRatio += HamiltonianBetas(I, proposedBeta, updateIdx0, componentUpdateIdx, 
+                /*logProposalRatio +=*/ (void)HamiltonianBetas(I, proposedBeta, betas_, updateIdx0, componentUpdateIdx, 
                     datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
+                //volume-preserving and reversible HMC needs no proposal term when you do its own accept/reject at the kernel level.
             }
         }
         
     } else {//if( arma::any(gammas_(updateIdx,singleIdx_k)) ) {
         // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
-        
+        /*
         // Symmetric RW-MH with birth handling
         arma::uvec birth = setdiff_preserve_order(updateIdx0, updateIdx0_rev);       // newly active
         arma::uvec death = setdiff_preserve_order(updateIdx0_rev, updateIdx0);       // becoming inactive
@@ -423,10 +424,13 @@ void BVS_Sampler::sampleGamma(
             arma::vec bcurr = betas_(1 + death, singleIdx_k);                 // current coefficients
             logProposalRatio += logPDFNormal(bcurr, s_birth_rev * s_birth_rev);      // +log q(current|proposed)
         }
+        unsigned int J_stay = stay.n_elem;
+        */
 
         // Symmetric RW on stay only
-        unsigned int J_stay = stay.n_elem;
+        unsigned int J_stay = updateIdx0.n_elem;
         if (J_stay > 0) {
+            arma::uvec stay  = updateIdx0;
             double s_rw = sigmaMH_beta * 2.38 / std::sqrt(J_stay);
             arma::vec u = Rcpp::rnorm(J_stay, 0.0, s_rw);
             proposedBeta(1 + stay, singleIdx_k) += u;
@@ -440,8 +444,8 @@ void BVS_Sampler::sampleGamma(
     double logPriorBetaRatio = 0.; 
     double logLikelihoodRatio = 0.; 
     arma::vec proposedLikelihood = log_likelihood_;
-    if(!used_hmc) // HMC already accounted in ΔH 
-    {
+    // if(!used_hmc) // HMC already accounted in ΔH 
+    // {
         // prior ratio of beta
         logPriorBetaRatio += logPDFNormal(proposedBeta(1+updateIdx0,singleIdx_k), tauSq_[componentUpdateIdx]);
         logPriorBetaRatio -= logPDFNormal(betas_(1+updateIdx0_rev,singleIdx_k), tauSq_[componentUpdateIdx]);
@@ -450,7 +454,7 @@ void BVS_Sampler::sampleGamma(
         // loglikelihood( xi_, zetas_, betas_, kappa_, proportion_model, dataclass, log_likelihood_ ); // TODO: this can be removed
         loglikelihood( xi_, zetas_, proposedBeta, kappa_, proportion_model, dataclass, proposedLikelihood );
         logLikelihoodRatio = arma::sum(proposedLikelihood - log_likelihood_);
-    }
+    // }
 
     // Here we need always compute the proposal and original ratios, in particular the likelihood, since betas are updated
     //logProposalGammaRatio = arma::accu(proposedGammaPrior - logP_gamma);
@@ -485,11 +489,11 @@ void BVS_Sampler::sampleGamma(
         }
         betas_ = proposedBeta;
         // Update log_likelihood_ at the accepted state
-        if (used_hmc) {
-            loglikelihood(xi_, zetas_, betas_, kappa_, proportion_model, dataclass, log_likelihood_);
-        } else {
+        // if (used_hmc) {
+        //     loglikelihood(xi_, zetas_, betas_, kappa_, proportion_model, dataclass, log_likelihood_);
+        // } else {
             log_likelihood_ = proposedLikelihood;
-        }
+        // }
         // logPosteriorBeta = logPosteriorBeta_proposal;
 
         ++gamma_acc_count_;
@@ -750,13 +754,15 @@ void BVS_Sampler::sampleEta(
                 // iterations for the leapfrog steps
                 unsigned int I = 3; 
                 // add ΔH contributing to the Hastings correction
-                logProposalRatio += HamiltonianZetas(I, proposedZeta, updateIdx0, componentUpdateIdx, 
+                /*logProposalRatio +=*/ (void)HamiltonianZetas(I, proposedZeta, zetas_, updateIdx0, componentUpdateIdx, 
                     datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+                // volume-preserving and reversible HMC needs no proposal term when you do its own accept/reject at the kernel level.
             }
         }
 
     } else {//if( arma::any(etas_(updateIdx,singleIdx_k)) ) {
         // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
+        /*
         // Symmetric RW-MH with birth handling
         arma::uvec birth = setdiff_preserve_order(updateIdx0, updateIdx0_rev);
         arma::uvec death = setdiff_preserve_order(updateIdx0_rev, updateIdx0);
@@ -776,10 +782,13 @@ void BVS_Sampler::sampleEta(
             arma::vec zcurr = zetas_(1 + death, singleIdx_k);
             logProposalRatio += logPDFNormal(zcurr, s_birth_rev * s_birth_rev);
         }
+        unsigned int J_stay = stay.n_elem;
+        */
 
         // Symmetric RW on stay
-        unsigned int J_stay = stay.n_elem;
+        unsigned int J_stay = updateIdx0.n_elem;
         if (J_stay > 0) {
+            arma::uvec stay  = updateIdx0;
             double s_rw = sigmaMH_zeta * 2.38 / std::sqrt(J_stay);
             arma::vec u = Rcpp::rnorm(J_stay, 0.0, s_rw);
             proposedZeta(1 + stay, singleIdx_k) += u;
@@ -792,8 +801,8 @@ void BVS_Sampler::sampleEta(
     double logPriorZetaRatio = 0.; 
     double logLikelihoodRatio = 0.; 
     arma::vec proposedLikelihood = log_likelihood_;
-    if(!used_hmc) // HMC already accounted in ΔH 
-    {
+    // if(!used_hmc) // HMC already accounted in ΔH 
+    // {
         logPriorZetaRatio += logPDFNormal(proposedZeta(1+updateIdx0,singleIdx_k), wSq_[componentUpdateIdx]);
         logPriorZetaRatio -= logPDFNormal(zetas_(1+updateIdx0_rev,singleIdx_k), wSq_[componentUpdateIdx]);
 
@@ -802,7 +811,7 @@ void BVS_Sampler::sampleEta(
         // loglikelihood( xi_, zetas_, betas_, kappa_, true, dataclass, log_likelihood_ ); // TODO: this can be removed
         loglikelihood( xi_, proposedZeta, betas_, kappa_, true, dataclass, proposedLikelihood );
         logLikelihoodRatio = arma::sum(proposedLikelihood - log_likelihood_);
-    }
+    // }
 
 
     // Here we need always compute the proposal and original ratios, in particular the likelihood, since betas are updated
@@ -821,11 +830,11 @@ void BVS_Sampler::sampleEta(
 
         }
         zetas_ = proposedZeta;
-        if (used_hmc) {
-            loglikelihood(xi_, zetas_, betas_, kappa_, true, dataclass, log_likelihood_);
-        } else {
+        // if (used_hmc) {
+        //     loglikelihood(xi_, zetas_, betas_, kappa_, true, dataclass, log_likelihood_);
+        // } else {
             log_likelihood_ = proposedLikelihood;
-        }
+        // }
         // logPosteriorZeta = logPosteriorZeta_proposal;
 
         ++eta_acc_count_;
@@ -1229,6 +1238,7 @@ double BVS_Sampler::logPzetaK(
 double BVS_Sampler::HamiltonianBetas(
     unsigned int I,
     arma::mat& proposedBeta,
+    const arma::mat& betas_,
     const arma::uvec& updateIdx0,
     unsigned int componentUpdateIdx,
 
@@ -1270,6 +1280,7 @@ double BVS_Sampler::HamiltonianBetas(
     U = - logPbetaK(componentUpdateIdx, proposedBeta, tauSqK, kappa_, datTheta, datProportion, dataclass);
     H -= U + 0.5 * arma::as_scalar(r.t() * r); // HMC target ratio (difference between intial and final energy)
 
+    if( std::log(R::runif(0,1)) >= H ) proposedBeta = betas_;
     /*
     if( std::log(R::runif(0,1)) < H )
     {
@@ -1371,6 +1382,7 @@ arma::vec BVS_Sampler::gradientLogPbetas(
 double BVS_Sampler::HamiltonianZetas(
     unsigned int I,
     arma::mat& proposedZeta,
+    const arma::mat& zetas_,
     const arma::uvec& updateIdx0,
     unsigned int componentUpdateIdx,
 
@@ -1411,6 +1423,7 @@ double BVS_Sampler::HamiltonianZetas(
     U = -logPzetaK(componentUpdateIdx, proposedZeta, wSqK, kappa_, datTheta, weibullS, weibullLambda, dataclass);
     H -= U + 0.5 * arma::as_scalar(r.t() * r); // HMC target ratio (difference between intial and final energy)
 
+    if( std::log(R::runif(0,1)) >= H ) proposedZeta = zetas_;
     /*
     if( std::log(R::runif(0,1)) < H )
     {
