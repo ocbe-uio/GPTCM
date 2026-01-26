@@ -4,8 +4,10 @@
 
 * Update survival curve's ylab in vignette
 * Add symmetric and MALA RW-MH for the gamma-beta move
+* Implement Hamiltonian proposal for MH gamma-beta move
 * TODO: ask chatGPT to check if all specified truncation with bounds are sufficient
 * TODO: update vignette
+* TODO: copy other every small piece of theory and corresponding code for GPT to review
 
 ### GPTCM 1.1.3 (2025-11-01)
 

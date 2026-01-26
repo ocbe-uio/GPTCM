@@ -29,7 +29,7 @@
 #' @param BVS logical value for implementing Bayesian variable selection
 #' @param RW.MH string indicating the type of random-walk variance in MH 
 #' sampling for gamma-beta move, one of 
-#' \code{c("fisher", "adaptive", "symmetric")}
+#' \code{c("fisher", "hamiltonian", "symmetric")}
 #' @param sigmaMH a vector of two factors for the random-walk moving step for 
 #' gamma-beta and eta-zeta move
 #' @param threads maximum threads used for parallelization. Default is 1

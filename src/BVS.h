@@ -212,6 +212,62 @@ private:
         const DataClass& dataclass
     );
 
+    static double HamiltonianBetas(
+        unsigned int I,
+        arma::mat& proposedBeta,
+        const arma::uvec& updateIdx0,
+        unsigned int componentUpdateIdx,
+
+        const arma::vec& datTheta,
+        const arma::mat& datProportion,
+        const arma::mat& weibullS,
+        const arma::mat& weibullLambda,
+        double kappa_,
+        double tauSqK,
+        double eps,
+        const DataClass &dataclass
+    );
+
+    static arma::vec gradientLogPbetas(
+        const arma::mat& betas,
+        const arma::uvec& updateIdx0,
+        unsigned int componentUpdateIdx,
+
+        const arma::vec& datTheta,
+        const arma::mat& datProportion,
+        double kappa_,
+        double tauSqK,
+        const DataClass &dataclass
+    );
+
+    static double HamiltonianZetas(
+        unsigned int I,
+        arma::mat& proposedZeta,
+        const arma::uvec& updateIdx0,
+        unsigned int componentUpdateIdx,
+
+        const arma::vec& datTheta,
+        const arma::mat& weibullS,
+        const arma::mat& weibullLambda,
+        double kappa_,
+        double wSqK,
+        double eps,
+        const DataClass &dataclass
+    );
+
+    static arma::vec gradientLogPzetas(
+        const arma::mat& zetas,
+        const arma::uvec& updateIdx0,
+        unsigned int componentUpdateIdx,
+
+        const arma::vec& datTheta,
+        const arma::mat& weibullS,
+        const arma::mat& weibullLambda,
+        double kappa_,
+        double wSqK,
+        const DataClass &dataclass
+    );
+
     static double MALAbetas(
         arma::mat& proposedBeta,
         const arma::mat& betas_,
@@ -271,8 +327,6 @@ private:
         double eps,
         const DataClass &dataclass
     );
-
-    static double logPDFNormal(const arma::vec& x, const double& sigmaSq);
 
     static double gammaMC3Proposal(
         unsigned int p,
@@ -338,12 +392,13 @@ private:
         const arma::vec& m,
         const arma::mat& Sigma
     );
-    /*
+    
     static double logPDFNormal(
         const arma::vec& x,
-        const double& sigmaSq
+        double sigmaSq
     );
-    */
+
+    static arma::uvec setdiff_preserve_order(const arma::uvec& A, const arma::uvec& B);
 };
 
 // function logPDFMRF() is not yet used

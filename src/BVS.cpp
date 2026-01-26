@@ -360,40 +360,97 @@ void BVS_Sampler::sampleGamma(
     arma::mat proposedBeta = betas_;
     
     // RW-MH
-    if (arma::as_scalar(arma::any(proposedGamma(updateIdx, singleIdx_k)))) 
-    {
-        arma::uvec updateIdx0 = arma::find(proposedGamma(updateIdx, singleIdx_k) == 1);
-        updateIdx0 = updateIdx(updateIdx0);
-        unsigned int J = updateIdx0.n_elem;
-        if (rw_mh != "symmetric")
-        {
-            // double c = std::exp(a);
 
-            // Update proposal ratio with beta part
-            logProposalRatio -= MALAbetas(proposedBeta, betas_, updateIdx0, componentUpdateIdx, 
-                datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
-            logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0, componentUpdateIdx, 
-                datTheta, datProportion, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
-            
-        } else {//if( arma::any(gammas_(updateIdx,singleIdx_k)) ) {
-            // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2})
-            arma::vec u = Rcpp::rnorm( J, 0., sigmaMH_beta * 1. / std::sqrt(J) ); 
-            proposedBeta(1+updateIdx0, singleIdx_k) += u;
+    // forward active subset updateIdx for proposal/prior evaluated on proposedBeta
+    arma::uvec updateIdx0 = arma::find(proposedGamma(updateIdx, singleIdx_k) == 1);
+    updateIdx0 = updateIdx(updateIdx0);
+    // reverse active subset updateIdx0_rev for proposal/prior evaluated on betas
+    arma::uvec updateIdx0_rev = arma::find(gammas_(updateIdx, singleIdx_k) == 1);
+    updateIdx0_rev = updateIdx(updateIdx0_rev);
+
+    // Zero inactive coefficients, so energies/gradients reflect proposed γ
+    arma::uvec off_prop = arma::find(proposedGamma.col(componentUpdateIdx) == 0);
+    if (!off_prop.is_empty()) {
+        proposedBeta(1 + off_prop, singleIdx_k).zeros();
+    }
+
+    // if (arma::as_scalar(arma::any(proposedGamma(updateIdx, singleIdx_k)))) {
+    bool used_hmc = false;
+    if (rw_mh != "symmetric")
+    {
+        // double c = std::exp(a);
+
+        // Update proposal ratio with beta part
+        if (rw_mh == "fisher") {
+            if (updateIdx0.n_elem > 0) {
+                logProposalRatio -= MALAbetas(proposedBeta, betas_, updateIdx0, componentUpdateIdx, 
+                    datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
+            }
+            if (updateIdx0_rev.n_elem > 0) {
+                logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0_rev, componentUpdateIdx, 
+                    datTheta, datProportion, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
+            }
+        } else { // Hamiltonian proposal
+            if (updateIdx0.n_elem > 0) {
+                used_hmc = true;
+                // iterations for the leapfrog steps
+                unsigned int I = 3; 
+                // add ΔH contributing to the Hastings correction
+                logProposalRatio += HamiltonianBetas(I, proposedBeta, updateIdx0, componentUpdateIdx, 
+                    datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
+            }
+        }
+        
+    } else {//if( arma::any(gammas_(updateIdx,singleIdx_k)) ) {
+        // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
+        
+        // Symmetric RW-MH with birth handling
+        arma::uvec birth = setdiff_preserve_order(updateIdx0, updateIdx0_rev);       // newly active
+        arma::uvec death = setdiff_preserve_order(updateIdx0_rev, updateIdx0);       // becoming inactive
+        arma::uvec stay  = arma::intersect(updateIdx0, updateIdx0_rev);              // active both sides
+
+        // Forward births: draw and subtract forward density
+        if (birth.n_elem > 0) {
+            double s_birth_fwd = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+            arma::vec bdraw = Rcpp::rnorm(birth.n_elem, 0.0, s_birth_fwd);
+            proposedBeta(1 + birth, singleIdx_k) = bdraw;
+            logProposalRatio -= logPDFNormal(bdraw, s_birth_fwd * s_birth_fwd);      // −log q(proposed|current)
+        }
+
+        // Reverse births (i.e., forward deaths): add reverse density at current values
+        if (death.n_elem > 0) {
+            double s_birth_rev = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+            arma::vec bcurr = betas_(1 + death, singleIdx_k);                 // current coefficients
+            logProposalRatio += logPDFNormal(bcurr, s_birth_rev * s_birth_rev);      // +log q(current|proposed)
+        }
+
+        // Symmetric RW on stay only
+        unsigned int J_stay = stay.n_elem;
+        if (J_stay > 0) {
+            double s_rw = sigmaMH_beta * 2.38 / std::sqrt(J_stay);
+            arma::vec u = Rcpp::rnorm(J_stay, 0.0, s_rw);
+            proposedBeta(1 + stay, singleIdx_k) += u;
+            // No density term: symmetric RW cancels
         }
     }
-    proposedBeta(1+arma::find(proposedGamma.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
+    // }
+    // proposedBeta(1+arma::find(proposedGamma.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
 
-    // prior ratio of beta
-    double logPriorBetaRatio = 0.;
-    logPriorBetaRatio += logPDFNormal(proposedBeta(1+updateIdx,singleIdx_k), tauSq_[componentUpdateIdx]);
-    logPriorBetaRatio -= logPDFNormal(betas_(1+updateIdx,singleIdx_k), tauSq_[componentUpdateIdx]);
-
-    // compute logLikelihoodRatio, i.e. proposedLikelihood - log_likelihood
+    // prior/likelihood ratios
+    double logPriorBetaRatio = 0.; 
+    double logLikelihoodRatio = 0.; 
     arma::vec proposedLikelihood = log_likelihood_;
-    // loglikelihood( xi_, zetas_, betas_, kappa_, proportion_model, dataclass, log_likelihood_ );
-    loglikelihood( xi_, zetas_, proposedBeta, kappa_, proportion_model, dataclass, proposedLikelihood );
+    if(!used_hmc) // HMC already accounted in ΔH 
+    {
+        // prior ratio of beta
+        logPriorBetaRatio += logPDFNormal(proposedBeta(1+updateIdx0,singleIdx_k), tauSq_[componentUpdateIdx]);
+        logPriorBetaRatio -= logPDFNormal(betas_(1+updateIdx0_rev,singleIdx_k), tauSq_[componentUpdateIdx]);
 
-    double logLikelihoodRatio = arma::sum(proposedLikelihood - log_likelihood_);
+        // compute logLikelihoodRatio, i.e. proposedLikelihood - log_likelihood
+        // loglikelihood( xi_, zetas_, betas_, kappa_, proportion_model, dataclass, log_likelihood_ ); // TODO: this can be removed
+        loglikelihood( xi_, zetas_, proposedBeta, kappa_, proportion_model, dataclass, proposedLikelihood );
+        logLikelihoodRatio = arma::sum(proposedLikelihood - log_likelihood_);
+    }
 
     // Here we need always compute the proposal and original ratios, in particular the likelihood, since betas are updated
     //logProposalGammaRatio = arma::accu(proposedGammaPrior - logP_gamma);
@@ -426,8 +483,13 @@ void BVS_Sampler::sampleGamma(
             // pi[componentUpdateIdx] = pi_proposed;
 
         }
-        log_likelihood_ = proposedLikelihood;
         betas_ = proposedBeta;
+        // Update log_likelihood_ at the accepted state
+        if (used_hmc) {
+            loglikelihood(xi_, zetas_, betas_, kappa_, proportion_model, dataclass, log_likelihood_);
+        } else {
+            log_likelihood_ = proposedLikelihood;
+        }
         // logPosteriorBeta = logPosteriorBeta_proposal;
 
         ++gamma_acc_count_;
@@ -647,41 +709,101 @@ void BVS_Sampler::sampleEta(
     arma::mat proposedZeta = zetas_;
     
     // RW-MH
-    if (arma::as_scalar(arma::any(proposedEta(updateIdx, singleIdx_k))))
-    {
-        arma::uvec updateIdx0 = arma::find(proposedEta(updateIdx, singleIdx_k) == 1);
-        updateIdx0 = updateIdx(updateIdx0);
-        if (rw_mh != "symmetric")
-        {
-            // double c = std::exp(a);
 
+    // forward active subset updateIdx0 for proposal/prior evaluated on proposedGamma
+    arma::uvec updateIdx0 = arma::find(proposedEta(updateIdx, singleIdx_k) == 1);
+    updateIdx0 = updateIdx(updateIdx0);
+    // reverse active subset updateIdx0_rev for proposal/prior evaluated on gammas
+    arma::uvec updateIdx0_rev = arma::find(etas_(updateIdx, singleIdx_k) == 1);
+    updateIdx0_rev = updateIdx(updateIdx0_rev);
+
+    // Zero inactive zetas BEFORE HMC
+    arma::uvec off_prop_eta = arma::find(proposedEta.col(componentUpdateIdx) == 0);
+    if (!off_prop_eta.is_empty()) {
+        proposedZeta(1 + off_prop_eta, singleIdx_k).zeros();
+    }
+
+    // if (arma::as_scalar(arma::any(proposedEta(updateIdx, singleIdx_k)))) {
+    bool used_hmc = false;
+    if (rw_mh != "symmetric")
+    {
+        // double c = std::exp(a);
+
+        if (rw_mh == "fisher") {
             // Update proposal ratio with beta part
             // logProposalRatio -= logPDFNormal(proposedZeta(1 + updateIdx0, singleIdx_k), m, Sigma); 
             // logProposalRatio += logPDFNormal(zetas_(1 + updateIdx0, singleIdx_k), m_mutant, Sigma_mutant);// TODO: use proposedZeta to repeat the above steps (wrap into a func) to obtain m_mutant & Sigma_mutant
-            logProposalRatio -= MALAzetas(proposedZeta, zetas_, updateIdx0, componentUpdateIdx, 
-                datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
-            logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0, componentUpdateIdx, 
-                datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+                if (updateIdx0.n_elem > 0) {
+                    logProposalRatio -= MALAzetas(proposedZeta, zetas_, updateIdx0, componentUpdateIdx, 
+                        datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+                }
+            
+            // arma::uvec updateIdx0_rev = arma::find(etas_(updateIdx, singleIdx_k) == 1);
+            // updateIdx0_rev = updateIdx(updateIdx0_rev);
+            if (updateIdx0_rev.n_elem > 0) {
+                logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0_rev, componentUpdateIdx, 
+                    datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+            }
+        } else {// Hamiltonian proposal
+            if (updateIdx0.n_elem > 0) {
+                used_hmc = true;
+                // iterations for the leapfrog steps
+                unsigned int I = 3; 
+                // add ΔH contributing to the Hastings correction
+                logProposalRatio += HamiltonianZetas(I, proposedZeta, updateIdx0, componentUpdateIdx, 
+                    datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+            }
+        }
 
-        } else {//if( arma::any(etas_(updateIdx,singleIdx_k)) ) {
-            // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2})
-            arma::vec u = Rcpp::rnorm( updateIdx0.n_elem, 0., sigmaMH_zeta * 1. / std::sqrt(updateIdx0.n_elem) ); 
-            proposedZeta(1+updateIdx0, singleIdx_k) += u;
+    } else {//if( arma::any(etas_(updateIdx,singleIdx_k)) ) {
+        // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
+        // Symmetric RW-MH with birth handling
+        arma::uvec birth = setdiff_preserve_order(updateIdx0, updateIdx0_rev);
+        arma::uvec death = setdiff_preserve_order(updateIdx0_rev, updateIdx0);
+        arma::uvec stay  = arma::intersect(updateIdx0, updateIdx0_rev);
+
+        // Forward births
+        if (birth.n_elem > 0) {
+            double s_birth_fwd = std::max(std::sqrt(wSq_[componentUpdateIdx]), 1.0);
+            arma::vec zdraw = Rcpp::rnorm(birth.n_elem, 0.0, s_birth_fwd);
+            proposedZeta(1 + birth, singleIdx_k) = zdraw;
+            logProposalRatio -= logPDFNormal(zdraw, s_birth_fwd * s_birth_fwd);
+        }
+
+        // Reverse births (forward deaths)
+        if (death.n_elem > 0) {
+            double s_birth_rev = std::max(std::sqrt(wSq_[componentUpdateIdx]), 1.0);
+            arma::vec zcurr = zetas_(1 + death, singleIdx_k);
+            logProposalRatio += logPDFNormal(zcurr, s_birth_rev * s_birth_rev);
+        }
+
+        // Symmetric RW on stay
+        unsigned int J_stay = stay.n_elem;
+        if (J_stay > 0) {
+            double s_rw = sigmaMH_zeta * 2.38 / std::sqrt(J_stay);
+            arma::vec u = Rcpp::rnorm(J_stay, 0.0, s_rw);
+            proposedZeta(1 + stay, singleIdx_k) += u;
         }
     }
-    proposedZeta(1+arma::find(proposedEta.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
+    // }
+    // proposedZeta(1+arma::find(proposedEta.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
 
-    // prior ratio of zeta
-    double logPriorZetaRatio = 0.;
-    logPriorZetaRatio += logPDFNormal(proposedZeta(1+updateIdx,singleIdx_k), wSq_[componentUpdateIdx]);
-    logPriorZetaRatio -= logPDFNormal(zetas_(1+updateIdx,singleIdx_k), wSq_[componentUpdateIdx]);
-
-    // compute logLikelihoodRatio, i.e. proposedLikelihood - log_likelihood
+    // prior/likelihood ratios
+    double logPriorZetaRatio = 0.; 
+    double logLikelihoodRatio = 0.; 
     arma::vec proposedLikelihood = log_likelihood_;
-    // loglikelihood( xi_, zetas_, betas_, kappa_, true, dataclass, log_likelihood_ );
-    loglikelihood( xi_, proposedZeta, betas_, kappa_, true, dataclass, proposedLikelihood );
+    if(!used_hmc) // HMC already accounted in ΔH 
+    {
+        logPriorZetaRatio += logPDFNormal(proposedZeta(1+updateIdx0,singleIdx_k), wSq_[componentUpdateIdx]);
+        logPriorZetaRatio -= logPDFNormal(zetas_(1+updateIdx0_rev,singleIdx_k), wSq_[componentUpdateIdx]);
 
-    double logLikelihoodRatio = arma::sum(proposedLikelihood - log_likelihood_);
+        // compute logLikelihoodRatio, i.e. proposedLikelihood - log_likelihood
+        // TODO: re-check if updating log_likelihood_ is needed here
+        // loglikelihood( xi_, zetas_, betas_, kappa_, true, dataclass, log_likelihood_ ); // TODO: this can be removed
+        loglikelihood( xi_, proposedZeta, betas_, kappa_, true, dataclass, proposedLikelihood );
+        logLikelihoodRatio = arma::sum(proposedLikelihood - log_likelihood_);
+    }
+
 
     // Here we need always compute the proposal and original ratios, in particular the likelihood, since betas are updated
     double logAccProb = logLikelihoodRatio +
@@ -698,8 +820,12 @@ void BVS_Sampler::sampleEta(
             // rho[componentUpdateIdx] = rho_proposed;
 
         }
-        log_likelihood_ = proposedLikelihood;
         zetas_ = proposedZeta;
+        if (used_hmc) {
+            loglikelihood(xi_, zetas_, betas_, kappa_, true, dataclass, log_likelihood_);
+        } else {
+            log_likelihood_ = proposedLikelihood;
+        }
         // logPosteriorZeta = logPosteriorZeta_proposal;
 
         ++eta_acc_count_;
@@ -1012,7 +1138,9 @@ double BVS_Sampler::logPbetaK(
     unsigned int L = dataclass.datX.n_slices;
 
     // compute log density
-    double logprior = - arma::sum(betas.col(k) % betas.col(k)) / tauSq / 2.;
+    // double logprior = - arma::sum(betas.col(k) % betas.col(k)) / tauSq / 2.;
+    arma::uvec singleIdx_k = { k };
+    double logprior = - arma::accu(betas.submat(1, k, p, k) % betas.submat(1, k, p, k)) / tauSq / 2.;
 
     arma::vec logpost_first = arma::zeros<arma::vec>(N);
     // arma::vec logpost_second= arma::zeros<arma::vec>(N);
@@ -1097,6 +1225,286 @@ double BVS_Sampler::logPzetaK(
     return logP;
 }
 
+// Hamiltonian proposal for betaK in RW-MH for (beta, gamma) sampling
+double BVS_Sampler::HamiltonianBetas(
+    unsigned int I,
+    arma::mat& proposedBeta,
+    const arma::uvec& updateIdx0,
+    unsigned int componentUpdateIdx,
+
+    const arma::vec& datTheta,
+    const arma::mat& datProportion,
+    const arma::mat& weibullS,
+    const arma::mat& weibullLambda,
+    double kappa_,
+    double tauSqK,
+    double eps,
+    const DataClass &dataclass)
+{
+    // intial momentum
+    arma::vec r = Rcpp::rnorm( updateIdx0.n_elem, 0., 1. ); 
+
+    // Hamiltonian engery
+    double U = - logPbetaK(componentUpdateIdx, proposedBeta, tauSqK, kappa_, datTheta, datProportion, dataclass); 
+    double H = U + 0.5 * arma::as_scalar(r.t() * r); // initial engery
+    // double logPriorRatio = - logPDFNormal(r, 1.0);
+
+    arma::uvec singleIdx_k = { componentUpdateIdx };
+    arma::vec gradient_betaK;
+    for(unsigned int i = 0; i < I; ++i) {
+        // Compute the negative of the score function
+        gradient_betaK = - gradientLogPbetas(proposedBeta, updateIdx0, componentUpdateIdx, datTheta, datProportion, kappa_, tauSqK, dataclass);
+
+        // Half-step for momentum
+        r -= 0.5 * eps * gradient_betaK;
+
+        // Full-step for momentum
+        proposedBeta(1 + updateIdx0, singleIdx_k) += eps * r;
+
+        // Final half-step for momentum
+        gradient_betaK = - gradientLogPbetas(proposedBeta, updateIdx0, componentUpdateIdx, datTheta, datProportion, kappa_, tauSqK, dataclass);
+        r -= 0.5 * eps * gradient_betaK;
+    }
+
+    // log acceptance ratio
+    U = - logPbetaK(componentUpdateIdx, proposedBeta, tauSqK, kappa_, datTheta, datProportion, dataclass);
+    H -= U + 0.5 * arma::as_scalar(r.t() * r); // HMC target ratio (difference between intial and final energy)
+
+    /*
+    if( std::log(R::runif(0,1)) < H )
+    {
+        logPriorRatio += logPDFNormal(r, 1.0);
+    } else {
+        logPriorRatio = 0.;
+        proposedBeta = betas_;
+    }
+
+    return logPriorRatio;
+    */
+    return H;
+}
+
+// gradient of log posterior betaK
+arma::vec BVS_Sampler::gradientLogPbetas(
+    const arma::mat& betas,
+    const arma::uvec& updateIdx0,
+    unsigned int componentUpdateIdx,
+
+    const arma::vec& datTheta,
+    const arma::mat& datProportion,
+    double kappa_,
+    double tauSqK,
+    const DataClass &dataclass)
+{
+    // dimensions
+    unsigned int n = dataclass.datX.n_rows;
+    unsigned int p = dataclass.datX.n_cols;
+    unsigned int L = dataclass.datX.n_slices;
+    arma::uvec singleIdx_k = { componentUpdateIdx };
+
+    // Precompute a and powers
+    arma::vec a;                // n-vector
+    arma::vec a_power_kappa;    // z_il^kappa
+
+    // s_l = κ / λ_il * (t_i/λ_il)^{κ-1} * p_il * S_l(t_i)
+    arma::vec s_l; //= (kappa_ / weibullLambda.col(componentUpdateIdx)) % arma::pow(a, kappa_ - 1.0) % datProportion.col(componentUpdateIdx) % weibullS.col(componentUpdateIdx);
+    arma::vec weibullS_l;
+
+    // S = sum over components of κ / λ * (t/λ)^{κ-1} * p * S(t)
+    arma::vec S(n, arma::fill::zeros);
+    for (unsigned int l = 0; l < L; ++l) 
+    {
+        // Recompute quantities conditional on betas
+        arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betas.submat(1, l, p, l);
+        logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+        arma::vec mu_l = arma::exp(logMu_l);
+        arma::vec weibull_lambdas_l = mu_l / std::tgamma(1. + 1./kappa_);
+        arma::vec weibullS_l_tmp = arma::exp( - arma::pow( dataclass.datTime / weibull_lambdas_l, kappa_) );
+
+        arma::vec a_tmp = dataclass.datTime / weibull_lambdas_l;
+        arma::vec s_tmp = (kappa_ / weibull_lambdas_l) % arma::pow(a_tmp, kappa_ - 1.0) % datProportion.col(l) % weibullS_l_tmp;
+        S += s_tmp;
+
+        // Save quantities w.r.t. componentUpdateIdx for later use
+        if(l == componentUpdateIdx) {
+            a = a_tmp;
+            a_power_kappa = arma::pow(a, kappa_);       
+            s_l = s_tmp;
+            weibullS_l = weibullS_l_tmp;
+        }
+    }
+
+    // Per-observation weights w_i (likelihood-only score part)
+    arma::vec w_i(n);
+
+    // Stabilize division s_l / S
+    const double eps_div = 1e-12;
+    arma::vec S_safe = S + eps_div;
+
+    // First term: −δ_i * (s_il / S_i) * (1 − z_il^κ)
+    w_i  = - dataclass.datEvent
+        % (s_l / S_safe)
+        % (1.0 - a_power_kappa);
+
+    // Second term: + θ_i * p_il * S_l(t_i) * z_il^κ
+    w_i += datTheta
+        % datProportion.col(componentUpdateIdx)
+        % weibullS_l
+        % a_power_kappa;
+
+    // Design matrix and likelihood-only per-observation gradients
+    arma::mat X_l = dataclass.datX.slice(componentUpdateIdx).cols(updateIdx0);     // n x p
+    const double G = std::tgamma(1.0 + 1.0 / kappa_);                              // Γ(1 + 1/κ)
+
+    // gradient_betaK_i0 = (κ / G) * X * w_i (likelihood-only)
+    arma::mat gradient_betaK_i0 = (kappa_ / G) * (X_l.each_col() % w_i);          // n x p
+
+    // Prior gradient at proposed (reverse direction)
+    arma::vec gradient_betaK = arma::sum(gradient_betaK_i0, 0).t();
+    gradient_betaK -= betas(1 + updateIdx0, singleIdx_k) / tauSqK;
+
+    return gradient_betaK;
+}
+
+
+// Hamiltonian proposal for zetaK in RW-MH for (zeta, eta) sampling
+double BVS_Sampler::HamiltonianZetas(
+    unsigned int I,
+    arma::mat& proposedZeta,
+    const arma::uvec& updateIdx0,
+    unsigned int componentUpdateIdx,
+
+    const arma::vec& datTheta,
+    const arma::mat& weibullS,
+    const arma::mat& weibullLambda,
+    double kappa_,
+    double wSqK,
+    double eps,
+    const DataClass &dataclass)
+{
+    // intial momentum
+    arma::vec r = Rcpp::rnorm( updateIdx0.n_elem, 0., 1. ); 
+
+    // Hamiltonian engery
+    double U = -logPzetaK(componentUpdateIdx, proposedZeta, wSqK, kappa_, datTheta, weibullS, weibullLambda, dataclass); 
+    double H = U + 0.5 * arma::as_scalar(r.t() * r); // initial engery
+    // double logPriorRatio = - logPDFNormal(r, 1.0);
+
+    arma::uvec singleIdx_k = { componentUpdateIdx };
+    arma::vec gradient_zetaK;
+    for(unsigned int i = 0; i < I; ++i) {
+        // Compute the negative of the score function
+        gradient_zetaK = -gradientLogPzetas(proposedZeta, updateIdx0, componentUpdateIdx, datTheta, weibullS, weibullLambda, kappa_, wSqK, dataclass);
+
+        // Half-step for momentum
+        r -= 0.5 * eps * gradient_zetaK;
+
+        // Full-step for momentum
+        proposedZeta(1 + updateIdx0, singleIdx_k) += eps * r;
+
+        // Final half-step for momentum
+        gradient_zetaK = -gradientLogPzetas(proposedZeta, updateIdx0, componentUpdateIdx, datTheta, weibullS, weibullLambda, kappa_, wSqK, dataclass);
+        r -= 0.5 * eps * gradient_zetaK;
+    }
+
+    // log acceptance ratio
+    U = -logPzetaK(componentUpdateIdx, proposedZeta, wSqK, kappa_, datTheta, weibullS, weibullLambda, dataclass);
+    H -= U + 0.5 * arma::as_scalar(r.t() * r); // HMC target ratio (difference between intial and final energy)
+
+    /*
+    if( std::log(R::runif(0,1)) < H )
+    {
+        logPriorRatio += logPDFNormal(r, 1.0);
+    } else {
+        logPriorRatio = 0.;
+        proposedZeta = zetas_;
+    }
+
+    return logPriorRatio;
+    */
+    return H;
+}
+
+// gradient of log posterior zetaK
+arma::vec BVS_Sampler::gradientLogPzetas(
+    const arma::mat& zetas,
+    const arma::uvec& updateIdx0,
+    unsigned int componentUpdateIdx,
+
+    const arma::vec& datTheta,
+    const arma::mat& weibullS,
+    const arma::mat& weibullLambda,
+    double kappa_,
+    double wSqK,
+    const DataClass &dataclass)
+{
+    // dimensions
+    unsigned int n = dataclass.datX.n_rows;
+    unsigned int p = dataclass.datX.n_cols;
+    unsigned int L = dataclass.datX.n_slices;
+    arma::uvec singleIdx_k = { componentUpdateIdx };
+
+    // Compute alphas: n x L
+    arma::mat alphas = arma::zeros<arma::mat>(n, L);
+    for (unsigned int l = 0; l < L; ++l) {
+        // zetas_: (p+1) x L: intercept zeta(0,j); coefficients zeta(1..p, j)
+        alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetas.submat(1, l, p, l) );
+    }
+    arma::vec alpha0 = arma::sum(alphas, 1);  
+
+    // Weights and C for component l
+    arma::vec omega_l; //= alphas.col(l) / alpha0;
+    arma::vec C_l; //= arma::pow(weibullLambda.col(l), -kappa_) % weibullS.col(l);
+
+    // M_i = sum_j ω_ij C_ij and N_i = sum_j ω_ij S_j(t_i)
+    arma::vec M_i = arma::zeros<arma::vec>(n);
+    arma::vec N_i = arma::zeros<arma::vec>(n);
+    for (unsigned int l = 0; l < L; ++l) 
+    {
+        arma::vec omega_l_tmp = alphas.col(l) / alpha0;
+        arma::vec C_l_tmp = arma::pow(weibullLambda.col(l), -kappa_) % weibullS.col(l);
+        M_i += omega_l_tmp % C_l_tmp;
+        N_i += omega_l_tmp % weibullS.col(l);
+
+        if (l == componentUpdateIdx) 
+        {
+            omega_l = omega_l_tmp;
+            C_l = C_l_tmp;
+        }
+    }
+
+    // Per-observation scalar weights w_i (likelihood-only score part)
+    arma::vec w_i(n);
+
+    // Stabilize division C_l / M_i
+    const double eps_div = 1.0e-12;
+    arma::vec M_i_safe = M_i + eps_div;
+
+    w_i  = dataclass.datEvent % omega_l % (C_l / M_i_safe - 1.0);                 // δ_i * ω_il * (C_il/M_i - 1)
+    w_i += datTheta           % omega_l % (weibullS.col(componentUpdateIdx) - N_i);                 // θ_i * ω_il * (S_l - N_i)
+
+    // Digamma and Dirichlet-like terms
+    arma::vec digamma_alpha0  = Rcpp::digamma(Rcpp::wrap(alpha0));
+    arma::vec alpha_l         = alphas.col(componentUpdateIdx);
+    arma::vec digamma_alpha_l = Rcpp::digamma(Rcpp::wrap(alpha_l));
+
+    w_i += alpha_l % (digamma_alpha0 - digamma_alpha_l);                           // α_il [ψ(α_i0) − ψ(α_il)]
+    w_i += alpha_l % arma::log(dataclass.datProportionConst.col(componentUpdateIdx));               // α_il log p̃_il
+
+    // Design matrix for component l, restricted to updated coordinates
+    arma::mat X_l = dataclass.datX.slice(componentUpdateIdx).cols(updateIdx0);                       // n x p (d = updateIdx.n_elem)
+
+    // Likelihood-only per-observation gradients: n x p
+    arma::mat gradient_zetaK_i0 = X_l.each_col() % w_i;
+
+    // Prior gradient at proposed (reverse direction)
+    arma::vec gradient_zetaK = arma::sum(gradient_zetaK_i0, 0).t();
+    gradient_zetaK -= zetas(1 + updateIdx0, singleIdx_k) / wSqK;
+
+    return gradient_zetaK;
+}
+
+
 // MALA for betaK proposal in RW-MH for (beta, gamma) sampling
 double BVS_Sampler::MALAbetas(
     arma::mat& proposedBeta,
@@ -1113,6 +1521,7 @@ double BVS_Sampler::MALAbetas(
     double eps,
     const DataClass &dataclass)
 {
+    /*
     // dimensions
     unsigned int n = dataclass.datX.n_rows;
     unsigned int L = dataclass.datX.n_slices;
@@ -1137,6 +1546,44 @@ double BVS_Sampler::MALAbetas(
         % datProportion.col(l)
         % weibullS.col(l);
     }
+    */
+    // dimensions
+    unsigned int n = dataclass.datX.n_rows;
+    unsigned int p = dataclass.datX.n_cols;
+    unsigned int L = dataclass.datX.n_slices;
+    arma::uvec singleIdx_k = { componentUpdateIdx };
+
+    // Precompute a and powers
+    arma::vec a;                // n-vector
+    arma::vec a_power_kappa;    // z_il^kappa
+
+    // s_l = κ / λ_il * (t_i/λ_il)^{κ-1} * p_il * S_l(t_i)
+    arma::vec s_l; //= (kappa_ / weibullLambda.col(componentUpdateIdx)) % arma::pow(a, kappa_ - 1.0) % datProportion.col(componentUpdateIdx) % weibullS.col(componentUpdateIdx);
+    arma::vec weibullS_l;
+
+    // S = sum over components of κ / λ * (t/λ)^{κ-1} * p * S(t)
+    arma::vec S(n, arma::fill::zeros);
+    for (unsigned int l = 0; l < L; ++l) 
+    {
+        // Recompute quantities conditional on betas_
+        arma::vec logMu_l = betas_(0, l) + dataclass.datX.slice(l) * betas_.submat(1, l, p, l);
+        logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+        arma::vec mu_l = arma::exp(logMu_l);
+        arma::vec weibull_lambdas_l = mu_l / std::tgamma(1. + 1./kappa_);
+        arma::vec weibullS_l_tmp = arma::exp( - arma::pow( dataclass.datTime / weibull_lambdas_l, kappa_) );
+
+        arma::vec a_tmp = dataclass.datTime / weibull_lambdas_l;
+        arma::vec s_tmp = (kappa_ / weibull_lambdas_l) % arma::pow(a_tmp, kappa_ - 1.0) % datProportion.col(l) % weibullS_l_tmp;
+        S += s_tmp;
+
+        // Save quantities w.r.t. componentUpdateIdx for later use
+        if(l == componentUpdateIdx) {
+            a = a_tmp;
+            a_power_kappa = arma::pow(a, kappa_);       
+            s_l = s_tmp;
+            weibullS_l = weibullS_l_tmp;
+        }
+    }
 
     // Stabilize division s_l / S
     const double eps_div = 1e-12;
@@ -1151,7 +1598,7 @@ double BVS_Sampler::MALAbetas(
     // Second term: + θ_i * p_il * S_l(t_i) * z_il^κ
     w_i += datTheta
         % datProportion.col(componentUpdateIdx)
-        % weibullS.col(componentUpdateIdx)
+        % weibullS_l
         % a_power_kappa;
 
     // Design matrix and likelihood-only per-observation gradients
@@ -1656,7 +2103,7 @@ double BVS_Sampler::logPDFBeta(double x, double a, double b)
 			return -lBeta(a,b) + (a-1)*log(x) + (b-1)*log(1-x);
 }
 */
-double BVS_Sampler::logPDFNormal(const arma::vec& x, const double& sigmaSq)  // zeroMean and independentVar
+double BVS_Sampler::logPDFNormal(const arma::vec& x, double sigmaSq)  // zeroMean and independentVar
 {
     unsigned int k = x.n_elem;
     double tmp = (double)k * std::log(sigmaSq); // log-determinant(Sigma)
@@ -1725,6 +2172,23 @@ double BVS_Sampler::logPDFNormal(
     return -0.5*(double)k*log(2.*M_PI) -0.5*tmp -0.5* arma::as_scalar( (x-m).t() * arma::inv_sympd(Sigma) * (x-m) );
 
 }
+
+// Compute set difference: elements of A that are not in B, preserving A's order
+arma::uvec BVS_Sampler::setdiff_preserve_order(const arma::uvec& A, const arma::uvec& B) {
+    std::unordered_set<arma::uword> bset;
+    bset.reserve(B.n_elem);
+    for (arma::uword x : B) bset.insert(x);
+
+    std::vector<arma::uword> out;
+    out.reserve(A.n_elem);
+    for (arma::uword x : A) {
+        if (bset.find(x) == bset.end()) {
+            out.push_back(x);
+        }
+    }
+    return arma::uvec(out);
+}
+
 
 /*
 double logPDFMRF(const arma::umat& externalGamma, const arma::mat& mrfG, double a, double b )

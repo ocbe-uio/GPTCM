@@ -486,20 +486,6 @@ Rcpp::List run_mcmc(
                         "] " << (int)((m + 1.) / nIter * 100.0) << "%\r";             // printing percentage
 
 
-        // update \beta's variacnes tau0Sq, tauSq
-        tau0Sq = sampleV(hyperpar->tau0A, hyperpar->tau0B, betas.row(0).t());
-        for (unsigned int l=0; l<L; ++l)
-        {
-            tauSq[l] = sampleV(hyperpar->tauA, hyperpar->tauB, betas.submat(1,l,p,l));
-        }
-
-        // update \xi's variance vSq
-        v0Sq = sampleV0(hyperpar->v0A, hyperpar->v0B, xi[0]);
-        // hyperpar->v0Sq = v0Sq;
-        vSq = sampleV(hyperpar->vA, hyperpar->vB, xi.subvec(1, xi.n_elem - 1));
-        // hyperpar->vSq = vSq;
-        // vSq_mcmc[1+m] = hyperpar->vSq;
-
         // update \xi's in cure fraction
         // the void function below passes the address of \xi and update it
         ARMS_Gibbs::arms_gibbs_xi //all key parameters can be declared as global variables and the arms functions be void
@@ -534,6 +520,15 @@ Rcpp::List run_mcmc(
         ); */
         // xi_mcmc.row(1+m) = xi.t();
 
+        // update \xi's variance vSq
+        // Updating the variance after coefficient updatesis generally better for mixing and avoids self-reinforcing shrinkage toward zero
+        v0Sq = sampleV0(hyperpar->v0A, hyperpar->v0B, xi[0]);
+        // hyperpar->v0Sq = v0Sq;
+        vSq = sampleV(hyperpar->vA, hyperpar->vB, xi.subvec(1, xi.n_elem - 1));
+        // hyperpar->vSq = vSq;
+        // vSq_mcmc[1+m] = hyperpar->vSq;
+
+
         // update cure rate based on the new xi
         logTheta = dataclass.datX0 * xi;
         logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
@@ -548,12 +543,6 @@ Rcpp::List run_mcmc(
                 // Here both etas and zetas are updated inside due to passing their addresses
                 if(BVS)
                 {
-                    // update \zeta's variacnes w0Sq, wSq
-                    w0Sq = sampleV(hyperpar->w0A, hyperpar->w0B, zetas.row(0).t());
-                    for (unsigned int l=0; l<L; ++l)
-                    {
-                        wSq[l] = sampleV(hyperpar->wA, hyperpar->wB, zetas.submat(1,l,p,l));
-                    }
                     //// update cluster-specific Bernoulli probability via Gibbs
                     // arma::vec rho = arma::zeros<arma::vec>(L); 
                     // for (unsigned int l=0; l<L; ++l)
@@ -602,6 +591,7 @@ Rcpp::List run_mcmc(
                 // }
 
                 // One more round update beside sampleEta(), more accurate
+                // TODO: disable ARMS_Gibbs::arms_gibbs_zeta() just to test whether ζ/η turn on
                 ARMS_Gibbs::arms_gibbs_zeta(
                     armsPar,
                     zetas,
@@ -617,6 +607,14 @@ Rcpp::List run_mcmc(
                     dataclass
                     // logPosteriorZeta
                 );
+
+                // update \zeta's variacnes w0Sq, wSq 
+                // Updating the variance after coefficient updatesis generally better for mixing and avoids self-reinforcing shrinkage toward zero
+                w0Sq = sampleV(hyperpar->w0A, hyperpar->w0B, zetas.row(0).t());
+                for (unsigned int l=0; l<L; ++l)
+                {
+                    wSq[l] = sampleV(hyperpar->wA, hyperpar->wB, zetas.submat(1,l,p,l));
+                }
 
                 // zeta_mcmc.row(1+m) = arma::vectorise(zetas).t();
 
@@ -709,6 +707,8 @@ Rcpp::List run_mcmc(
         // else
         // {
         // update \betas in non-cure fraction (one more round update besides in sampleGamma())
+
+        // TODO: disable ARMS_Gibbs::arms_gibbs_beta() just to test whether β/γ turn on
         ARMS_Gibbs::arms_gibbs_beta(
             armsPar,
             betas,
@@ -725,6 +725,14 @@ Rcpp::List run_mcmc(
             dataclass
             // logPosteriorBeta
         );
+
+        // update \beta's variacnes tau0Sq, tauSq
+        // Updating the variance after coefficient updatesis generally better for mixing and avoids self-reinforcing shrinkage toward zero
+        tau0Sq = sampleV(hyperpar->tau0A, hyperpar->tau0B, betas.row(0).t());
+        for (unsigned int l=0; l<L; ++l)
+        {
+            tauSq[l] = sampleV(hyperpar->tauA, hyperpar->tauB, betas.submat(1,l,p,l));
+        }
 
         // }
         // beta_mcmc.row(1+m) = arma::vectorise(betas).t();
