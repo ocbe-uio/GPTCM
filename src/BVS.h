@@ -272,7 +272,10 @@ private:
         const DataClass &dataclass
     );
 
-    static double logPDFNormal(const arma::vec& x, const double& sigmaSq);
+    static double logPDFNormal(
+        const arma::vec& x, 
+        double sigmaSq
+    );
 
     static double gammaMC3Proposal(
         unsigned int p,
@@ -338,12 +341,11 @@ private:
         const arma::vec& m,
         const arma::mat& Sigma
     );
-    /*
-    static double logPDFNormal(
-        const arma::vec& x,
-        const double& sigmaSq
+    
+    static arma::uvec setdiff_preserve_order(
+        const arma::uvec& A, 
+        const arma::uvec& B
     );
-    */
 };
 
 // function logPDFMRF() is not yet used

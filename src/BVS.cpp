@@ -360,11 +360,25 @@ void BVS_Sampler::sampleGamma(
     arma::mat proposedBeta = betas_;
     
     // RW-MH
+
+    // forward active subset updateIdx for proposal/prior evaluated on proposedBeta
+    arma::uvec updateIdx0 = arma::find(proposedGamma(updateIdx, singleIdx_k) == 1);
+    updateIdx0 = updateIdx(updateIdx0);
+    // reverse active subset updateIdx0_rev for proposal/prior evaluated on betas
+    arma::uvec updateIdx0_rev = arma::find(gammas_(updateIdx, singleIdx_k) == 1);
+    updateIdx0_rev = updateIdx(updateIdx0_rev);
+
+    // Zero inactive coefficients, so energies/gradients reflect proposed γ
+    arma::uvec off_prop = arma::find(proposedGamma.col(componentUpdateIdx) == 0);
+    if (!off_prop.is_empty()) {
+        proposedBeta(1 + off_prop, singleIdx_k).zeros();
+    }
+
     if (arma::as_scalar(arma::any(proposedGamma(updateIdx, singleIdx_k)))) 
     {
         arma::uvec updateIdx0 = arma::find(proposedGamma(updateIdx, singleIdx_k) == 1);
         updateIdx0 = updateIdx(updateIdx0);
-        unsigned int J = updateIdx0.n_elem;
+        // unsigned int J = updateIdx0.n_elem;
         if (rw_mh != "symmetric")
         {
             // double c = std::exp(a);
@@ -375,13 +389,41 @@ void BVS_Sampler::sampleGamma(
             logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0, componentUpdateIdx, 
                 datTheta, datProportion, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
             
-        } else {//if( arma::any(gammas_(updateIdx,singleIdx_k)) ) {
-            // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2})
-            arma::vec u = Rcpp::rnorm( J, 0., sigmaMH_beta * 1. / std::sqrt(J) ); 
-            proposedBeta(1+updateIdx0, singleIdx_k) += u;
+        } else {
+            // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
+            
+            // Symmetric RW-MH with birth handling
+            arma::uvec birth = setdiff_preserve_order(updateIdx0, updateIdx0_rev);
+            arma::uvec death = setdiff_preserve_order(updateIdx0_rev, updateIdx0);
+            arma::uvec stay  = arma::intersect(updateIdx0, updateIdx0_rev);
+
+            // Forward births
+            if (birth.n_elem > 0) {
+                // double s_birth_fwd = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+                double s_birth_fwd = std::sqrt(tauSq_[componentUpdateIdx]);
+                arma::vec bdraw = Rcpp::rnorm(birth.n_elem, 0.0, s_birth_fwd);
+                proposedBeta(1 + birth, singleIdx_k) = bdraw;
+                logProposalRatio -= logPDFNormal(bdraw, s_birth_fwd * s_birth_fwd);
+            }
+
+            // Reverse births (forward deaths)
+            if (death.n_elem > 0) {
+                // double s_birth_rev = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+                double s_birth_rev = std::sqrt(tauSq_[componentUpdateIdx]);
+                arma::vec bcurr = betas_(1 + death, singleIdx_k);
+                logProposalRatio += logPDFNormal(bcurr, s_birth_rev * s_birth_rev);
+            }
+
+            // Symmetric RW on stay
+            unsigned int J_stay = stay.n_elem;
+            if (J_stay > 0) {
+                double s_rw = sigmaMH_beta * 2.38 / std::sqrt(J_stay);
+                arma::vec u = Rcpp::rnorm(J_stay, 0.0, s_rw);
+                proposedBeta(1 + stay, singleIdx_k) += u;
+            }
         }
     }
-    proposedBeta(1+arma::find(proposedGamma.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
+    // proposedBeta(1+arma::find(proposedGamma.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
 
     // prior ratio of beta
     double logPriorBetaRatio = 0.;
@@ -647,6 +689,20 @@ void BVS_Sampler::sampleEta(
     arma::mat proposedZeta = zetas_;
     
     // RW-MH
+
+    // forward active subset updateIdx0 for proposal/prior evaluated on proposedGamma
+    arma::uvec updateIdx0 = arma::find(proposedEta(updateIdx, singleIdx_k) == 1);
+    updateIdx0 = updateIdx(updateIdx0);
+    // reverse active subset updateIdx0_rev for proposal/prior evaluated on gammas
+    arma::uvec updateIdx0_rev = arma::find(etas_(updateIdx, singleIdx_k) == 1);
+    updateIdx0_rev = updateIdx(updateIdx0_rev);
+
+    // Zero inactive zetas BEFORE HMC
+    arma::uvec off_prop_eta = arma::find(proposedEta.col(componentUpdateIdx) == 0);
+    if (!off_prop_eta.is_empty()) {
+        proposedZeta(1 + off_prop_eta, singleIdx_k).zeros();
+    }
+    
     if (arma::as_scalar(arma::any(proposedEta(updateIdx, singleIdx_k))))
     {
         arma::uvec updateIdx0 = arma::find(proposedEta(updateIdx, singleIdx_k) == 1);
@@ -663,13 +719,41 @@ void BVS_Sampler::sampleEta(
             logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0, componentUpdateIdx, 
                 datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
 
-        } else {//if( arma::any(etas_(updateIdx,singleIdx_k)) ) {
-            // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2})
-            arma::vec u = Rcpp::rnorm( updateIdx0.n_elem, 0., sigmaMH_zeta * 1. / std::sqrt(updateIdx0.n_elem) ); 
-            proposedZeta(1+updateIdx0, singleIdx_k) += u;
+        } else {
+            // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
+            
+            // Symmetric RW-MH with birth handling
+            arma::uvec birth = setdiff_preserve_order(updateIdx0, updateIdx0_rev);
+            arma::uvec death = setdiff_preserve_order(updateIdx0_rev, updateIdx0);
+            arma::uvec stay  = arma::intersect(updateIdx0, updateIdx0_rev);
+
+            // Forward births
+            if (birth.n_elem > 0) {
+                // double s_birth_fwd = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+                double s_birth_fwd = std::sqrt(wSq_[componentUpdateIdx]);
+                arma::vec bdraw = Rcpp::rnorm(birth.n_elem, 0.0, s_birth_fwd);
+                proposedZeta(1 + birth, singleIdx_k) = bdraw;
+                logProposalRatio -= logPDFNormal(bdraw, s_birth_fwd * s_birth_fwd);
+            }
+
+            // Reverse births (forward deaths)
+            if (death.n_elem > 0) {
+                // double s_birth_rev = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+                double s_birth_rev = std::sqrt(wSq_[componentUpdateIdx]);
+                arma::vec bcurr = zetas_(1 + death, singleIdx_k);
+                logProposalRatio += logPDFNormal(bcurr, s_birth_rev * s_birth_rev);
+            }
+
+            // Symmetric RW on stay
+            unsigned int J_stay = stay.n_elem;
+            if (J_stay > 0) {
+                double s_rw = sigmaMH_zeta * 2.38 / std::sqrt(J_stay);
+                arma::vec u = Rcpp::rnorm(J_stay, 0.0, s_rw);
+                proposedZeta(1 + stay, singleIdx_k) += u;
+            }
         }
     }
-    proposedZeta(1+arma::find(proposedEta.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
+    // proposedZeta(1+arma::find(proposedEta.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
 
     // prior ratio of zeta
     double logPriorZetaRatio = 0.;
@@ -1656,7 +1740,9 @@ double BVS_Sampler::logPDFBeta(double x, double a, double b)
 			return -lBeta(a,b) + (a-1)*log(x) + (b-1)*log(1-x);
 }
 */
-double BVS_Sampler::logPDFNormal(const arma::vec& x, const double& sigmaSq)  // zeroMean and independentVar
+double BVS_Sampler::logPDFNormal(
+    const arma::vec& x, 
+    double sigmaSq)  // zeroMean and independentVar
 {
     unsigned int k = x.n_elem;
     double tmp = (double)k * std::log(sigmaSq); // log-determinant(Sigma)
@@ -1724,6 +1810,26 @@ double BVS_Sampler::logPDFNormal(
 
     return -0.5*(double)k*log(2.*M_PI) -0.5*tmp -0.5* arma::as_scalar( (x-m).t() * arma::inv_sympd(Sigma) * (x-m) );
 
+}
+
+// Compute set difference: elements of A that are not in B, preserving A's order
+arma::uvec BVS_Sampler::setdiff_preserve_order(
+    const arma::uvec& A, 
+    const arma::uvec& B) 
+{
+    std::unordered_set<arma::uword> bset;
+    bset.reserve(B.n_elem);
+    for (arma::uword x : B) bset.insert(x);
+
+    std::vector<arma::uword> out;
+    out.reserve(A.n_elem);
+    for (arma::uword x : A) {
+        if (bset.find(x) == bset.end()) {
+            out.push_back(x);
+        }
+    }
+
+    return arma::uvec(out);
 }
 
 /*
