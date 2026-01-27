@@ -374,60 +374,53 @@ void BVS_Sampler::sampleGamma(
         proposedBeta(1 + off_prop, singleIdx_k).zeros();
     }
 
-    if (arma::as_scalar(arma::any(proposedGamma(updateIdx, singleIdx_k)))) 
+    if (rw_mh != "symmetric")
     {
-        arma::uvec updateIdx0 = arma::find(proposedGamma(updateIdx, singleIdx_k) == 1);
-        updateIdx0 = updateIdx(updateIdx0);
-        // unsigned int J = updateIdx0.n_elem;
-        if (rw_mh != "symmetric")
-        {
-            // double c = std::exp(a);
+        // double c = std::exp(a);
 
-            // Update proposal ratio with beta part
-            if (updateIdx0.n_elem > 0) {
-                logProposalRatio -= MALAbetas(proposedBeta, betas_, updateIdx0, componentUpdateIdx, 
-                    datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
-            }
-            if (updateIdx0_rev.n_elem > 0) {
-                logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0, componentUpdateIdx, 
-                    datTheta, datProportion, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
-            }
-            
-        } else {
-            // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
-            
-            // Symmetric RW-MH with birth handling
-            arma::uvec birth = setdiff_preserve_order(updateIdx0, updateIdx0_rev);
-            arma::uvec death = setdiff_preserve_order(updateIdx0_rev, updateIdx0);
-            arma::uvec stay  = arma::intersect(updateIdx0, updateIdx0_rev);
+        // Update proposal ratio with beta part
+        if (updateIdx0.n_elem > 0) {
+            logProposalRatio -= MALAbetas(proposedBeta, betas_, updateIdx0, componentUpdateIdx, 
+                datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
+        }
+        if (updateIdx0_rev.n_elem > 0) {
+            logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0, componentUpdateIdx, 
+                datTheta, datProportion, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
+        }
+        
+    } else {
+        // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
+        
+        // Symmetric RW-MH with birth handling
+        arma::uvec birth = setdiff_preserve_order(updateIdx0, updateIdx0_rev);
+        arma::uvec death = setdiff_preserve_order(updateIdx0_rev, updateIdx0);
+        arma::uvec stay  = arma::intersect(updateIdx0, updateIdx0_rev);
 
-            // Forward births
-            if (birth.n_elem > 0) {
-                // double s_birth_fwd = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
-                double s_birth_fwd = std::sqrt(tauSq_[componentUpdateIdx]);
-                arma::vec bdraw = Rcpp::rnorm(birth.n_elem, 0.0, s_birth_fwd);
-                proposedBeta(1 + birth, singleIdx_k) = bdraw;
-                logProposalRatio -= logPDFNormal(bdraw, s_birth_fwd * s_birth_fwd);
-            }
+        // Forward births
+        if (birth.n_elem > 0) {
+            // double s_birth_fwd = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+            double s_birth_fwd = std::sqrt(tauSq_[componentUpdateIdx]);
+            arma::vec bdraw = Rcpp::rnorm(birth.n_elem, 0.0, s_birth_fwd);
+            proposedBeta(1 + birth, singleIdx_k) = bdraw;
+            logProposalRatio -= logPDFNormal(bdraw, s_birth_fwd * s_birth_fwd);
+        }
 
-            // Reverse births (forward deaths)
-            if (death.n_elem > 0) {
-                // double s_birth_rev = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
-                double s_birth_rev = std::sqrt(tauSq_[componentUpdateIdx]);
-                arma::vec bcurr = betas_(1 + death, singleIdx_k);
-                logProposalRatio += logPDFNormal(bcurr, s_birth_rev * s_birth_rev);
-            }
+        // Reverse births (forward deaths)
+        if (death.n_elem > 0) {
+            // double s_birth_rev = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+            double s_birth_rev = std::sqrt(tauSq_[componentUpdateIdx]);
+            arma::vec bcurr = betas_(1 + death, singleIdx_k);
+            logProposalRatio += logPDFNormal(bcurr, s_birth_rev * s_birth_rev);
+        }
 
-            // Symmetric RW on stay
-            unsigned int J_stay = stay.n_elem;
-            if (J_stay > 0) {
-                double s_rw = sigmaMH_beta * 2.38 / std::sqrt(J_stay);
-                arma::vec u = Rcpp::rnorm(J_stay, 0.0, s_rw);
-                proposedBeta(1 + stay, singleIdx_k) += u;
-            }
+        // Symmetric RW on stay
+        unsigned int J_stay = stay.n_elem;
+        if (J_stay > 0) {
+            double s_rw = sigmaMH_beta * 2.38 / std::sqrt(J_stay);
+            arma::vec u = Rcpp::rnorm(J_stay, 0.0, s_rw);
+            proposedBeta(1 + stay, singleIdx_k) += u;
         }
     }
-    // proposedBeta(1+arma::find(proposedGamma.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
 
     // prior ratio of beta
     double logPriorBetaRatio = 0.;
@@ -707,58 +700,53 @@ void BVS_Sampler::sampleEta(
         proposedZeta(1 + off_prop_eta, singleIdx_k).zeros();
     }
 
-    if (arma::as_scalar(arma::any(proposedEta(updateIdx, singleIdx_k))))
+    if (rw_mh != "symmetric")
     {
-        arma::uvec updateIdx0 = arma::find(proposedEta(updateIdx, singleIdx_k) == 1);
-        updateIdx0 = updateIdx(updateIdx0);
-        if (rw_mh != "symmetric")
-        {
-            // double c = std::exp(a);
+        // double c = std::exp(a);
 
-            // Update proposal ratio with beta part
-            // logProposalRatio -= logPDFNormal(proposedZeta(1 + updateIdx0, singleIdx_k), m, Sigma); 
-            // logProposalRatio += logPDFNormal(zetas_(1 + updateIdx0, singleIdx_k), m_mutant, Sigma_mutant);// TODO: use proposedZeta to repeat the above steps (wrap into a func) to obtain m_mutant & Sigma_mutant
-            if (updateIdx0.n_elem > 0) {
-                logProposalRatio -= MALAzetas(proposedZeta, zetas_, updateIdx0, componentUpdateIdx, 
-                    datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
-            }
-            if (updateIdx0_rev.n_elem > 0) {
-                logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0, componentUpdateIdx, 
-                    datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
-            }
+        // Update proposal ratio with beta part
+        // logProposalRatio -= logPDFNormal(proposedZeta(1 + updateIdx0, singleIdx_k), m, Sigma); 
+        // logProposalRatio += logPDFNormal(zetas_(1 + updateIdx0, singleIdx_k), m_mutant, Sigma_mutant);// TODO: use proposedZeta to repeat the above steps (wrap into a func) to obtain m_mutant & Sigma_mutant
+        if (updateIdx0.n_elem > 0) {
+            logProposalRatio -= MALAzetas(proposedZeta, zetas_, updateIdx0, componentUpdateIdx, 
+                datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+        }
+        if (updateIdx0_rev.n_elem > 0) {
+            logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0, componentUpdateIdx, 
+                datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+        }
 
-        } else {
-            // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
-            
-            // Symmetric RW-MH with birth handling
-            arma::uvec birth = setdiff_preserve_order(updateIdx0, updateIdx0_rev);
-            arma::uvec death = setdiff_preserve_order(updateIdx0_rev, updateIdx0);
-            arma::uvec stay  = arma::intersect(updateIdx0, updateIdx0_rev);
+    } else {
+        // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
+        
+        // Symmetric RW-MH with birth handling
+        arma::uvec birth = setdiff_preserve_order(updateIdx0, updateIdx0_rev);
+        arma::uvec death = setdiff_preserve_order(updateIdx0_rev, updateIdx0);
+        arma::uvec stay  = arma::intersect(updateIdx0, updateIdx0_rev);
 
-            // Forward births
-            if (birth.n_elem > 0) {
-                // double s_birth_fwd = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
-                double s_birth_fwd = std::sqrt(wSq_[componentUpdateIdx]);
-                arma::vec bdraw = Rcpp::rnorm(birth.n_elem, 0.0, s_birth_fwd);
-                proposedZeta(1 + birth, singleIdx_k) = bdraw;
-                logProposalRatio -= logPDFNormal(bdraw, s_birth_fwd * s_birth_fwd);
-            }
+        // Forward births
+        if (birth.n_elem > 0) {
+            // double s_birth_fwd = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+            double s_birth_fwd = std::sqrt(wSq_[componentUpdateIdx]);
+            arma::vec bdraw = Rcpp::rnorm(birth.n_elem, 0.0, s_birth_fwd);
+            proposedZeta(1 + birth, singleIdx_k) = bdraw;
+            logProposalRatio -= logPDFNormal(bdraw, s_birth_fwd * s_birth_fwd);
+        }
 
-            // Reverse births (forward deaths)
-            if (death.n_elem > 0) {
-                // double s_birth_rev = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
-                double s_birth_rev = std::sqrt(wSq_[componentUpdateIdx]);
-                arma::vec bcurr = zetas_(1 + death, singleIdx_k);
-                logProposalRatio += logPDFNormal(bcurr, s_birth_rev * s_birth_rev);
-            }
+        // Reverse births (forward deaths)
+        if (death.n_elem > 0) {
+            // double s_birth_rev = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+            double s_birth_rev = std::sqrt(wSq_[componentUpdateIdx]);
+            arma::vec bcurr = zetas_(1 + death, singleIdx_k);
+            logProposalRatio += logPDFNormal(bcurr, s_birth_rev * s_birth_rev);
+        }
 
-            // Symmetric RW on stay
-            unsigned int J_stay = stay.n_elem;
-            if (J_stay > 0) {
-                double s_rw = sigmaMH_zeta * 2.38 / std::sqrt(J_stay);
-                arma::vec u = Rcpp::rnorm(J_stay, 0.0, s_rw);
-                proposedZeta(1 + stay, singleIdx_k) += u;
-            }
+        // Symmetric RW on stay
+        unsigned int J_stay = stay.n_elem;
+        if (J_stay > 0) {
+            double s_rw = sigmaMH_zeta * 2.38 / std::sqrt(J_stay);
+            arma::vec u = Rcpp::rnorm(J_stay, 0.0, s_rw);
+            proposedZeta(1 + stay, singleIdx_k) += u;
         }
     }
     // proposedZeta(1+arma::find(proposedEta.col(componentUpdateIdx) == 0), singleIdx_k).fill(0.); // assure 0 for corresponding proposed betas with 0
@@ -1104,7 +1092,7 @@ double BVS_Sampler::logPbetaK(
     unsigned int L = dataclass.datX.n_slices;
 
     // compute log density
-    double logprior = - arma::sum(betas.submat(1, k, p, k) % betas.submat(1, k, p, k)) / tauSq / 2.;
+    double logprior = - arma::accu(betas.submat(1, k, p, k) % betas.submat(1, k, p, k)) / tauSq / 2.;
 
     arma::vec logpost_first = arma::zeros<arma::vec>(N);
     // arma::vec logpost_second= arma::zeros<arma::vec>(N);
