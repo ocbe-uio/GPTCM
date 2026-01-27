@@ -384,10 +384,14 @@ void BVS_Sampler::sampleGamma(
             // double c = std::exp(a);
 
             // Update proposal ratio with beta part
-            logProposalRatio -= MALAbetas(proposedBeta, betas_, updateIdx0, componentUpdateIdx, 
-                datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
-            logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0, componentUpdateIdx, 
-                datTheta, datProportion, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
+            if (updateIdx0.n_elem > 0) {
+                logProposalRatio -= MALAbetas(proposedBeta, betas_, updateIdx0, componentUpdateIdx, 
+                    datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
+            }
+            if (updateIdx0_rev.n_elem > 0) {
+                logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0, componentUpdateIdx, 
+                    datTheta, datProportion, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
+            }
             
         } else {
             // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
@@ -702,7 +706,7 @@ void BVS_Sampler::sampleEta(
     if (!off_prop_eta.is_empty()) {
         proposedZeta(1 + off_prop_eta, singleIdx_k).zeros();
     }
-    
+
     if (arma::as_scalar(arma::any(proposedEta(updateIdx, singleIdx_k))))
     {
         arma::uvec updateIdx0 = arma::find(proposedEta(updateIdx, singleIdx_k) == 1);
@@ -714,10 +718,14 @@ void BVS_Sampler::sampleEta(
             // Update proposal ratio with beta part
             // logProposalRatio -= logPDFNormal(proposedZeta(1 + updateIdx0, singleIdx_k), m, Sigma); 
             // logProposalRatio += logPDFNormal(zetas_(1 + updateIdx0, singleIdx_k), m_mutant, Sigma_mutant);// TODO: use proposedZeta to repeat the above steps (wrap into a func) to obtain m_mutant & Sigma_mutant
-            logProposalRatio -= MALAzetas(proposedZeta, zetas_, updateIdx0, componentUpdateIdx, 
-                datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
-            logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0, componentUpdateIdx, 
-                datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+            if (updateIdx0.n_elem > 0) {
+                logProposalRatio -= MALAzetas(proposedZeta, zetas_, updateIdx0, componentUpdateIdx, 
+                    datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+            }
+            if (updateIdx0_rev.n_elem > 0) {
+                logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0, componentUpdateIdx, 
+                    datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+            }
 
         } else {
             // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
@@ -1096,7 +1104,7 @@ double BVS_Sampler::logPbetaK(
     unsigned int L = dataclass.datX.n_slices;
 
     // compute log density
-    double logprior = - arma::sum(betas.col(k) % betas.col(k)) / tauSq / 2.;
+    double logprior = - arma::sum(betas.submat(1, k, p, k) % betas.submat(1, k, p, k)) / tauSq / 2.;
 
     arma::vec logpost_first = arma::zeros<arma::vec>(N);
     // arma::vec logpost_second= arma::zeros<arma::vec>(N);
