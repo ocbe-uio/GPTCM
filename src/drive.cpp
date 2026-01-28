@@ -533,6 +533,17 @@ Rcpp::List run_mcmc(
           weibullS
         ); */
         // xi_mcmc.row(1+m) = xi.t();
+        
+        // update likelihood
+        BVS_Sampler::loglikelihood(
+            xi,
+            zetas,
+            betas,
+            kappa,
+            proportion_model,
+            dataclass,
+            log_likelihood
+        );
 
         // update cure rate based on the new xi
         logTheta = dataclass.datX0 * xi;
@@ -651,6 +662,17 @@ Rcpp::List run_mcmc(
             dataclass
         ); // if n>1, here it will be an average
         // kappa_mcmc[1+m] = kappa;
+        
+        // update likelihood
+        BVS_Sampler::loglikelihood(
+            xi,
+            zetas,
+            betas,
+            kappa,
+            proportion_model,
+            dataclass,
+            log_likelihood
+        );
 
         // update Weibull's quantities based on the new kappa
         for(unsigned int l=0; l<L; ++l)
@@ -732,6 +754,17 @@ Rcpp::List run_mcmc(
         // update \betas' variance tauSq
         // hyperpar->tauSq = sampleTau(hyperpar->tauA, hyperpar->tauB, betas);
         // tauSq_mcmc[1+m] = hyperpar->tauSq;
+        
+        // update likelihood
+        BVS_Sampler::loglikelihood(
+            xi,
+            zetas,
+            betas,
+            kappa,
+            proportion_model,
+            dataclass,
+            log_likelihood
+        );
 
         #ifdef _OPENMP
         #pragma omp parallel for
@@ -796,19 +829,6 @@ Rcpp::List run_mcmc(
                     eta_mcmc.row(1+nIter_thin_count) = arma::vectorise(etas).t();
                 }
             } 
-            else 
-            {
-                // update likelihood
-                BVS_Sampler::loglikelihood(
-                    xi,
-                    zetas,
-                    betas,
-                    kappa,
-                    proportion_model,
-                    dataclass,
-                    log_likelihood
-                );
-            }
             // save loglikelihoods
             loglikelihood_mcmc.row(1+nIter_thin_count) = log_likelihood.t();
 
