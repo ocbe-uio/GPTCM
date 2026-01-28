@@ -148,6 +148,8 @@ public:
         const DataClass &dataclass
     );
 
+    static double logsumexp(const std::vector<double>& x);
+
     static void sampleEta(
         arma::umat& etas_,
         Eta_Prior_Type eta_prior,
