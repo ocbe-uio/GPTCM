@@ -471,20 +471,28 @@ Rcpp::List run_mcmc(
 
     // BVS_Sampler::banditInit(p, L, N);
 
-    const unsigned int cTotalLength = 50;
+    const unsigned int cTotalLength = 100;//50;
     //std::cout
     Rprintf("Running MCMC iterations ...\n");
     unsigned int nIter_thin_count = 0;
     for (unsigned int m=0; m<nIter; ++m)
     {
         // print progression cursor
+        /*
         if (m % 10 == 0 || m == (nIter - 1))
             //std::cout
             Rcpp::Rcout << "\r[" <<                                           //'\r' aka carriage return should move printer's cursor back at the beginning of the current line
                         std::string(cTotalLength * (m + 1.) / nIter, '#') <<        // printing filled part
                         std::string(cTotalLength * (1. - (m + 1.) / nIter), '-') << // printing empty part
                         "] " << (int)((m + 1.) / nIter * 100.0) << "%\r";             // printing percentage
-
+        */
+        if ((m+1) % cTotalLength == 0) {
+            double gamma_acc = (double)(gamma_acc_count)/(double)(m) * 1000.0;
+            double eta_acc = (double)(eta_acc_count)/(double)(m) * 1000.0;
+            Rcpp::Rcout << " Running iteration " << m+1 << " ... Acc Rate: ~ gamma: " << 
+                std::round(gamma_acc)/1000.0 << "" << 
+                " ... ~ eta: " << std::round(eta_acc)/1000.0 << "\n";
+        }
 
         // update \beta's variacnes tau0Sq, tauSq
         tau0Sq = sampleV(hyperpar->tau0A, hyperpar->tau0B, betas.row(0).t());

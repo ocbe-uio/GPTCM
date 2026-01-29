@@ -1,10 +1,10 @@
 <div style="text-align: left;">
 
-### GPTCM 1.1.4 (2026-01-16)
+### GPTCM 1.1.4 (2026-01-29)
 
 * Update survival curve's ylab in vignette
 * Add symmetric and MALA RW-MH for the gamma-beta move
-* Implement Hamiltonian proposal for MH gamma-beta move
+* Implement annealed importance sampling (AIS) within MH gamma-beta move
 * TODO: ask chatGPT to check if all specified truncation with bounds are sufficient
 * TODO: update vignette
 * TODO: copy other every small piece of theory and corresponding code for GPT to review

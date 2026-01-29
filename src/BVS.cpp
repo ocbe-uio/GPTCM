@@ -395,8 +395,10 @@ void BVS_Sampler::sampleGamma(
 
         // Temperatures
         const unsigned int K = 101;
-        std::vector<double> temps(K + 1);
+        arma::vec temps(K + 1);
         for (unsigned int k = 0; k <= K; ++k) temps[k] = double(k) / double(K);
+        // arma::vec temps = arma::reverse( 1.0 - arma::logspace(-2., 0., K) );
+        // temps(K-1) = 1.0;
 
         const unsigned int M = 10; // number of AIS paths
 
@@ -831,10 +833,15 @@ void BVS_Sampler::sampleEta(
         const double prior_var = wSq_[componentUpdateIdx];
         const double prior_sd  = sqrt(prior_var); 
 
-        // Temperatures
+        // Temperatures; equal-, log-, or power-spaced
         const unsigned int K = 101;
         std::vector<double> temps(K + 1);
         for (unsigned int k = 0; k <= K; ++k) temps[k] = double(k) / double(K);
+        // arma::vec temps = arma::reverse( 1.0 - arma::logspace(-2., 0., K) );
+        // temps(K-1) = 1.0;
+        // arma::vec temps = arma::linspace(0.0, 1.0, K); 
+        // temps = arma::pow(temps, 3.0);
+        // temps(0) = 0.0; temps(K-1) = 1.0;
 
         const unsigned int M = 10; // number of AIS paths
 
