@@ -878,7 +878,7 @@ void BVS_Sampler::sampleEta(
                     logw[m] += delta * log_like_curr;
 
                     // Propose new state (symmetric RW)
-                    const double rw_sd = sigmaMH_beta; //prior_sd; // or sigmaMH_beta * 2.38 / std::sqrt(J)
+                    const double rw_sd = sigmaMH_zeta; //prior_sd; // or sigmaMH_zeta * 2.38 / std::sqrt(J)
                     arma::vec u = Rcpp::rnorm(J, 0.0, rw_sd);
                     arma::vec beta_prop = beta_curr + u;
 
