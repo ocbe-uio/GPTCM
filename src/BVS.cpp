@@ -376,113 +376,113 @@ void BVS_Sampler::sampleGamma(
 
     double logLikelihoodRatio = 0.;
 
-    if (rw_mh != "symmetric")
-    {
-        // double c = std::exp(a);
-
-        // Update proposal ratio with beta part
-        if (rw_mh == "mala") {
-            if (updateIdx0.n_elem > 0) {
-                logProposalRatio -= MALAbetas(proposedBeta, betas_, updateIdx0, componentUpdateIdx, 
-                    datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
-            }
-            if (updateIdx0_rev.n_elem > 0) {
-                logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0, componentUpdateIdx, 
-                    datTheta, datProportion, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
-            }
-        } else { // AIS sampling for marginal likelihood ratio
-
-            // Annealed Importance Sampling (AIS)
-            // double tauSq_l = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
-            // Prior variance (Gaussian N(0, prior_var))
-            const double prior_var = tauSq_[componentUpdateIdx];
-            const double prior_sd  = sqrt(prior_var); 
-
-            // Temperatures
-            const unsigned int K = 101;
-            std::vector<double> temps(K + 1);
-            for (unsigned int k = 0; k <= K; ++k) temps[k] = double(k) / double(K);
-
-            const unsigned int M = 10; // number of AIS paths
-
-            auto run_ais_logZ = [&](const arma::uvec& active_idx) -> double {
-                const unsigned int J = active_idx.n_elem;
-                if (J == 0) return 0.0; // no active coeffs → ratio contribution is zero
-
-                // Initialize M paths from the prior
-                arma::mat paths(J, M);
-                for (unsigned int m = 0; m < M; ++m) {
-                    arma::vec u = Rcpp::rnorm(J, 0.0, prior_sd); 
-                    paths.col(m) = u;
-                }
-
-                std::vector<double> logw(M, 0.0);
-
-                for (unsigned int m = 0; m < M; ++m) {
-                    arma::vec beta_curr = paths.col(m);
-
-                    for (unsigned int k = 1; k <= K; ++k) {
-                        const double tkm1 = temps[k - 1];
-                        const double tk   = temps[k];
-                        const double delta = tk - tkm1;
-
-                        // Evaluate current state
-                        arma::mat betas_tmp = betas_;
-                        betas_tmp(1 + active_idx, singleIdx_k) = beta_curr;
-
-                        const double log_prior_curr = logPDFNormal(beta_curr, prior_var);
-                        const double log_u_curr     = logPbetaK(componentUpdateIdx, betas_tmp,
-                                                                prior_var, kappa_,
-                                                                datTheta, datProportion, dataclass);
-
-                        // AIS weight increment uses the previous state only
-                        const double log_like_curr  = log_u_curr - log_prior_curr;
-                        logw[m] += delta * log_like_curr;
-
-                        // Propose new state (symmetric RW)
-                        const double rw_sd = prior_sd; // you can tune; e.g., sqrt(prior_var) or sigmaMH_beta * 2.38 / sqrt(J)
-                        arma::vec u = Rcpp::rnorm(J, 0.0, rw_sd);
-                        arma::vec beta_prop = beta_curr + u;
-
-                        // Evaluate proposal
-                        betas_tmp(1 + active_idx, singleIdx_k) = beta_prop;
-                        const double log_prior_prop = logPDFNormal(beta_prop, prior_var);
-                        const double log_u_prop     = logPbetaK(componentUpdateIdx, betas_tmp,
-                                                                prior_var, kappa_,
-                                                                datTheta, datProportion, dataclass);
-
-                        // Metropolis acceptance for pk
-                        const double log_target_curr = (1.0 - tk) * log_prior_curr + tk * log_u_curr;
-                        const double log_target_prop = (1.0 - tk) * log_prior_prop + tk * log_u_prop;
-                        const double log_acc = log_target_prop - log_target_curr;
-
-                        if (std::log(R::runif(0, 1)) < log_acc) {
-                            beta_curr = beta_prop;
-                        }
-                    }
-                    paths.col(m) = beta_curr; // optional
-                }
-
-                // Stable average: log Ẑ = logmeanexp(logw)
-                const double logZ_hat = logsumexp(logw) - std::log(static_cast<double>(M));
-                return logZ_hat;
-            };
-
-            // Forward (proposed gamma active set)
-            double logZ_hat_proposed = 0.0;
-            if (updateIdx0.n_elem > 0) {
-                logZ_hat_proposed = run_ais_logZ(updateIdx0);
-                logLikelihoodRatio += logZ_hat_proposed;
-            }
-
-            // Reverse (current gamma active set)
-            double logZ_hat_current = 0.0;
-            if (updateIdx0_rev.n_elem > 0) {
-                logZ_hat_current = run_ais_logZ(updateIdx0_rev);
-                logLikelihoodRatio -= logZ_hat_current; // subtract current
-            }
+    if (rw_mh == "mala") {
+        if (updateIdx0.n_elem > 0) {
+            logProposalRatio -= MALAbetas(proposedBeta, betas_, updateIdx0, componentUpdateIdx, 
+                datTheta, datProportion, weibullS, weibullLambda, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
         }
-        
+        if (updateIdx0_rev.n_elem > 0) {
+            logProposalRatio += MALAlogPbetas(betas_, proposedBeta, updateIdx0, componentUpdateIdx, 
+                datTheta, datProportion, kappa_, tauSq_[componentUpdateIdx], sigmaMH_beta, dataclass);
+        }
+    } else if (rw_mh == "ais") { // AIS sampling for marginal likelihood ratio
+
+        // Annealed Importance Sampling (AIS)
+        // double tauSq_l = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+        // Prior variance (Gaussian N(0, prior_var))
+        const double prior_var = tauSq_[componentUpdateIdx];
+        const double prior_sd  = sqrt(prior_var); 
+
+        // Temperatures
+        const unsigned int K = 101;
+        std::vector<double> temps(K + 1);
+        for (unsigned int k = 0; k <= K; ++k) temps[k] = double(k) / double(K);
+
+        const unsigned int M = 10; // number of AIS paths
+
+        auto run_ais_logZ = [&](const arma::uvec& active_idx, const arma::uvec& inactive_set) -> double {
+            const unsigned int J = active_idx.n_elem;
+            if (J == 0) return 0.0;
+
+            // Initialize M paths from the prior N(0, prior_var I)
+            arma::mat paths(J, M);
+            for (unsigned int m = 0; m < M; ++m) {
+                arma::vec u = Rcpp::rnorm(J, 0.0, prior_sd);
+                paths.col(m) = u;
+            }
+
+            std::vector<double> logw(M, 0.0);
+
+            for (unsigned int m = 0; m < M; ++m) {
+                arma::vec beta_curr = paths.col(m);
+
+                for (unsigned int k = 1; k <= K; ++k) {
+                    const double tkm1 = temps[k - 1];
+                    const double tk   = temps[k];
+                    const double delta = tk - tkm1;
+
+                    // Evaluate current state
+                    arma::mat betas_tmp = betas_;
+                    // Zero inactive rows in this column
+                    if (!inactive_set.is_empty()) {
+                        betas_tmp(1 + inactive_set, singleIdx_k).zeros();
+                    }
+                    // Insert current AIS state into active rows (1 + offset for intercept)
+                    betas_tmp(1 + active_idx, singleIdx_k) = beta_curr;
+
+                    const double log_prior_curr = logPDFNormal(beta_curr, prior_var);
+                    const double log_u_curr     = logPbetaK(componentUpdateIdx, betas_tmp,
+                                                            prior_var, kappa_,
+                                                            datTheta, datProportion, dataclass);
+
+                    // AIS weight increment uses the previous state only
+                    const double log_like_curr  = log_u_curr - log_prior_curr;
+                    logw[m] += delta * log_like_curr;
+
+                    // Propose new state (symmetric RW)
+                    const double rw_sd = sigmaMH_beta; //prior_sd; // or sigmaMH_beta * 2.38 / std::sqrt(J)
+                    arma::vec u = Rcpp::rnorm(J, 0.0, rw_sd);
+                    arma::vec beta_prop = beta_curr + u;
+
+                    // Evaluate proposal
+                    betas_tmp(1 + active_idx, singleIdx_k) = beta_prop;
+                    const double log_prior_prop = logPDFNormal(beta_prop, prior_var);
+                    const double log_u_prop     = logPbetaK(componentUpdateIdx, betas_tmp,
+                                                            prior_var, kappa_,
+                                                            datTheta, datProportion, dataclass);
+
+                    // Metropolis acceptance for pk
+                    const double log_target_curr = (1.0 - tk) * log_prior_curr + tk * log_u_curr;
+                    const double log_target_prop = (1.0 - tk) * log_prior_prop + tk * log_u_prop;
+                    const double log_acc = log_target_prop - log_target_curr;
+
+                    if (std::log(R::runif(0, 1)) < log_acc) {
+                        beta_curr = beta_prop;
+                    }
+                }
+                paths.col(m) = beta_curr; // optional
+            }
+
+            // Stable average: log Ẑ = logsumexp(logw) - log(M)
+            return logsumexp(logw) - std::log(static_cast<double>(M));
+        };
+
+
+        // Forward (proposed gamma active set)
+        if (updateIdx0.n_elem > 0) {
+            arma::uvec inactive_prop = arma::find(proposedGamma.col(componentUpdateIdx) == 0);
+            double logZ_hat_proposed = run_ais_logZ(updateIdx0, inactive_prop);
+            logLikelihoodRatio += logZ_hat_proposed;
+        }
+
+
+        // Reverse (current gamma active set)
+        if (updateIdx0_rev.n_elem > 0) {
+            arma::uvec inactive_curr = arma::find(gammas_.col(componentUpdateIdx) == 0);
+            double logZ_hat_current = run_ais_logZ(updateIdx0_rev, inactive_curr);
+            logLikelihoodRatio -= logZ_hat_current;
+        }
+
     } else {
         // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
         
@@ -808,27 +808,119 @@ void BVS_Sampler::sampleEta(
 
     double logLikelihoodRatio = 0.;
 
-    if (rw_mh != "symmetric")
+    if (rw_mh == "mala")
     {
         // double c = std::exp(a);
 
         // Update proposal ratio with beta part
         // logProposalRatio -= logPDFNormal(proposedZeta(1 + updateIdx0, singleIdx_k), m, Sigma); 
         // logProposalRatio += logPDFNormal(zetas_(1 + updateIdx0, singleIdx_k), m_mutant, Sigma_mutant);// TODO: use proposedZeta to repeat the above steps (wrap into a func) to obtain m_mutant & Sigma_mutant
-        if (rw_mh == "mala") {
-            if (updateIdx0.n_elem > 0) {
-                logProposalRatio -= MALAzetas(proposedZeta, zetas_, updateIdx0, componentUpdateIdx, 
-                    datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
-            }
-            if (updateIdx0_rev.n_elem > 0) {
-                logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0, componentUpdateIdx, 
-                    datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
-            }
-        } else { // AIS sampling for marginal likelihood ratio
-
-            logProposalRatio += 0.;
-            
+        if (updateIdx0.n_elem > 0) {
+            logProposalRatio -= MALAzetas(proposedZeta, zetas_, updateIdx0, componentUpdateIdx, 
+                datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
         }
+        if (updateIdx0_rev.n_elem > 0) {
+            logProposalRatio += MALAlogPzetas(zetas_, proposedZeta, updateIdx0, componentUpdateIdx, 
+                datTheta, weibullS, weibullLambda, kappa_, wSq_[componentUpdateIdx], sigmaMH_zeta, dataclass);
+        }
+    } else if (rw_mh == "ais") {// AIS sampling for marginal likelihood ratio
+
+        // Annealed Importance Sampling (AIS)
+        // double tauSq_l = std::max(std::sqrt(tauSq_[componentUpdateIdx]), 1.0);
+        // Prior variance (Gaussian N(0, prior_var))
+        const double prior_var = wSq_[componentUpdateIdx];
+        const double prior_sd  = sqrt(prior_var); 
+
+        // Temperatures
+        const unsigned int K = 101;
+        std::vector<double> temps(K + 1);
+        for (unsigned int k = 0; k <= K; ++k) temps[k] = double(k) / double(K);
+
+        const unsigned int M = 10; // number of AIS paths
+
+        auto run_ais_logZ = [&](const arma::uvec& active_idx, const arma::uvec& inactive_set) -> double {
+            const unsigned int J = active_idx.n_elem;
+            if (J == 0) return 0.0;
+
+            // Initialize M paths from the prior N(0, prior_var I)
+            arma::mat paths(J, M);
+            for (unsigned int m = 0; m < M; ++m) {
+                arma::vec u = Rcpp::rnorm(J, 0.0, prior_sd);
+                paths.col(m) = u;
+            }
+
+            std::vector<double> logw(M, 0.0);
+
+            for (unsigned int m = 0; m < M; ++m) {
+                arma::vec beta_curr = paths.col(m);
+
+                for (unsigned int k = 1; k <= K; ++k) {
+                    const double tkm1 = temps[k - 1];
+                    const double tk   = temps[k];
+                    const double delta = tk - tkm1;
+
+                    // Evaluate current state
+                    arma::mat betas_tmp = zetas_;
+                    // Zero inactive rows in this column
+                    if (!inactive_set.is_empty()) {
+                        betas_tmp(1 + inactive_set, singleIdx_k).zeros();
+                    }
+                    // Insert current AIS state into active rows (1 + offset for intercept)
+                    betas_tmp(1 + active_idx, singleIdx_k) = beta_curr;
+
+                    const double log_prior_curr = logPDFNormal(beta_curr, prior_var);
+                    const double log_u_curr     = logPzetaK(componentUpdateIdx, betas_tmp,
+                                                            prior_var, kappa_,
+                                                            datTheta, weibullS, weibullLambda, dataclass);
+
+                    // AIS weight increment uses the previous state only
+                    const double log_like_curr  = log_u_curr - log_prior_curr;
+                    logw[m] += delta * log_like_curr;
+
+                    // Propose new state (symmetric RW)
+                    const double rw_sd = sigmaMH_beta; //prior_sd; // or sigmaMH_beta * 2.38 / std::sqrt(J)
+                    arma::vec u = Rcpp::rnorm(J, 0.0, rw_sd);
+                    arma::vec beta_prop = beta_curr + u;
+
+                    // Evaluate proposal
+                    betas_tmp(1 + active_idx, singleIdx_k) = beta_prop;
+                    const double log_prior_prop = logPDFNormal(beta_prop, prior_var);
+                    const double log_u_prop     = logPzetaK(componentUpdateIdx, betas_tmp,
+                                                            prior_var, kappa_,
+                                                            datTheta, weibullS, weibullLambda, dataclass);
+
+                    // Metropolis acceptance for pk
+                    const double log_target_curr = (1.0 - tk) * log_prior_curr + tk * log_u_curr;
+                    const double log_target_prop = (1.0 - tk) * log_prior_prop + tk * log_u_prop;
+                    const double log_acc = log_target_prop - log_target_curr;
+
+                    if (std::log(R::runif(0, 1)) < log_acc) {
+                        beta_curr = beta_prop;
+                    }
+                }
+                paths.col(m) = beta_curr; // optional
+            }
+
+            // Stable average: log Ẑ = logsumexp(logw) - log(M)
+            return logsumexp(logw) - std::log(static_cast<double>(M));
+        };
+
+
+        // Forward (proposed gamma active set)
+        if (updateIdx0.n_elem > 0) {
+            arma::uvec inactive_prop = arma::find(proposedEta.col(componentUpdateIdx) == 0);
+            double logZ_hat_proposed = run_ais_logZ(updateIdx0, inactive_prop);
+            logLikelihoodRatio += logZ_hat_proposed;
+        }
+
+
+        // Reverse (current gamma active set)
+        if (updateIdx0_rev.n_elem > 0) {
+            arma::uvec inactive_curr = arma::find(etas_.col(componentUpdateIdx) == 0);
+            double logZ_hat_current = run_ais_logZ(updateIdx0_rev, inactive_curr);
+            logLikelihoodRatio -= logZ_hat_current;
+        }
+        
     } else {
         // (symmetric) random-walk Metropolis with optimal standard deviation O(d^{-1/2}, theoretically 2.38*d^{-1/2})
         
@@ -868,7 +960,7 @@ void BVS_Sampler::sampleEta(
     double logPriorZetaRatio = 0.;
     // compute logLikelihoodRatio, i.e. proposedLikelihood - log_likelihood
     arma::vec proposedLikelihood = log_likelihood_;
-    // if (rw_mh != "ais") {
+    if (rw_mh != "ais") {
         logPriorZetaRatio += logPDFNormal(proposedZeta(1+updateIdx,singleIdx_k), wSq_[componentUpdateIdx]);
         logPriorZetaRatio -= logPDFNormal(zetas_(1+updateIdx,singleIdx_k), wSq_[componentUpdateIdx]);
 
@@ -876,7 +968,7 @@ void BVS_Sampler::sampleEta(
         loglikelihood( xi_, proposedZeta, betas_, kappa_, true, dataclass, proposedLikelihood );
 
         logLikelihoodRatio = arma::sum(proposedLikelihood - log_likelihood_);
-    // }
+    }
 
     // Here we need always compute the proposal and original ratios, in particular the likelihood, since betas are updated
     double logAccProb = logLikelihoodRatio +
