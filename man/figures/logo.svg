@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+<polygon points="1050.3,340.0 1050.3,860.0 600.0,1120.0 149.7,860.0 149.7,340.0 600.0,80.0" fill="#162033" stroke="white" stroke-width="18"/>
+<path d="M390 250 V278 H470 V308 H560 V332 H685 V350 H810" fill="none" stroke="white" stroke-width="13" stroke-linejoin="round"/>
+<path d="M685 350 H810" fill="none" stroke="#66A61E" stroke-width="16"/>
+<path d="M350 410 L600 535 M850 410 L600 535 M600 735 L600 535" stroke="#5DC7D8" stroke-width="8" opacity=".55"/>
+<g stroke="white" stroke-width="5">
+<rect x="485" y="462" width="38" height="145" rx="13" fill="#2B8CBE"/><rect x="545" y="432" width="38" height="205" rx="13" fill="#66A61E"/><rect x="605" y="475" width="38" height="120" rx="13" fill="#D95F5F"/><rect x="665" y="448" width="38" height="175" rx="13" fill="#5DC7D8"/><rect x="725" y="485" width="38" height="100" rx="13" fill="#E6A23C"/>
+</g>
+<g stroke="white" stroke-width="5"><circle cx="350" cy="410" r="62" fill="none" stroke="#2B8CBE" stroke-width="8"/><circle cx="350" cy="410" r="23" fill="#2B8CBE"/><circle cx="384" cy="410" r="20" fill="#2B8CBE"/><circle cx="333" cy="440" r="20" fill="#2B8CBE"/><circle cx="333" cy="380" r="20" fill="#2B8CBE"/><circle cx="850" cy="410" r="62" fill="none" stroke="#66A61E" stroke-width="8"/><circle cx="850" cy="410" r="23" fill="#66A61E"/><circle cx="884" cy="410" r="20" fill="#66A61E"/><circle cx="833" cy="440" r="20" fill="#66A61E"/><circle cx="833" cy="380" r="20" fill="#66A61E"/><circle cx="600" cy="735" r="62" fill="none" stroke="#D95F5F" stroke-width="8"/><circle cx="600" cy="735" r="23" fill="#D95F5F"/><circle cx="634" cy="735" r="20" fill="#D95F5F"/><circle cx="583" cy="765" r="20" fill="#D95F5F"/><circle cx="583" cy="705" r="20" fill="#D95F5F"/></g>
+<text x="600" y="940" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="128" fill="white">GPTCM</text>
+<text x="600" y="1000" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" fill="white" opacity=".88">cell-type drivers</text>
+</svg>
