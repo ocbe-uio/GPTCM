@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
 <polygon points="1050.3,340.0 1050.3,860.0 600.0,1120.0 149.7,860.0 149.7,340.0 600.0,80.0" fill="#162033" stroke="white" stroke-width="18"/>
-<circle cx="600" cy="540" r="380" fill="none" stroke="#5DC7D8" stroke-width="4" opacity=".07"/><circle cx="600" cy="540" r="300" fill="none" stroke="#2B8CBE" stroke-width="4" opacity=".055"/><circle cx="600" cy="540" r="220" fill="none" stroke="#66A61E" stroke-width="4" opacity=".04"/>
+<circle cx="600" cy="540" r="380" fill="none" stroke="white" stroke-width="4" opacity=".025"/><circle cx="600" cy="540" r="300" fill="none" stroke="white" stroke-width="4" opacity=".02"/><circle cx="600" cy="540" r="220" fill="none" stroke="white" stroke-width="4" opacity=".016"/>
 <path d="M390 250 V278 H470 V308 H560 V332 H685 V350 H810" fill="none" stroke="white" stroke-width="13" stroke-linejoin="round"/>
 <path d="M685 350 H810" fill="none" stroke="#66A61E" stroke-width="16"/>
 <path d="M350 410 L600 535 M850 410 L600 535 M600 735 L600 535" stroke="#5DC7D8" stroke-width="8" opacity=".36"/>
