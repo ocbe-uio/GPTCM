@@ -1,15 +1,13 @@
 <div style="text-align: left;">
 
-### GPTCM 1.1.4 (2026-01-29)
+### GPTCM 2.0.0 (2026-06-03)
 
-* Update survival curve's ylab in vignette
-* Add symmetric and MALA RW-MH for the gamma-beta move
-* Implement annealed importance sampling (AIS) within MH gamma-beta move
-* TODO: ask chatGPT to check if all specified truncation with bounds are sufficient
-* TODO: update vignette
-* TODO: copy other every small piece of theory and corresponding code for GPT to review
+* Fix CRAN check warnings
+* Update the M-H sampling for variable selection by using the Carlin-Chib approach (Carlin and Chib, 1995; JRSSB)
+* Clean up C++ functions
 
-### GPTCM 1.1.3 (2025-11-01)
+
+### GPTCM 1.1.3 (2025-10-31)
 
 * Remove redundant variables `logPosteriorZeta` and `logPosteriorBeta` in cpp files
 * Remove partial likelihood `loglikelihood0()`, and always use joint likelihood
@@ -19,6 +17,7 @@
 * Use `openmp` to parallelize some for-loop
 * Update vignette
 
+
 ### GPTCM 1.1.2 (2025-09-26)
 
 * Update simulation examples in vignette due to the change of `mvnfast::rmvn()`
@@ -27,31 +26,9 @@
 * Update function `simData()` for any number of clusters 
 * Simplify `BVS.cpp`
 
+
 ### GPTCM 1.1.1 (2025-09-16)
 
-* Fix a warning about fallback compilation with Armadillo 14.6.3 from CRAN check on machine `r-devel-linux-x86_64-debian-gcc`
-* Fix issues raised from CRAN reviewer
-* Change `MASS::mvrnorm()` to `mvnfast::rmvn()`
-
-### GPTCM 1.1.0 (2025-09-07) (GitHub Only)
-
 * First CRAN version
-* Add vignette
-
-### GPTCM 1.0.3 (2025-09-05) (GitHub Only)
-
-* Fix NOTE about `elapsed time` from Winbuilder checks 
-
-### GPTCM 1.0.2 (2025-09-05) (GitHub Only)
-
-* Improve help files
-
-### GPTCM 1.0.1 (2025-08-28) (GitHub Only)
-
-* In `simData()`, suppress intercept when simulating data based on the Cox model
-
-### GPTCM 1.0.0 (2025-08-25) (GitHub Only)
-
-* First released version at `ocbe-uio` github
 
 </div>

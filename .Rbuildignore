@@ -1,6 +1,12 @@
+^test.R
 ^test_build.R$
+^test_build_README.R$
 ^results/
-^\.github$
+^cleanup/
+^README*
 ^LICENSE$
+^\.github$
+^.*\.pdf$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+

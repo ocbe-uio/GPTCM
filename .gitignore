@@ -4,7 +4,9 @@
 .Rhistory
 .DS_Store
 
-test_build.R
+README.html
+README.Rmd
+test_build*
 results
 src/Makevars
 src/*.o

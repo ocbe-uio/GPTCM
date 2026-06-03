@@ -9,13 +9,11 @@ GPTCM(
   nIter = 500,
   burnin = 200,
   thin = 1,
-  tick = 100,
+  tick = 500,
   proportion.model = TRUE,
   dirichlet = TRUE,
   hyperpar = NULL,
   BVS = TRUE,
-  RW.MH = "fisher",
-  sigmaMH = c(1, 1),
   threads = 1,
   kappaIGamma = FALSE,
   kappaSampler = "arms",
@@ -54,13 +52,6 @@ parametrization of the Dirichlet regression model}
 \item{hyperpar}{a list of relevant hyperparameters}
 
 \item{BVS}{logical value for implementing Bayesian variable selection}
-
-\item{RW.MH}{string indicating the type of random-walk variance in MH 
-sampling for gamma-beta move, one of 
-\code{c("fisher", "hamiltonian", "symmetric")}}
-
-\item{sigmaMH}{a vector of two factors for the random-walk moving step for 
-gamma-beta and eta-zeta move}
 
 \item{threads}{maximum threads used for parallelization. Default is 1}
 

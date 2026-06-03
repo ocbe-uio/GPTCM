@@ -8,6 +8,7 @@
 #' @param nIter number of MCMC iterations
 #' @param burnin length of MCMC burn-in period
 #' @param thin number of thinning
+#' @param tick an integer used for printing the iteration index
 #' @param n number of samples to draw
 #' @param nsamp how many samples to draw for generating each sample; only the last draw will be kept
 #' @param ninit number of initials as meshgrid values for envelop search
@@ -21,8 +22,6 @@
 #' @param gamma_sampler one of \code{c("mc3", "bandit")}
 #' @param eta_prior one of \code{c("bernoulli", "MRF")}
 #' @param eta_sampler one of \code{c("mc3", "bandit")}
-#' @param rw_mh string indicating the type of random-walk variance in MH sampling for gamma-beta move
-#' @param sigmaMH a vector of two factors for the random-walk variances in MH sampling for gamma-beta and eta-zeta move
 #' @param initList a list of initial values for parameters "kappa", "xi", "betas", and "zetas"
 #' @param rangeList a list of ranges of initial values for parameters "kappa", "xi", "betas", and "zetas"
 #' @param hyperparList a list of relevant hyperparameters
@@ -32,7 +31,7 @@
 #' @param datX0 a matrix of mandatory variables
 #' @param datProportionConst an array of cluster-specific proportions
 #'
-run_mcmc <- function(nIter, burnin, thin, n, nsamp, ninit, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, rw_mh, sigmaMH, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst) {
-    .Call(`_GPTCM_run_mcmc`, nIter, burnin, thin, n, nsamp, ninit, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, rw_mh, sigmaMH, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst)
+run_mcmc <- function(nIter, burnin, thin, tick, n, nsamp, ninit, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst) {
+    .Call(`_GPTCM_run_mcmc`, nIter, burnin, thin, tick, n, nsamp, ninit, convex, npoint, dirichlet, proportion_model, BVS, threads, gamma_prior, gamma_sampler, eta_prior, eta_sampler, initList, rangeList, hyperparList, datEvent, datTime, datX, datX0, datProportionConst)
 }
 

@@ -27,11 +27,6 @@
 #' parametrization of the Dirichlet regression model
 #' @param hyperpar a list of relevant hyperparameters
 #' @param BVS logical value for implementing Bayesian variable selection
-#' @param RW.MH string indicating the type of random-walk variance in MH 
-#' sampling for gamma-beta move, one of 
-#' \code{c("fisher", "hamiltonian", "symmetric")}
-#' @param sigmaMH a vector of two factors for the random-walk moving step for 
-#' gamma-beta and eta-zeta move
 #' @param threads maximum threads used for parallelization. Default is 1
 #' @param kappaIGamma logical value for using inverse-gamma prior (\code{TRUE})
 #' or gamma prior (\code{FALSE}) for Weibull's shape parameter
@@ -90,13 +85,11 @@ GPTCM <- function(dat,
                   nIter = 500,
                   burnin = 200,
                   thin = 1,
-                  tick = 100,
+                  tick = 500,
                   proportion.model = TRUE,
                   dirichlet = TRUE,
                   hyperpar = NULL,
                   BVS = TRUE,
-                  RW.MH = "fisher",
-                  sigmaMH = c(1, 1),
                   threads = 1,
                   kappaIGamma = FALSE,
                   kappaSampler = "arms",
@@ -316,6 +309,7 @@ GPTCM <- function(dat,
     nIter,
     burnin,
     thin,
+    tick,
     arms.list$n, # n: number of samples to draw, now only 1
     arms.list$nsamp, # nsamp: number of MCMC for generating each ARMS sample, only keeping the last one
     arms.list$ninit, # ninit: number of initials as meshgrid values for envelop search
@@ -329,8 +323,6 @@ GPTCM <- function(dat,
     gammaSampler,
     etaPrior,
     etaSampler,
-    RW.MH,
-    sigmaMH,
     initList,
     rangeList,
     hyperpar,

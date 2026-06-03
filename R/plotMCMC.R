@@ -6,7 +6,7 @@
 #' @name plotMCMC
 #'
 #' @importFrom ggplot2 ggplot aes geom_step theme element_blank
-#' @importFrom graphics segments
+#' @importFrom graphics segments par layout abline
 #'
 #' @param dat input data as a list containing survival data sub-list
 #' \code{survObj} with two vectors (\code{event} and \code{time}), clinical

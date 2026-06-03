@@ -27,7 +27,7 @@ double EvalFunction::log_dens_xis(
 
     //if (par >= *(mydata_parm->xl) && par <= *(mydata_parm->xr)) // this is judged in ARMS::initial()
     //{
-    arma::vec xis(mydata_parm->currentPars, mydata_parm->p, false);
+    arma::vec xis(mydata_parm->currentPars, mydata_parm->p, true);
     // arma::vec xis_original(mydata_parm->currentPars, mydata_parm->p, false);
     // arma::vec xis = xis_original;
 
@@ -109,22 +109,27 @@ double EvalFunction::log_dens_betas(
     arma::uvec datEvent(const_cast<unsigned int*>(mydata_parm->datEvent), mydata_parm->N, false);
     arma::vec datTime(const_cast<double*>(mydata_parm->datTime), mydata_parm->N, false);
     arma::mat datX(const_cast<double*>(mydata_parm->datX), mydata_parm->N, mydata_parm->p, false);
+    arma::umat gammaIndicator(const_cast<unsigned int*>(mydata_parm->gammaIndicator), mydata_parm->p+1, mydata_parm->L, false);
 
-    arma::mat pars(mydata_parm->currentPars, mydata_parm->p+1, mydata_parm->L, false);
+    arma::mat pars(mydata_parm->currentPars, mydata_parm->p+1, mydata_parm->L, true);
     // arma::mat pars_original(mydata_parm->currentPars, mydata_parm->p, mydata_parm->L, false);
     // arma::mat pars = pars_original; // might be no need to make an extra copy; changing original pointed memory should be fine, since the value of this coordinate will be updated after ARMS
     pars(mydata_parm->jj, mydata_parm->l) = par;
 
-    arma::mat mu_tmp(mydata_parm->datMu, mydata_parm->N, mydata_parm->L, false);
+    arma::mat mu_tmp(mydata_parm->datMu, mydata_parm->N, mydata_parm->L, true);
     // arma::mat mu_original(mydata_parm->datMu, mydata_parm->N, mydata_parm->L, false);
     // arma::mat mu_tmp = mu_original;
     
     // arma::vec logMu_l = datX * pars.col(mydata_parm->l);
-    arma::vec logMu_l = pars(0, mydata_parm->l) + datX * pars.submat(1, mydata_parm->l, mydata_parm->p, mydata_parm->l);
+    // arma::vec pars_l = pars.submat(1, mydata_parm->l, mydata_parm->p, mydata_parm->l);
+    // pars_l.elem(arma::find(gammaIndicator == 0)).fill(0.0);
+    arma::vec pars_l = pars.submat(1, mydata_parm->l, mydata_parm->p, mydata_parm->l) % 
+        gammaIndicator.submat(1, mydata_parm->l, mydata_parm->p, mydata_parm->l);
+    arma::vec logMu_l = pars(0, mydata_parm->l) + datX * pars_l;
     logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
     mu_tmp.col(mydata_parm->l) = arma::exp(logMu_l);
 
-    arma::mat weibullS_tmp(mydata_parm->weibullS, mydata_parm->N, mydata_parm->L, false);
+    arma::mat weibullS_tmp(mydata_parm->weibullS, mydata_parm->N, mydata_parm->L, true);
     // arma::mat weibullS_original(mydata_parm->weibullS, mydata_parm->N, mydata_parm->L, false);
     // arma::mat weibullS_tmp = weibullS_original;
     //arma::mat lambdas = mu_tmp / std::tgamma(1. + 1./mydata_parm->kappa);
@@ -154,9 +159,7 @@ double EvalFunction::log_dens_betas(
     }
 
     //double logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(mydata_parm->datEvent)) ) );
-    double logpost_first_sum = arma::accu( arma::log(
-            logpost_first.elem(arma::find(datEvent))
-                                           ) );
+    double logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
 
     //double logpost_second_sum = arma::accu(mydata_parm->datTheta %
     //  mydata_parm->datProportion.col(mydata_parm->l) % weibullS_tmp.col(mydata_parm->l));
@@ -198,8 +201,9 @@ double EvalFunction::log_dens_zetas(
     arma::cube datX(const_cast<double*>(mydata_parm->datX), mydata_parm->N, mydata_parm->p, mydata_parm->L, false);
     arma::uvec datEvent(const_cast<unsigned int*>(mydata_parm->datEvent), mydata_parm->N, false);
     arma::mat datProportionConst_tmp(const_cast<double*>(mydata_parm->datProportionConst), mydata_parm->N, mydata_parm->L, false);
+    arma::umat gammaIndicator(const_cast<unsigned int*>(mydata_parm->gammaIndicator), mydata_parm->p+1, mydata_parm->L, false);
 
-    arma::mat pars(mydata_parm->currentPars, mydata_parm->p+1, mydata_parm->L, false);
+    arma::mat pars(mydata_parm->currentPars, mydata_parm->p+1, mydata_parm->L, true);
     // arma::mat pars_original(mydata_parm->currentPars, mydata_parm->p+1, mydata_parm->L, false);
     // arma::mat pars = pars_original;
     pars(mydata_parm->jj, mydata_parm->l) = par;
@@ -210,7 +214,10 @@ double EvalFunction::log_dens_zetas(
 
     for(unsigned int ll=0; ll<(mydata_parm->L); ++ll)
     {
-        alphas.col(ll) = arma::exp( pars(0, ll) + datX.slice(ll) * pars.submat(1, ll, mydata_parm->p, ll) );
+        // arma::vec pars_l = pars.submat(1, ll, mydata_parm->p, ll);
+        // pars_l.elem(arma::find(gammaIndicator == 0)).fill(0.0);
+        arma::vec pars_l = pars.submat(1, ll, mydata_parm->p, ll) % gammaIndicator.submat(1, ll, mydata_parm->p, ll);
+        alphas.col(ll) = arma::exp( pars(0, ll) + datX.slice(ll) * pars_l );
     }
     alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
     alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);

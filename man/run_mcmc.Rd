@@ -8,6 +8,7 @@ run_mcmc(
   nIter,
   burnin,
   thin,
+  tick,
   n,
   nsamp,
   ninit,
@@ -21,8 +22,6 @@ run_mcmc(
   gamma_sampler,
   eta_prior,
   eta_sampler,
-  rw_mh,
-  sigmaMH,
   initList,
   rangeList,
   hyperparList,
@@ -39,6 +38,8 @@ run_mcmc(
 \item{burnin}{length of MCMC burn-in period}
 
 \item{thin}{number of thinning}
+
+\item{tick}{an integer used for printing the iteration index}
 
 \item{n}{number of samples to draw}
 
@@ -65,10 +66,6 @@ run_mcmc(
 \item{eta_prior}{one of \code{c("bernoulli", "MRF")}}
 
 \item{eta_sampler}{one of \code{c("mc3", "bandit")}}
-
-\item{rw_mh}{string indicating the type of random-walk variance in MH sampling for gamma-beta move}
-
-\item{sigmaMH}{a vector of two factors for the random-walk variances in MH sampling for gamma-beta and eta-zeta move}
 
 \item{initList}{a list of initial values for parameters "kappa", "xi", "betas", and "zetas"}
 

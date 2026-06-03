@@ -14,6 +14,7 @@ typedef struct common_data
 {
     // members
     double *currentPars;
+    unsigned int *gammaIndicator;
 
     unsigned int jj;
     unsigned int l;

@@ -63,8 +63,8 @@ library(survminer)
 fit.km <- survival::survfit(Surv(time, event) ~ 1, data = dat$survObj)
 ggsurv <- survminer::ggsurvplot(fit.km,
   conf.int = TRUE,
-  xlab = "Follow-up time",
-  ylab = "Survival probability",
+  xlab = "Follow-up time (year)",
+  ylab = "Survival probability (%)",
   legend = "none",
   risk.table = TRUE,
   cumevents = TRUE,
@@ -88,7 +88,7 @@ ggsurv
 dev.off()
 ```
 
-<img src="../man/figures/cran_km.png" width="70%" />
+![](man/figures/fig_km-1.png)<!-- -->
 
 After fitting GPTCM-Ber2, we compare its the survival prediction performance with other approaches (i.e. Kaplan-Meier method without covariates, classic Cox model with two clinical covariates (Cox.clin), Cox model with mean aggregate covariates (Cox.X.mean), Cox model with median aggregate covariates (Cox.X.median), Cox model with clinical and mean aggregate covariates (Cox.clin.X.mean), and frequentist semiparametric promotion time cure model with clinical variables (PTCM.clin)). 
 The follow figure shows the prediction performance of time-dependent Brier scores. 
@@ -118,7 +118,7 @@ plotBrier(dat,
 dev.off()
 ```
 
-<img src="../man/figures/cran_brier.png" width="70%" />
+<img src="../man/figures/fig_km-1.png" width="100%" />
 
 The following figure shows the posterior distributions of cell-type-specific effects associated with cell-type-specific progression with the black diamonds indicating true effects, and marginal posterior inclusion probabilities (mPIP) of Bayesian variable selection (BVS). 
 
@@ -137,8 +137,8 @@ plotCoeff(dat, datMCMC = fit, estimator = "gamma")
 dev.off()
 ```
 
-<img src="../man/figures/cran_betas.png" width="100%" />
-<img src="../man/figures/cran_gammas.png" width="100%" />
+<img src="../man/figures/fig_betas-1.png" width="100%" />
+<img src="../man/figures/fig_gammas-1.png" width="100%" />
 
 
 The following figure shows the posterior distributions of cell-type-specific effects associated with cell-type-specific proportions, and mPIP of Bayesian variable selection. 
@@ -158,8 +158,8 @@ plotCoeff(dat, datMCMC = fit, estimator = "eta")
 dev.off()
 ```
 
-<img src="../man/figures/cran_zetas.png" width="100%" />
-<img src="../man/figures/cran_etas.png" width="100%" />
+<img src="../man/figures/fig_zetas-1.png" width="100%" />
+<img src="../man/figures/fig_etas-1.png" width="100%" />
 
 ## References
 

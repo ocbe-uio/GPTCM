@@ -87,6 +87,8 @@ public:
         const arma::vec& xi,
         const arma::mat& zetas,
         const arma::mat& betas,
+        const arma::umat& etas,
+        const arma::umat& gammas,
         double kappa,
 
         bool proportion_model,
@@ -116,8 +118,6 @@ public:
         arma::mat& logP_gamma_,
         unsigned int& gamma_acc_count_,
         arma::vec& log_likelihood_,
-        const std::string& rw_mh,
-        double sigmaMH_beta,
 
         // int n,
         // int nsamp,
@@ -131,11 +131,14 @@ public:
 
         const arma::vec& xi_,
         const arma::mat& zetas_,
+        const arma::umat& etas_,
         arma::mat& betas_,
         double kappa_,
         double tau0Sq_,
         const arma::vec& tauSq_,
-        double pi0,
+        const arma::vec& pi,
+        arma::vec& logZ_gamma,
+        
 
         bool proportion_model,
 
@@ -143,12 +146,11 @@ public:
         arma::mat& datProportion,
         arma::vec& datTheta,
         const arma::mat& datMu,
-        const arma::mat& weibullLambda,
         const arma::mat& weibullS,
         const DataClass &dataclass
     );
 
-    static double logsumexp(const std::vector<double>& x);
+    static double logsumexp(const arma::vec& x);
 
     static void sampleEta(
         arma::umat& etas_,
@@ -157,18 +159,18 @@ public:
         arma::mat& logP_eta_,
         unsigned int& eta_acc_count_,
         arma::vec& log_likelihood_,
-        const std::string& rw_mh,
-        double sigmaMH_zeta,
 
         const armsParmClass& armsPar,
         void *hyperpar_,
         arma::mat& zetas_,
         const arma::mat& betas_,
+        const arma::umat& gammas_,
         const arma::vec& xi_,
         double kappa_,
         double w0Sq_,
         arma::vec wSq_,
-        double rho0,
+        const arma::vec& rho,
+        arma::vec& logZ_eta,
 
         bool dirichlet,
 
@@ -194,6 +196,7 @@ private:
     static double logPbetaK(
         const unsigned int k,
         const arma::mat& betas,
+        const arma::umat& gammas,
 
         const double tauSq,
         const double kappa,
@@ -205,6 +208,7 @@ private:
     static double logPzetaK(
         const unsigned int k,
         const arma::mat& zetas,
+        const arma::umat& etas,
         const double wSq,
         const double kappa,
 
@@ -212,66 +216,6 @@ private:
         const arma::mat& weibullS,
         const arma::mat& weibullLambda,
         const DataClass& dataclass
-    );
-
-    static double MALAbetas(
-        arma::mat& proposedBeta,
-        const arma::mat& betas_,
-        const arma::uvec& updateIdx0,
-        unsigned int componentUpdateIdx,
-
-        const arma::vec& datTheta,
-        const arma::mat& datProportion,
-        const arma::mat& weibullS,
-        const arma::mat& weibullLambda,
-        double kappa_,
-        double tauSqK,
-        double eps,
-        const DataClass &dataclass
-    );
-
-    static double MALAlogPbetas(
-        const arma::mat& betas_,
-        const arma::mat& proposedBeta,
-        const arma::uvec& updateIdx0,
-        unsigned int componentUpdateIdx,
-
-        const arma::vec& datTheta,
-        const arma::mat& datProportion,
-        double kappa_,
-        double tauSqK,
-        double eps,
-        const DataClass &dataclass
-    );
-
-    static double MALAzetas(
-        arma::mat& proposedZeta,
-        const arma::mat& zetas_,
-        const arma::uvec& updateIdx0,
-        unsigned int componentUpdateIdx,
-
-        const arma::vec& datTheta,
-        const arma::mat& weibullS,
-        const arma::mat& weibullLambda,
-        double kappa_,
-        double wSqK,
-        double eps,
-        const DataClass &dataclass
-    );
-
-    static double MALAlogPzetas(
-        const arma::mat& zetas_,
-        const arma::mat& proposedZeta,
-        const arma::uvec& updateIdx0,
-        unsigned int componentUpdateIdx,
-
-        const arma::vec& datTheta,
-        const arma::mat& weibullS,
-        const arma::mat& weibullLambda,
-        double kappa_,
-        double wSqK,
-        double eps,
-        const DataClass &dataclass
     );
 
     static double logPDFNormal(

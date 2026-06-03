@@ -18,5 +18,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Zhi Zhao \email{zhi.zhao@medisin.uio.no}
 
+Authors:
+\itemize{
+  \item Zhi Zhao \email{zhi.zhao@medisin.uio.no}
+}
+
 }
 \keyword{internal}

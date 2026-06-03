@@ -72,10 +72,6 @@ void ARMS_Gibbs::arms_gibbs_xi(
     // {
     // Gibbs sampling
 
-    #ifdef _OPENMP
-    #pragma omp parallel for 
-    #endif
-
     for (unsigned int j = 0; j < p; ++j)
     {
         mydata->jj = j;
@@ -174,8 +170,8 @@ void ARMS_Gibbs::arms_gibbs_xi(
 void ARMS_Gibbs::arms_gibbs_beta(
     const armsParmClass& armsPar,
     arma::mat& currentPars,
-    double& tau0Sq,
     arma::vec& tauSq,
+    double& tau0Sq,
 
     // const arma::umat& gammas,
     arma::umat gammas,
@@ -225,7 +221,8 @@ void ARMS_Gibbs::arms_gibbs_beta(
     dataS *mydata = (dataS *)malloc(sizeof (dataS));
 
     gammas = arma::join_cols(arma::ones<arma::urowvec>(L), gammas);
-    currentPars.elem(arma::find(gammas == 0)).fill(0.);
+    mydata->gammaIndicator = gammas.memptr();
+    // currentPars.elem(arma::find(gammas == 0)).fill(0.);
     mydata->currentPars = currentPars.memptr();
     mydata->p = p;
     mydata->L = L;
@@ -257,10 +254,18 @@ void ARMS_Gibbs::arms_gibbs_beta(
         // mydata->tauSq = tauSq_tmp[l];
         for (unsigned int j = 0; j < p+1; ++j)
         {
-            if (gammas(j, l))
+            if (!gammas(j, l))
+            {
+                if (j > 0)
+                    currentPars(j, l) = R::rnorm(0., std::sqrt(tauSq[l]));
+            }
+            else
             {
                 mydata->jj = j;
                 mydata->l = l;
+                // arma::uvec gamma_l = gammas.submat(1, l, p, l);
+                // mydata->gammaIndicator = gamma_l.memptr();
+
                 // // update \beta's variance tauSq
                 // mydata->tauSq = sampleTau(tauA, tauB, currentPars);
 
@@ -270,7 +275,7 @@ void ARMS_Gibbs::arms_gibbs_beta(
                 // if put 'create_mydata' out of for-loop, the following updates can for elements of pointer *mydata
                 
                 // arma::vec logMu_l = dataclass.datX.slice(l) * currentPars.col(l);
-                arma::vec logMu_l = currentPars(0, l) + dataclass.datX.slice(l) * currentPars.submat(1, l, p, l);
+                arma::vec logMu_l = currentPars(0, l) + dataclass.datX.slice(l) * (currentPars.submat(1, l, p, l) % gammas.submat(1, l, p, l));
                 logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
                 datMu.col(l) = arma::exp( logMu_l );
                 // arma::vec lambdas = datMu.col(l) / std::tgamma(1. + 1./kappa);
@@ -394,7 +399,8 @@ void ARMS_Gibbs::arms_gibbs_betaK(
     dataS *mydata = (dataS *)malloc(sizeof (dataS));
 
     gammas = arma::join_cols(arma::ones<arma::urowvec>(L), gammas);
-    currentPars.elem(arma::find(gammas == 0)).fill(0.);
+    mydata->gammaIndicator = gammas.memptr();
+    // currentPars.elem(arma::find(gammas == 0)).fill(0.);
     mydata->currentPars = currentPars.memptr();
     mydata->p = p;
     mydata->L = L;
@@ -415,15 +421,22 @@ void ARMS_Gibbs::arms_gibbs_betaK(
     // mydata->tauSq = sampleW(tauA, tauB, currentPars.col(l));
     for (unsigned int j = 0; j < p+1; ++j)
     {
-        if (gammas(j, l))
+        if (!gammas(j, l))
+        {
+            if (j > 0)
+                currentPars(j, l) = R::rnorm(0., std::sqrt(tauSqK));
+        }
+        else
         {
             mydata->jj = j;
             mydata->l = l;
+            // arma::uvec gamma_l = gammas.submat(1, l, p, l);
+            // mydata->gammaIndicator = gamma_l.memptr();
 
             mydata->datX = dataclass.datX.slice(l).memptr();
 
             // arma::vec logMu_l = dataclass.datX.slice(l) * currentPars.col(l);
-            arma::vec logMu_l = currentPars(0, l) + dataclass.datX.slice(l) * currentPars.submat(1, l, p, l);
+            arma::vec logMu_l = currentPars(0, l) + dataclass.datX.slice(l) * (currentPars.submat(1, l, p, l) % gammas.submat(1, l, p, l));
             logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
             datMu.col(l) = arma::exp( logMu_l );
             arma::vec lambdas = arma::pow( dataclass.datTime / (datMu.col(l) / std::tgamma(1. + 1./kappa)), kappa);
@@ -535,7 +548,8 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     dataS *mydata = (dataS *)malloc(sizeof (dataS));
 
     etas = arma::join_cols(arma::ones<arma::urowvec>(L), etas);
-    currentPars.elem(arma::find(etas == 0)).fill(0.);
+    mydata->gammaIndicator = etas.memptr();
+    // currentPars.elem(arma::find(etas == 0)).fill(0.);
     mydata->currentPars = currentPars.memptr();
     mydata->p = p;
     mydata->L = L;
@@ -544,7 +558,7 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     // mydata->wSq = wSq;
     //mydata->phi = phi;
     //mydata->dirichlet = dirichlet,
-    mydata->kappa = kappa,
+    mydata->kappa = kappa;
     mydata->datTheta = datTheta.memptr();
     //mydata->datMu = datMu.memptr();
     mydata->weibullS = weibullS.memptr();
@@ -565,10 +579,17 @@ void ARMS_Gibbs::arms_gibbs_zeta(
         // mydata->wSq = wSq_tmp[l];
         for (unsigned int j = 0; j < p+1; ++j)
         {
-            if (etas(j, l))
+            if (!etas(j, l))
+            {
+                if (j > 0)
+                    currentPars(j, l) = R::rnorm(0., std::sqrt(wSq[l]));
+            }
+            else
             {
                 mydata->jj = j;
                 mydata->l = l;
+                // arma::uvec eta_l = etas.submat(1, l, p, l);
+                // mydata->gammaIndicator = eta_l.memptr();
                 // // update \zetas' variance wSq
                 // mydata->wSq = sampleW(wA, wB, currentPars.rows(1, p));
                 // if(w0IGamma)
@@ -684,15 +705,16 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
     dataS *mydata = (dataS *)malloc(sizeof (dataS));
 
     etas = arma::join_cols(arma::ones<arma::urowvec>(L), etas);
-    currentPars.elem(arma::find(etas == 0)).fill(0.);
+    mydata->gammaIndicator = etas.memptr();
+    // currentPars.elem(arma::find(etas == 0)).fill(0.);
     mydata->currentPars = currentPars.memptr();
     mydata->p = p;
     mydata->L = L;
     mydata->N = N;
     mydata->w0Sq = w0Sq;
     mydata->wSq = wSqK;
-    mydata->kappa = kappa,
-            mydata->datTheta = datTheta.memptr();
+    mydata->kappa = kappa;
+    mydata->datTheta = datTheta.memptr();
     mydata->weibullS = weibullS.memptr();
     mydata->weibullLambda = weibullLambda.memptr();
     mydata->datX = dataclass.datX.memptr();
@@ -705,10 +727,18 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
     // mydata->wSq = sampleW(wA, wB, currentPars.submat(1,l,p,l));
     for (unsigned int j = 0; j < p+1; ++j)
     {
-        if (etas(j, l))
+        if (!etas(j, l))
+        {
+            if (j > 0)
+                currentPars(j, l) = R::rnorm(0., std::sqrt(wSqK));
+        }
+        else
         {
             mydata->jj = j;
             mydata->l = l;
+            // arma::uvec eta_l = etas.submat(1, l, p, l);
+            // mydata->gammaIndicator = eta_l.memptr();
+
             double xprev = currentPars(j, l);
             std::vector<double> xsamp(armsPar.nsamp);
 
@@ -928,7 +958,7 @@ void ARMS_Gibbs::slice_sample(
         }
         while (cnt < 1e4);
 
-        if (cnt == 1e4) ::Rf_error("slice_sample_cpp loop did not finish");
+        if (cnt == 1e4) Rcpp::stop("slice_sample_cpp loop did not finish");
 
         x = xs;
         logy = logys;
