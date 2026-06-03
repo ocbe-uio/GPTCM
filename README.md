@@ -1,3 +1,4 @@
+<img src="man/figures/logo.png" align="right" height="139" alt="GPTCM logo" />
 
 [![CRAN](https://www.r-pkg.org/badges/version/GPTCM)](https://cran.r-project.org/package=GPTCM)
 [![r-universe](https://zhizuio.r-universe.dev/badges/GPTCM)](https://zhizuio.r-universe.dev/GPTCM)
