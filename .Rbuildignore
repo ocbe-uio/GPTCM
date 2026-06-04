@@ -3,7 +3,8 @@
 ^test_build_README.R$
 ^results/
 ^cleanup/
-^README*
+^README.Rmd$
+^README.html$
 ^LICENSE$
 ^\.github$
 ^.*\.pdf$
