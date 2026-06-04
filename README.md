@@ -1,8 +1,9 @@
+
 <img src="man/figures/logo.png" align="right" height="139" alt="GPTCM logo" />
 
 [![CRAN](https://www.r-pkg.org/badges/version/GPTCM)](https://cran.r-project.org/package=GPTCM)
-[![r-universe](https://ocbe-uio.r-universe.dev/badges/GPTCM)](https://ocbe-uio.r-universe.dev/GPTCM)
-[![R-CMD-check](https://github.com/ocbe-uio/GPTCM/workflows/R-CMD-check/badge.svg)](https://github.com/ocbe-uio/GPTCM/actions)
+[![r-universe](https://zhizuio.r-universe.dev/badges/GPTCM)](https://zhizuio.r-universe.dev/GPTCM)
+[![R-CMD-check](https://github.com/zhizuio/GPTCM/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/GPTCM/actions)
 [![License](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![DOI](https://img.shields.io/badge/doi-10.32614%2FCRAN.package.GPTCM-brightgreen)](https://doi.org/10.32614/CRAN.package.GPTCM)
 
@@ -25,11 +26,11 @@ install.packages("GPTCM")
 ```
 
 Install the latest development version from
-[GitHub](https://github.com/ocbe-uio/GPTCM):
+[GitHub](https://github.com/zhizuio/GPTCM):
 
 ``` r
 #install.packages("remotes")
-remotes::install_github("ocbe-uio/GPTCM")
+remotes::install_github("zhizuio/GPTCM")
 ```
 
 ## A simulation study
@@ -84,7 +85,7 @@ fit.km <- survival::survfit(Surv(time, event) ~ 1, data = dat$survObj)
 ggsurv <- survminer::ggsurvplot(fit.km,
                                 conf.int = TRUE, 
                                 xlab = "Follow-up time (year)",
-                                ylab = "Survival probability (%)",
+                                ylab = "Survival probability",
                                 legend = "none",
                                 risk.table = TRUE,
                                 cumevents = TRUE,
@@ -147,7 +148,7 @@ selection (BVS).
 
 ``` r
 ## show cel-type-specific effects
-plotCoeff(dat, datMCMC = fit, estimator = "beta")
+plotCoeff(dat, datMCMC = fit, estimator = "beta", bandwidth = 0.02)
 ```
 
 ![](man/figures/fig_betas-1.png)<!-- -->
@@ -165,7 +166,7 @@ proportions, and mPIP of Bayesian variable selection.
 
 ``` r
 ## show cel-type-specific effects
-plotCoeff(dat, datMCMC = fit, estimator = "zeta")
+plotCoeff(dat, datMCMC = fit, estimator = "zeta", bandwidth = 0.02)
 ```
 
 ![](man/figures/fig_zetas-1.png)<!-- -->
