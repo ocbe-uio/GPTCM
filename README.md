@@ -1,8 +1,8 @@
 <img src="man/figures/logo.png" align="right" height="139" alt="GPTCM logo" />
 
 [![CRAN](https://www.r-pkg.org/badges/version/GPTCM)](https://cran.r-project.org/package=GPTCM)
-[![r-universe](https://zhizuio.r-universe.dev/badges/GPTCM)](https://zhizuio.r-universe.dev/GPTCM)
-[![R-CMD-check](https://github.com/zhizuio/GPTCM/workflows/R-CMD-check/badge.svg)](https://github.com/zhizuio/GPTCM/actions)
+[![r-universe](https://ocbe-uio.r-universe.dev/badges/GPTCM)](https://ocbe-uio.r-universe.dev/GPTCM)
+[![R-CMD-check](https://github.com/ocbe-uio/GPTCM/workflows/R-CMD-check/badge.svg)](https://github.com/ocbe-uio/GPTCM/actions)
 [![License](https://img.shields.io/badge/License-GPLv3-brightgreen.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![DOI](https://img.shields.io/badge/doi-10.32614%2FCRAN.package.GPTCM-brightgreen)](https://doi.org/10.32614/CRAN.package.GPTCM)
 
@@ -25,11 +25,11 @@ install.packages("GPTCM")
 ```
 
 Install the latest development version from
-[GitHub](https://github.com/zhizuio/GPTCM):
+[GitHub](https://github.com/ocbe-uio/GPTCM):
 
 ``` r
 #install.packages("remotes")
-remotes::install_github("zhizuio/GPTCM")
+remotes::install_github("ocbe-uio/GPTCM")
 ```
 
 ## A simulation study
