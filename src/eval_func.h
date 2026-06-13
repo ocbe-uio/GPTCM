@@ -71,12 +71,23 @@ public:
         void *abc_data
     );
 
+    static double log_dens_betasFull
+    (
+        double par,
+        void *abc_data
+    );
+
     static double log_dens_zetas
     (
         double par,
         void *abc_data
     );
 
+    static double log_dens_zetasFull
+    (
+        double par,
+        void *abc_data
+    );
     /*
     static double log_dens_phi
     (

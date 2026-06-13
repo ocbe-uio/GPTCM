@@ -449,52 +449,52 @@ Rcpp::List run_mcmc(
 
     unsigned int nIter_thin_count = 0;
 
-    for (unsigned int m=0; m<nIter; ++m)
+    if (BVS)
     {
-        if ((m+1) % cTotalLength == 0) {
-            double gamma_acc = (m == 0) ? 0.0 : (double)(gamma_acc_count)/(double)(m) * 1000.0;
-            double eta_acc = (m == 0) ? 0.0 : (double)(eta_acc_count)/(double)(m) * 1000.0;
-
-            Rcpp::Rcout << " Running iteration " << m+1 << " ... Acc Rate: ~ gamma: "
-                        << std::round(gamma_acc)/1000.0
-                        << " ... ~ eta: " << std::round(eta_acc)/1000.0 << "\n";
-        }
-
-        // update beta variances tau0Sq, tauSq
-        tau0Sq = sampleV(hyperpar->tau0A, hyperpar->tau0B, betas.row(0).t());
-
-        for (unsigned int l=0; l<L; ++l)
+        for (unsigned int m=0; m<nIter; ++m)
         {
-            tauSq[l] = sampleV(hyperpar->tauA, hyperpar->tauB, betas.submat(1,l,p,l));
-        }
+            if ((m+1) % cTotalLength == 0) {
+                double gamma_acc = (m == 0) ? 0.0 : (double)(gamma_acc_count)/(double)(m+1) * 1000.0;
+                double eta_acc = (m == 0) ? 0.0 : (double)(eta_acc_count)/(double)(m+1) * 1000.0;
 
-        // update xi variance vSq
-        v0Sq = sampleV0(hyperpar->v0A, hyperpar->v0B, xi[0]);
-        vSq = sampleV(hyperpar->vA, hyperpar->vB, xi.subvec(1, xi.n_elem - 1));
+                Rcpp::Rcout << " Running iteration " << m+1 << " ... Acc Rate: ~ gamma: "
+                            << std::round(gamma_acc)/1000.0
+                            << " ... ~ eta: " << std::round(eta_acc)/1000.0 << "\n";
+            }
 
-        // update xi in cure fraction
-        ARMS_Gibbs::arms_gibbs_xi
-        (
-            armsPar,
-            xi,
-            v0Sq,
-            vSq,
-            datProportion,
-            weibullS,
-            dataclass
-        );
+            // update beta variances tau0Sq, tauSq
+            tau0Sq = sampleV(hyperpar->tau0A, hyperpar->tau0B, betas.row(0).t());
 
-        // update cure rate based on new xi
-        logTheta = dataclass.datX0 * xi;
-        logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
-        datTheta = arma::exp( logTheta );
-
-        // update parameters in the proportion model
-        if(proportion_model)
-        {
-            if(dirichlet)
+            for (unsigned int l=0; l<L; ++l)
             {
-                if(BVS)
+                tauSq[l] = sampleV(hyperpar->tauA, hyperpar->tauB, betas.submat(1,l,p,l));
+            }
+
+            // update xi variance vSq
+            v0Sq = sampleV0(hyperpar->v0A, hyperpar->v0B, xi[0]);
+            vSq = sampleV(hyperpar->vA, hyperpar->vB, xi.subvec(1, xi.n_elem - 1));
+
+            // update xi in cure fraction
+            ARMS_Gibbs::arms_gibbs_xi
+            (
+                armsPar,
+                xi,
+                v0Sq,
+                vSq,
+                datProportion,
+                weibullS,
+                dataclass
+            );
+
+            // update cure rate based on new xi
+            logTheta = dataclass.datX0 * xi;
+            logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+            datTheta = arma::exp( logTheta );
+
+            // update parameters in the proportion model
+            if(proportion_model)
+            {
+                if(dirichlet)
                 {
                     // update zeta variances w0Sq, wSq
                     w0Sq = sampleV(hyperpar->w0A, hyperpar->w0B, zetas.row(0).t());
@@ -504,285 +504,468 @@ Rcpp::List run_mcmc(
                         wSq[l] = sampleV(hyperpar->wA, hyperpar->wB, zetas.submat(1,l,p,l));
                     }
 
-                    // ============================================================
-                    // Update latent Bernoulli probabilities rho | eta
-                    // ============================================================
-
-                    if(etaPrior == Eta_Prior_Type::bernoulli)
+                    if(BVS)
                     {
-                        for(unsigned int l=0; l<L; ++l)
+                        // ============================================================
+                        // Update latent Bernoulli probabilities rho | eta
+                        // ============================================================
+
+                        if(etaPrior == Eta_Prior_Type::bernoulli)
                         {
-                            double s_l = arma::accu(etas.col(l));
-
-                            rho[l] = R::rbeta(hyperpar->rhoA + s_l,
-                                              hyperpar->rhoB + static_cast<double>(p) - s_l);
-
-                            // Recompute logP_eta so it is consistent with current rho.
-                            for(unsigned int j=0; j<p; ++j)
+                            for(unsigned int l=0; l<L; ++l)
                             {
-                                logP_eta(j, l) = BVS_Sampler::logPDFBernoulli(etas(j, l), rho[l]);
+                                double s_l = arma::accu(etas.col(l));
+
+                                rho[l] = R::rbeta(hyperpar->rhoA + s_l,
+                                                hyperpar->rhoB + static_cast<double>(p) - s_l);
+
+                                // Recompute logP_eta so it is consistent with current rho.
+                                for(unsigned int j=0; j<p; ++j)
+                                {
+                                    logP_eta(j, l) = BVS_Sampler::logPDFBernoulli(etas(j, l), rho[l]);
+                                }
                             }
                         }
+
+                        // logZ_eta.fill(std::numeric_limits<double>::quiet_NaN());
+                        BVS_Sampler::sampleEta(
+                            etas,
+                            etaPrior,
+                            etaSampler,
+                            logP_eta,
+                            eta_acc_count,
+                            log_likelihood,
+
+                            armsPar,
+                            hyperpar,
+
+                            zetas,
+                            betas,
+                            gammas,
+                            xi,
+                            kappa,
+                            w0Sq,
+                            wSq,
+                            rho,
+                            logZ_eta,
+
+                            dirichlet,
+                            datTheta,
+                            weibullS,
+                            weibullLambda,
+                            dataclass
+                        );
                     }
 
-                    // logZ_eta.fill(std::numeric_limits<double>::quiet_NaN());
-                    BVS_Sampler::sampleEta(
-                        etas,
-                        etaPrior,
-                        etaSampler,
-                        logP_eta,
-                        eta_acc_count,
-                        log_likelihood,
-
+                    // One more round update besides sampleEta()
+                    ARMS_Gibbs::arms_gibbs_zeta(
                         armsPar,
-                        hyperpar,
-
                         zetas,
-                        betas,
-                        gammas,
-                        xi,
-                        kappa,
                         w0Sq,
                         wSq,
-                        rho,
-                        logZ_eta,
+                        etas,
 
+                        kappa,
                         dirichlet,
                         datTheta,
                         weibullS,
                         weibullLambda,
                         dataclass
                     );
+
+                    // update Dirichlet concentrations and proportions based on new zetas
+                    arma::mat alphas = arma::zeros<arma::mat>(N, L);
+
+                    for(unsigned int l=0; l<L; ++l)
+                    {
+                        arma::vec zetaMask_l = zetas.submat(1, l, p, l);
+                        zetaMask_l.elem(arma::find(etas.col(l) == 0)).fill(0.0);
+                        alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l );
+                    }
+
+                    alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
+                    alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+                    datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
                 }
-
-                // One more round update besides sampleEta()
-                ARMS_Gibbs::arms_gibbs_zeta(
-                    armsPar,
-                    zetas,
-                    w0Sq,
-                    wSq,
-                    etas,
-
-                    kappa,
-                    dirichlet,
-                    datTheta,
-                    weibullS,
-                    weibullLambda,
-                    dataclass
-                );
-
-                // update Dirichlet concentrations and proportions based on new zetas
-                arma::mat alphas = arma::zeros<arma::mat>(N, L);
-
-                for(unsigned int l=0; l<L; ++l)
+                else
                 {
-                    arma::vec zetaMask_l = zetas.submat(1, l, p, l);
-                    zetaMask_l.elem(arma::find(etas.col(l) == 0)).fill(0.0);
-                    alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l );
-                }
-
-                alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
-                alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-                datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
-            }
-            else
-            {
-                Rprintf("Warning: In arms_gibbs_zeta(), Dirichlet modeling with logit/alr-link is not implement!\n");
-                break;
-            }
-        }
-
-        // update Weibull shape parameter kappa
-        ARMS_Gibbs::arms_kappa(
-            armsPar,
-            kappa,
-            hyperpar->kappaA,
-            hyperpar->kappaB,
-            hyperpar->kappaIGamma,
-            datTheta,
-            datMu,
-            datProportion,
-            dataclass
-        );
-
-        // update Weibull quantities based on new kappa
-        for(unsigned int l=0; l<L; ++l)
-        {
-            weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
-            weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
-        }
-
-        // ============================================================
-        // Update latent Bernoulli probabilities pi | gamma
-        // ============================================================
-
-        if(BVS && gammaPrior == Gamma_Prior_Type::bernoulli)
-        {
-            for(unsigned int l=0; l<L; ++l)
-            {
-                double s_l = arma::accu(gammas.col(l));
-
-                pi[l] = R::rbeta(hyperpar->piA + s_l,
-                                 hyperpar->piB + static_cast<double>(p) - s_l);
-
-                // Recompute logP_gamma so it is consistent with current pi.
-                for(unsigned int j=0; j<p; ++j)
-                {
-                    logP_gamma(j, l) = BVS_Sampler::logPDFBernoulli(gammas(j, l), pi[l]);
+                    Rprintf("Warning: In arms_gibbs_zeta(), Dirichlet modeling with logit/alr-link is not implement!\n");
+                    break;
                 }
             }
-        }
 
-        // update gammas -- variable selection indicators
-        if(BVS)
-        {
-            // logZ_gamma.fill(std::numeric_limits<double>::quiet_NaN());
-            BVS_Sampler::sampleGamma(
-                gammas,
-                gammaPrior,
-                gammaSampler,
-                logP_gamma,
-                gamma_acc_count,
-                log_likelihood,
-
+            // update Weibull shape parameter kappa
+            ARMS_Gibbs::arms_kappa(
                 armsPar,
-                hyperpar,
-
-                xi,
-                zetas,
-                etas,
-                betas,
                 kappa,
-                tau0Sq,
-                tauSq,
-                pi,        
-                logZ_gamma,
-
-                proportion_model,
-
-                datProportion,
+                hyperpar->kappaA,
+                hyperpar->kappaB,
+                hyperpar->kappaIGamma,
                 datTheta,
                 datMu,
+                datProportion,
+                dataclass
+            );
+
+            // update Weibull quantities based on new kappa
+            for(unsigned int l=0; l<L; ++l)
+            {
+                weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
+                weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
+            }
+
+            // ============================================================
+            // Update latent Bernoulli probabilities pi | gamma
+            // ============================================================
+
+            if(BVS)
+            {
+                if(gammaPrior == Gamma_Prior_Type::bernoulli)
+                {
+                    for(unsigned int l=0; l<L; ++l)
+                    {
+                        double s_l = arma::accu(gammas.col(l));
+
+                        pi[l] = R::rbeta(hyperpar->piA + s_l,
+                                        hyperpar->piB + static_cast<double>(p) - s_l);
+
+                        // Recompute logP_gamma so it is consistent with current pi.
+                        for(unsigned int j=0; j<p; ++j)
+                        {
+                            logP_gamma(j, l) = BVS_Sampler::logPDFBernoulli(gammas(j, l), pi[l]);
+                        }
+                    }
+                }
+            //}
+
+            // update gammas -- variable selection indicators
+            //if(BVS)
+            //{
+                // logZ_gamma.fill(std::numeric_limits<double>::quiet_NaN());
+                BVS_Sampler::sampleGamma(
+                    gammas,
+                    gammaPrior,
+                    gammaSampler,
+                    logP_gamma,
+                    gamma_acc_count,
+                    log_likelihood,
+
+                    armsPar,
+                    hyperpar,
+
+                    xi,
+                    zetas,
+                    etas,
+                    betas,
+                    kappa,
+                    tau0Sq,
+                    tauSq,
+                    pi,        
+                    logZ_gamma,
+
+                    proportion_model,
+
+                    datProportion,
+                    datTheta,
+                    datMu,
+                    weibullS,
+                    dataclass
+                );
+            }
+
+            // update betas in non-cure fraction
+            ARMS_Gibbs::arms_gibbs_beta(
+                armsPar,
+                betas,
+                tauSq,
+                tau0Sq,
+
+                gammas,
+
+                kappa,
+                datTheta,
+                datMu,
+                datProportion,
                 weibullS,
                 dataclass
             );
-        }
 
-        // update betas in non-cure fraction
-        ARMS_Gibbs::arms_gibbs_beta(
-            armsPar,
-            betas,
-            tauSq,
-            tau0Sq,
+            #ifdef _OPENMP
+            #pragma omp parallel for
+            #endif
 
-            gammas,
-
-            kappa,
-            datTheta,
-            datMu,
-            datProportion,
-            weibullS,
-            dataclass
-        );
-
-        #ifdef _OPENMP
-        #pragma omp parallel for
-        #endif
-
-        // update Weibull quantities based on new betas
-        for(unsigned int l=0; l<L; ++l)
-        {
-            arma::vec betaMask_l = betas.submat(1, l, p, l);
-            betaMask_l.elem(arma::find(gammas.col(l) == 0)).fill(0.0);
-            arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
-            logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
-
-            datMu.col(l) = arma::exp( logMu_l );
-            weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
-            weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
-        }
-
-        // save results for un-thinned posterior mean
-        if(m >= burnin)
-        {
-            xi_post += xi;
-            zeta_post += zetas;
-            kappa_post += kappa;
-            beta_post += betas;
-
-            if(BVS)
+            // update Weibull quantities based on new betas
+            for(unsigned int l=0; l<L; ++l)
             {
-                gamma_post += gammas;
+                arma::vec betaMask_l = betas.submat(1, l, p, l);
+                betaMask_l.elem(arma::find(gammas.col(l) == 0)).fill(0.0);
+                arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
+                logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
 
-                if(gammaPrior == Gamma_Prior_Type::bernoulli)
+                datMu.col(l) = arma::exp( logMu_l );
+                weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
+                weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
+            }
+
+            // save results for un-thinned posterior mean
+            if(m >= burnin)
+            {
+                xi_post += xi;
+                zeta_post += zetas;
+                kappa_post += kappa;
+                beta_post += betas;
+
+                if(BVS)
                 {
-                    pi_post += pi;
-                }
+                    gamma_post += gammas;
 
-                if(proportion_model)
-                {
-                    eta_post += etas;
-
-                    if(etaPrior == Eta_Prior_Type::bernoulli)
+                    if(gammaPrior == Gamma_Prior_Type::bernoulli)
                     {
-                        rho_post += rho;
+                        pi_post += pi;
+                    }
+
+                    if(proportion_model)
+                    {
+                        eta_post += etas;
+
+                        if(etaPrior == Eta_Prior_Type::bernoulli)
+                        {
+                            rho_post += rho;
+                        }
                     }
                 }
             }
-        }
 
-        // save results of thinned iterations
-        if((m+1) % thin == 0)
-        {
-            xi_mcmc.row(1+nIter_thin_count) = xi.t();
-            wSq_mcmc[1+nIter_thin_count] = wSq[0];
-            kappa_mcmc[1+nIter_thin_count] = kappa;
-            tauSq_mcmc[1+nIter_thin_count] = tauSq[0];
-
-            arma::mat betaMask = betas;
-            arma::mat zetaMask = zetas;
-            if(BVS)
+            // save results of thinned iterations
+            if((m+1) % thin == 0)
             {
-                betaMask = betas % arma::join_cols(arma::ones<arma::urowvec>(L), gammas);
-                gamma_mcmc.row(1+nIter_thin_count) = arma::vectorise(gammas).t();
+                xi_mcmc.row(1+nIter_thin_count) = xi.t();
+                wSq_mcmc[1+nIter_thin_count] = wSq[0];
+                kappa_mcmc[1+nIter_thin_count] = kappa;
+                tauSq_mcmc[1+nIter_thin_count] = tauSq[0];
 
-                if(gammaPrior == Gamma_Prior_Type::bernoulli)
+                arma::mat betaMask = betas;
+                arma::mat zetaMask = zetas;
+                if(BVS)
                 {
-                    pi_mcmc.row(1+nIter_thin_count) = pi.t();
-                }
+                    betaMask = betas % arma::join_cols(arma::ones<arma::urowvec>(L), gammas);
+                    gamma_mcmc.row(1+nIter_thin_count) = arma::vectorise(gammas).t();
 
-                if(proportion_model)
-                {
-                    zetaMask = zetas % arma::join_cols(arma::ones<arma::urowvec>(L), etas);
-                    eta_mcmc.row(1+nIter_thin_count) = arma::vectorise(etas).t();
-
-                    if(etaPrior == Eta_Prior_Type::bernoulli)
+                    if(gammaPrior == Gamma_Prior_Type::bernoulli)
                     {
-                        rho_mcmc.row(1+nIter_thin_count) = rho.t();
+                        pi_mcmc.row(1+nIter_thin_count) = pi.t();
+                    }
+
+                    if(proportion_model)
+                    {
+                        zetaMask = zetas % arma::join_cols(arma::ones<arma::urowvec>(L), etas);
+                        eta_mcmc.row(1+nIter_thin_count) = arma::vectorise(etas).t();
+
+                        if(etaPrior == Eta_Prior_Type::bernoulli)
+                        {
+                            rho_mcmc.row(1+nIter_thin_count) = rho.t();
+                        }
                     }
                 }
+                else
+                {
+                    BVS_Sampler::loglikelihood(
+                        xi,
+                        zetas,
+                        betas,
+                        etas,
+                        gammas,
+                        kappa,
+                        proportion_model,
+                        dataclass,
+                        log_likelihood
+                    );
+                }
+
+                loglikelihood_mcmc.row(1+nIter_thin_count) = log_likelihood.t();
+
+                zeta_mcmc.row(1+nIter_thin_count) = arma::vectorise(zetaMask).t();
+                beta_mcmc.row(1+nIter_thin_count) = arma::vectorise(betaMask).t();
+
+                ++nIter_thin_count;
             }
-            else
+        }
+    }
+    else
+    {
+        gammas.ones();
+        etas.ones();
+        
+        for (unsigned int m=0; m<nIter; ++m)
+        {
+            if ((m+1) % cTotalLength == 0) {
+                Rcpp::Rcout << " Running iteration " << m+1 << "\n";
+            }
+
+            // update beta variances tau0Sq, tauSq
+            tau0Sq = sampleV(hyperpar->tau0A, hyperpar->tau0B, betas.row(0).t());
+
+            for (unsigned int l=0; l<L; ++l)
             {
-                BVS_Sampler::loglikelihood(
-                    xi,
-                    zetas,
-                    betas,
-                    etas,
-                    gammas,
-                    kappa,
-                    proportion_model,
-                    dataclass,
-                    log_likelihood
+                tauSq[l] = sampleV(hyperpar->tauA, hyperpar->tauB, betas.submat(1,l,p,l));
+            }
+
+            // update xi variance vSq
+            v0Sq = sampleV0(hyperpar->v0A, hyperpar->v0B, xi[0]);
+            vSq = sampleV(hyperpar->vA, hyperpar->vB, xi.subvec(1, xi.n_elem - 1));
+
+            // update xi in cure fraction
+            ARMS_Gibbs::arms_gibbs_xi
+            (
+                armsPar,
+                xi,
+                v0Sq,
+                vSq,
+                datProportion,
+                weibullS,
+                dataclass
+            );
+
+            // update cure rate based on new xi
+            logTheta = dataclass.datX0 * xi;
+            logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+            datTheta = arma::exp( logTheta );
+
+            // update parameters in the proportion model
+            if(proportion_model)
+            {
+                if(dirichlet)
+                {
+                    // update zeta variances w0Sq, wSq
+                    w0Sq = sampleV(hyperpar->w0A, hyperpar->w0B, zetas.row(0).t());
+
+                    for (unsigned int l=0; l<L; ++l)
+                    {
+                        wSq[l] = sampleV(hyperpar->wA, hyperpar->wB, zetas.submat(1,l,p,l));
+                    }
+
+                    // One more round update besides sampleEta()
+                    ARMS_Gibbs::arms_gibbs_zetaFull(
+                        armsPar,
+                        zetas,
+                        w0Sq,
+                        wSq,
+
+                        kappa,
+                        dirichlet,
+                        datTheta,
+                        weibullS,
+                        weibullLambda,
+                        dataclass
+                    );
+
+                    // update Dirichlet concentrations and proportions based on new zetas
+                    arma::mat alphas = arma::zeros<arma::mat>(N, L);
+
+                    for(unsigned int l=0; l<L; ++l)
+                    {
+                        arma::vec zetaMask_l = zetas.submat(1, l, p, l);
+                        alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l );
+                    }
+
+                    alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
+                    alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+                    datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
+                }
+                else
+                {
+                    Rprintf("Warning: In arms_gibbs_zeta(), Dirichlet modeling with logit/alr-link is not implement!\n");
+                    break;
+                }
+            }
+
+            // update Weibull shape parameter kappa
+            ARMS_Gibbs::arms_kappa(
+                armsPar,
+                kappa,
+                hyperpar->kappaA,
+                hyperpar->kappaB,
+                hyperpar->kappaIGamma,
+                datTheta,
+                datMu,
+                datProportion,
+                dataclass
+            );
+
+            // update Weibull quantities based on new kappa
+            for(unsigned int l=0; l<L; ++l)
+            {
+                weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
+                weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
+            }
+
+            // update betas in non-cure fraction
+            ARMS_Gibbs::arms_gibbs_betaFull(
+                armsPar,
+                betas,
+                tauSq,
+                tau0Sq,
+
+                kappa,
+                datTheta,
+                datMu,
+                datProportion,
+                weibullS,
+                dataclass
+            );
+
+            #ifdef _OPENMP
+            #pragma omp parallel for
+            #endif
+
+            // update Weibull quantities based on new betas
+            for(unsigned int l=0; l<L; ++l)
+            {
+                arma::vec betaMask_l = betas.submat(1, l, p, l);
+                arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
+                logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+
+                datMu.col(l) = arma::exp( logMu_l );
+                weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
+                weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
+            }
+
+            // save results for un-thinned posterior mean
+            if(m >= burnin)
+            {
+                xi_post += xi;
+                zeta_post += zetas;
+                kappa_post += kappa;
+                beta_post += betas;
+            }
+
+            // save results of thinned iterations
+            if((m+1) % thin == 0)
+            {
+                xi_mcmc.row(1+nIter_thin_count) = xi.t();
+                wSq_mcmc[1+nIter_thin_count] = wSq[0];
+                kappa_mcmc[1+nIter_thin_count] = kappa;
+                tauSq_mcmc[1+nIter_thin_count] = tauSq[0];
+
+                arma::mat betaMask = betas;
+                arma::mat zetaMask = zetas;
+                
+                BVS_Sampler::loglikelihood_noBVS(
+                        xi,
+                        zetas,
+                        betas,
+                        kappa,
+                        proportion_model,
+                        dataclass,
+                        log_likelihood
                 );
+                loglikelihood_mcmc.row(1+nIter_thin_count) = log_likelihood.t();
+
+                zeta_mcmc.row(1+nIter_thin_count) = arma::vectorise(zetaMask).t();
+                beta_mcmc.row(1+nIter_thin_count) = arma::vectorise(betaMask).t();
+
+                ++nIter_thin_count;
             }
-
-            loglikelihood_mcmc.row(1+nIter_thin_count) = log_likelihood.t();
-
-            zeta_mcmc.row(1+nIter_thin_count) = arma::vectorise(zetaMask).t();
-            beta_mcmc.row(1+nIter_thin_count) = arma::vectorise(betaMask).t();
-
-            ++nIter_thin_count;
         }
     }
 

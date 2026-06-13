@@ -96,6 +96,16 @@ public:
         arma::vec& loglik//,
         //arma::vec& loglik0 // log-density of survival data
     );
+    static void loglikelihood_noBVS(
+        const arma::vec& xi,
+        const arma::mat& zetas,
+        const arma::mat& betas,
+        double kappa,
+
+        bool proportion_model,
+        const DataClass &dataclass,
+        arma::vec& loglik
+    );
 
     /*
     // log-density of survival data

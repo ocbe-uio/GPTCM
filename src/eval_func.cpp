@@ -286,6 +286,129 @@ double EvalFunction::log_dens_zetas(
     return h;
 }
 
+
+// log-density for coefficient betas without BVS
+double EvalFunction::log_dens_betasFull(
+    double par,
+    void *abc_data)
+{
+    double h = 0.;
+
+    // Allocation of a zero-initialized memory block of (num*size) bytes
+    auto mydata_parm = static_cast<dataS*>(abc_data);
+
+    arma::uvec datEvent(const_cast<unsigned int*>(mydata_parm->datEvent), mydata_parm->N, false);
+    arma::vec datTime(const_cast<double*>(mydata_parm->datTime), mydata_parm->N, false);
+    arma::mat datX(const_cast<double*>(mydata_parm->datX), mydata_parm->N, mydata_parm->p, false);
+
+    arma::mat pars(mydata_parm->currentPars, mydata_parm->p+1, mydata_parm->L, true);
+    pars(mydata_parm->jj, mydata_parm->l) = par;
+
+    arma::mat mu_tmp(mydata_parm->datMu, mydata_parm->N, mydata_parm->L, true);
+    arma::vec logMu_l = pars(0, mydata_parm->l) + datX * pars.submat(1, mydata_parm->l, mydata_parm->p, mydata_parm->l);
+    logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+    mu_tmp.col(mydata_parm->l) = arma::exp(logMu_l);
+
+    arma::mat weibullS_tmp(mydata_parm->weibullS, mydata_parm->N, mydata_parm->L, true);
+    arma::mat weibull_lambdas = mu_tmp / std::tgamma(1. + 1./mydata_parm->kappa);
+    weibullS_tmp.col(mydata_parm->l) = arma::exp( - arma::pow(
+                                           datTime / weibull_lambdas.col(mydata_parm->l),
+                                           mydata_parm->kappa) );
+
+    // compute log density
+    double tau = mydata_parm->tauSq;
+    if(mydata_parm->jj == 0)
+    {
+        tau = mydata_parm->tau0Sq;
+    }
+    double logprior = - par * par / tau / 2.;
+
+    arma::vec logpost_first = arma::zeros<arma::vec>(mydata_parm->N);
+    arma::mat datProportion(mydata_parm->datProportion, mydata_parm->N, mydata_parm->L, false);
+    for(unsigned int ll=0; ll<(mydata_parm->L); ++ll)
+    {
+        logpost_first += datProportion.col(ll) % (mydata_parm->kappa / weibull_lambdas.col(ll)) %
+                         arma::pow(datTime/weibull_lambdas.col(ll), mydata_parm->kappa - 1.0) % weibullS_tmp.col(ll);
+    }
+
+    double logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
+    double logpost_second_sum = arma::accu(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) %
+                                           datProportion.col(mydata_parm->l) % weibullS_tmp.col(mydata_parm->l));
+
+    h = logpost_first_sum +
+        logpost_second_sum +
+        logprior;
+
+    return h;
+}
+
+
+// log-density for coefficient zetas without BVS
+double EvalFunction::log_dens_zetasFull(
+    double par,
+    void *abc_data)
+{
+    double h = 0.;
+
+    auto mydata_parm = static_cast<dataS*>(abc_data);
+
+    arma::cube datX(const_cast<double*>(mydata_parm->datX), mydata_parm->N, mydata_parm->p, mydata_parm->L, false);
+    arma::uvec datEvent(const_cast<unsigned int*>(mydata_parm->datEvent), mydata_parm->N, false);
+    arma::mat datProportionConst_tmp(const_cast<double*>(mydata_parm->datProportionConst), mydata_parm->N, mydata_parm->L, false);
+
+    arma::mat pars(mydata_parm->currentPars, mydata_parm->p+1, mydata_parm->L, true);
+    pars(mydata_parm->jj, mydata_parm->l) = par;
+
+    // update proportions based on proposal
+    arma::mat alphas = arma::zeros<arma::mat>(mydata_parm->N, mydata_parm->L);
+
+    for(unsigned int ll=0; ll<(mydata_parm->L); ++ll)
+    {
+        alphas.col(ll) = arma::exp( pars(0, ll) + datX.slice(ll) * pars.submat(1, ll, mydata_parm->p, ll) );
+    }
+    alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
+    alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+    arma::vec alphas_Rowsum = arma::sum(alphas, 1);
+
+    // compute log prior
+    double w = mydata_parm->wSq;
+    if(mydata_parm->jj == 0)
+    {
+        w = mydata_parm->w0Sq;
+    }
+    double logprior = - par * par / w / 2.;
+
+    // non-cured density related censored part
+    arma::vec logpost_first = arma::zeros<arma::vec>(mydata_parm->N);
+    arma::vec logpost_second = arma::zeros<arma::vec>(mydata_parm->N);
+    arma::mat weibullS(mydata_parm->weibullS, mydata_parm->N, mydata_parm->L, false);
+    arma::mat weibull_lambdas(mydata_parm->weibullLambda, mydata_parm->N, mydata_parm->L, false);
+
+    for(unsigned int ll=0; ll<(mydata_parm->L); ++ll)
+    {
+        //arma::vec tmp = datProportionTmp.col(ll) / alphas_Rowsum %  weibullS.col(ll);
+        arma::vec tmp = alphas.col(ll) / alphas_Rowsum %  weibullS.col(ll);
+        logpost_first += arma::pow(weibull_lambdas.col(ll), - mydata_parm->kappa) % tmp;
+        logpost_second += tmp;
+    }
+
+    double logpost_first_sum = 0.;
+    logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
+
+    double logpost_second_sum = 0.;
+    logpost_second_sum = arma::accu(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) % logpost_second);
+
+    double log_dirichlet_sum = 0.;
+    log_dirichlet_sum = arma::accu(
+                            arma::lgamma(alphas_Rowsum) - arma::sum(arma::lgamma(alphas), 1) +
+                            arma::sum( (alphas - 1.0) % arma::log(datProportionConst_tmp), 1 )
+                        );
+
+    h = logprior + logpost_first_sum + logpost_second_sum + log_dirichlet_sum;
+
+    return h;
+}
+
 // density of truncated normal distribution
 /*
 double EvalFunction::pdfTruncNorm(double x, double m, double sd, double lower, double upper)

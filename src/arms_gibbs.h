@@ -68,6 +68,19 @@ public:
         // double& logPosteriorBeta
     );
 
+    static void arms_gibbs_betaFull(
+        const armsParmClass& armsPar,
+        arma::mat& currentPars,
+        arma::vec& tauSq,
+        double& tau0Sq,
+        double kappa,
+        arma::vec& datTheta,
+        arma::mat datMu,
+        arma::mat& datProportion,
+        arma::mat weibullS,
+        const DataClass& dataclass
+    );
+
     static void arms_gibbs_zeta(
         const armsParmClass& armsPar,
         arma::mat& currentPars,
@@ -101,6 +114,19 @@ public:
         arma::mat& weibullLambda,
         const DataClass& dataclass
         // double& logPosteriorZeta
+    );
+
+    static void arms_gibbs_zetaFull(
+        const armsParmClass& armsPar,
+        arma::mat& currentPars,
+        double& w0Sq,
+        arma::vec& wSq,
+        double kappa,
+        bool dirichlet,
+        arma::vec& datTheta,
+        arma::mat weibullS,
+        arma::mat& weibullLambda,
+        const DataClass& dataclass
     );
 
     static void arms_kappa(

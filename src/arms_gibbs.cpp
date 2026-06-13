@@ -485,6 +485,103 @@ void ARMS_Gibbs::arms_gibbs_betaK(
     free(mydata);
 }
 
+// Gibbs for betas without BVS
+void ARMS_Gibbs::arms_gibbs_betaFull(
+    const armsParmClass& armsPar,
+    arma::mat& currentPars,
+    arma::vec& tauSq,
+    double& tau0Sq,
+
+    double kappa,
+    arma::vec& datTheta,
+    arma::mat datMu,
+    arma::mat& datProportion,
+    arma::mat weibullS,
+    const DataClass &dataclass
+)
+{
+    /* make a subfunction arms_gibbs for only vector betas that can be used for (varying-length) variable selected vector*/
+
+    // dimensions
+    unsigned int N = dataclass.datX.n_rows;
+    unsigned int p = dataclass.datX.n_cols;
+    unsigned int L = dataclass.datX.n_slices;
+
+    // objects for arms()
+    double minD = armsPar.betaMin;
+    double maxD = armsPar.betaMax;
+
+    // reallocate struct variables
+    std::vector<double> xinit(armsPar.ninit); // Use std::vector instead of VLA
+    arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
+    for (unsigned int i = 0; i < armsPar.ninit; ++i)
+        xinit[i] = xinit0[i];  
+
+    dataS *mydata = (dataS *)malloc(sizeof (dataS));
+
+    mydata->currentPars = currentPars.memptr();
+    mydata->p = p;
+    mydata->L = L;
+    mydata->N = N;
+    mydata->tau0Sq = tau0Sq;
+    mydata->kappa = kappa;
+    mydata->datTheta = datTheta.memptr();
+    mydata->datMu = datMu.memptr();
+    mydata->datProportion = datProportion.memptr();
+    mydata->weibullS = weibullS.memptr();
+    mydata->datEvent = dataclass.datEvent.memptr();
+    mydata->datTime = dataclass.datTime.memptr();
+
+    // not easy to parallize the following for-loop due to data dependencies
+    for (unsigned int l = 0; l < L; ++l)
+    {
+        // Gibbs sampling
+        mydata->tauSq = tauSq[l];
+        for (unsigned int j = 0; j < p+1; ++j)
+        {
+            mydata->jj = j;
+            mydata->l = l;
+            mydata->datX = dataclass.datX.slice(l).memptr();
+
+            // update quantities needed for ARMS updates
+            arma::vec logMu_l = currentPars(0, l) + dataclass.datX.slice(l) * currentPars.submat(1, l, p, l);
+            logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+            datMu.col(l) = arma::exp( logMu_l );
+            arma::vec lambdas = arma::pow( dataclass.datTime / (datMu.col(l) / std::tgamma(1. + 1./kappa)), kappa);
+            lambdas.elem(arma::find(lambdas > upperbound)).fill(upperbound);
+            weibullS.col(l) = arma::exp( -lambdas );
+            
+            double xprev = currentPars(j, l);
+            std::vector<double> xsamp(armsPar.nsamp);
+
+            double qcent[1], xcent[1];
+            int neval, ncent = 0;
+
+            int err;
+            double convex = armsPar.convex;
+                err = ARMS::arms (
+                            xinit.data(), armsPar.ninit, &minD, &maxD,
+                            EvalFunction::log_dens_betasFull, mydata,
+                            &convex, armsPar.npoint,
+                            armsPar.metropolis, &xprev, xsamp.data(),
+                            armsPar.nsamp, qcent, xcent, ncent, &neval);
+
+            // check ARMS validity
+            if (err > 0)
+                Rprintf("In arms_gibbs_beta(): error code in ARMS = %d.\n", err);
+            if (std::isnan(xsamp[armsPar.nsamp-1]))
+                Rprintf("In arms_gibbs_beta(): NaN generated, possibly due to overflow in (log-)density (e.g. with densities involving exp(exp(...))).\n");
+            if (xsamp[armsPar.nsamp-1] < minD || xsamp[armsPar.nsamp-1] > maxD)
+                Rprintf("In arms_gibbs_beta(): %d-th sample out of range [%f, %f] (fused domain). Got %f.\n", armsPar.nsamp, minD, maxD, xsamp[armsPar.nsamp-1]);
+
+            currentPars(j, l) = xsamp[armsPar.nsamp - 1];
+        }
+    }
+
+    free(mydata);
+}
+
+
 //' Multivariate ARMS via Gibbs sampler for zeta
 //'
 //' @param n Number of samples to draw
@@ -780,6 +877,93 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
     free(mydata);
 
 }
+
+// Gibbs sampling for zetas without BVS
+void ARMS_Gibbs::arms_gibbs_zetaFull(
+    const armsParmClass& armsPar,
+    arma::mat& currentPars,
+    double& w0Sq,
+    arma::vec& wSq,
+
+    double kappa,
+    bool dirichlet,
+    arma::vec& datTheta,
+    arma::mat weibullS,
+    arma::mat& weibullLambda,
+    const DataClass &dataclass
+)
+{
+    // dimensions
+    unsigned int N = dataclass.datX.n_rows;
+    unsigned int p = dataclass.datX.n_cols;
+    unsigned int L = dataclass.datX.n_slices;
+
+    // objects for arms()
+    double minD = armsPar.zetaMin;
+    double maxD = armsPar.zetaMax;
+
+    // reallocate struct variables
+    std::vector<double> xinit(armsPar.ninit); // Use std::vector instead of VLA
+    arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
+    for (unsigned int i = 0; i < armsPar.ninit; ++i)
+        xinit[i] = xinit0[i];
+
+    if (!dirichlet)
+        Rprintf("Warning: In arms_gibbs_zeta(), Dirichlet modeling with logit/alr-link is not implement!\n");
+
+    dataS *mydata = (dataS *)malloc(sizeof (dataS));
+
+    mydata->currentPars = currentPars.memptr();
+    mydata->p = p;
+    mydata->L = L;
+    mydata->N = N;
+    mydata->w0Sq = w0Sq;
+    mydata->kappa = kappa;
+    mydata->datTheta = datTheta.memptr();
+    mydata->weibullS = weibullS.memptr();
+    mydata->weibullLambda = weibullLambda.memptr();
+    mydata->datX = dataclass.datX.memptr();
+    mydata->datProportionConst = dataclass.datProportionConst.memptr();
+    mydata->datEvent = dataclass.datEvent.memptr();
+
+    for (unsigned int l = 0; l < L; ++l)
+    {
+        // Gibbs sampling
+        mydata->wSq = wSq[l];
+        for (unsigned int j = 0; j < p+1; ++j)
+        {
+            mydata->jj = j;
+            mydata->l = l;
+            double xprev = currentPars(j, l);
+            std::vector<double> xsamp(armsPar.nsamp);
+
+            double qcent[1], xcent[1];
+            int neval, ncent = 0;
+
+            int err;
+            double convex = armsPar.convex;
+            err = ARMS::arms (
+                            xinit.data(), armsPar.ninit, &minD, &maxD,
+                            EvalFunction::log_dens_zetasFull, mydata,
+                            &convex, armsPar.npoint,
+                            armsPar.metropolis, &xprev, xsamp.data(),
+                            armsPar.nsamp, qcent, xcent, ncent, &neval);
+
+            // check ARMS validity
+            if (err > 0)
+                Rprintf("In arms_gibbs_zeta(): error code in ARMS = %d.\n", err);
+            if (std::isnan(xsamp[armsPar.nsamp-1]))
+                Rprintf("In arms_gibbs_zeta(): NaN generated, possibly due to overflow in (log-)density (e.g. with densities involving exp(exp(...))).\n");
+            if (xsamp[armsPar.nsamp-1] < minD || xsamp[armsPar.nsamp-1] > maxD)
+                Rprintf("In arms_gibbs_zeta(): %d-th sample out of range [%f, %f] (fused domain). Got %f.\n", armsPar.nsamp, minD, maxD, xsamp[armsPar.nsamp-1]);
+
+            currentPars(j, l) = xsamp[armsPar.nsamp - 1];
+        }
+    }
+
+    free(mydata);
+}
+
 
 //' Univariate ARMS for kappa
 //'

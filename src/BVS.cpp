@@ -201,6 +201,85 @@ void BVS_Sampler::loglikelihood(
 
     // summarize density of the Weibull's survival part
     arma::vec log_survival_pop = - thetas % (1. - survival_pop);
+    f.elem(arma::find(f < lowerbound)).fill(lowerbound);
+    arma::vec log_f_pop = logTheta + arma::log(f) + log_survival_pop;
+
+    // summarize density of the Dirichlet part
+    arma::vec log_dirichlet = arma::zeros<arma::vec>(N);
+    if (proportion_model)
+    {
+        log_dirichlet =
+            arma::lgamma(alphas_Rowsum) - arma::sum(arma::lgamma(alphas), 1) +
+            arma::sum( (alphas - 1.0) % arma::log(dataclass.datProportionConst), 1 );
+    }
+
+    log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
+    log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
+    loglik = log_f_pop + log_survival_pop + log_dirichlet;
+}
+
+// loglikelihood for 'BVS = FALSE'
+void BVS_Sampler::loglikelihood_noBVS(
+    const arma::vec& xi,
+    const arma::mat& zetas,
+    const arma::mat& betas,
+    double kappa,
+
+    bool proportion_model,
+    const DataClass &dataclass,
+    arma::vec& loglik)
+{
+    // dimensions
+    unsigned int N = dataclass.datX.n_rows;
+    unsigned int p = dataclass.datX.n_cols;
+    unsigned int L = dataclass.datX.n_slices;
+
+    arma::mat updateProportions = dataclass.datProportionConst;
+    arma::mat alphas = arma::zeros<arma::mat>(N, L);
+    arma::vec alphas_Rowsum;
+    if(proportion_model)
+    {
+        #ifdef _OPENMP
+        #pragma omp parallel for
+        #endif
+
+        for(unsigned int l=0; l<L; ++l)
+        {
+            arma::vec zetaMask_l = zetas.submat(1, l, p, l);
+            alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l );
+        }
+        alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
+        alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+        alphas_Rowsum = arma::sum(alphas, 1);
+        updateProportions = alphas / arma::repmat(alphas_Rowsum, 1, L);
+    }
+
+    arma::vec logTheta = dataclass.datX0 * xi;
+    logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+    arma::vec thetas = arma::exp( logTheta );
+
+    arma::vec f = arma::zeros<arma::vec>(N);
+    arma::vec survival_pop = arma::zeros<arma::vec>(N);
+
+    for(unsigned int l=0; l<L; ++l)
+    {
+        arma::vec betaMask_l = betas.submat(1, l, p, l);
+        arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
+        logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+        arma::vec mu_l = arma::exp(logMu_l);
+
+        arma::vec weibull_lambdas_l = mu_l / std::tgamma(1. + 1./kappa);
+        arma::vec weibullS_l = arma::exp( - arma::pow( dataclass.datTime / weibull_lambdas_l, kappa) );
+        arma::vec weibull_pdf = arma::exp(-kappa * arma::log(weibull_lambdas_l) - arma::pow(dataclass.datTime/weibull_lambdas_l, kappa));
+
+        survival_pop += updateProportions.col(l) % weibullS_l;
+
+        f += kappa * arma::pow(dataclass.datTime, kappa - 1.0) % updateProportions.col(l) % weibull_pdf;
+    }
+
+    // summarize density of the Weibull's survival part
+    arma::vec log_survival_pop = - thetas % (1. - survival_pop);
+    f.elem(arma::find(f < lowerbound)).fill(lowerbound);
     arma::vec log_f_pop = logTheta + arma::log(f) + log_survival_pop;
 
     // summarize density of the Dirichlet part

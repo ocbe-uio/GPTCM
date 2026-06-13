@@ -1,5 +1,9 @@
 <div style="text-align: left;">
 
+### GPTCM 2.0.1 (2026-06-13)
+
+* Separate MCMC loop for `BVS = FALSE` to speed up the running without variable selection
+
 ### GPTCM 2.0.0 (2026-06-03)
 
 * Fix CRAN check warnings

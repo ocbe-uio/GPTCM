@@ -248,7 +248,8 @@ GPTCM <- function(dat,
   # transform proportions data if including values very close to 0 or 1
   # This is the same as in DirichletReg::DR_data
   if (any(dat$proportion < 1e-10) || any(dat$proportion > 1 - 1e-10)) {
-    dat$proportion <- (dat$proportion * (n - 1) + 1 / L) / n
+    n_eff <- 200
+    dat$proportion <- (dat$proportion * (n_eff - 1) + 1 / L) / n_eff
   }
 
   # initialization of parameters
