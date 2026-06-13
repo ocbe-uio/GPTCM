@@ -96,6 +96,7 @@ public:
         arma::vec& loglik//,
         //arma::vec& loglik0 // log-density of survival data
     );
+
     static void loglikelihood_noBVS(
         const arma::vec& xi,
         const arma::mat& zetas,
@@ -103,6 +104,10 @@ public:
         double kappa,
 
         bool proportion_model,
+        arma::mat& alphas,
+        arma::mat& updateProportions,
+        arma::mat& weibullS,
+        arma::mat& weibullLambda,
         const DataClass &dataclass,
         arma::vec& loglik
     );

@@ -379,19 +379,25 @@ Rcpp::List run_mcmc(
 
     // quantity 2
     arma::mat datMu = arma::zeros<arma::mat>(N, L);
+    arma::mat weibullS = arma::zeros<arma::mat>(N, L);
+    arma::mat weibullLambda = arma::zeros<arma::mat>(N, L);
     for(unsigned int l=0; l<L; ++l)
     {
         arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betas.submat(1, l, p, l);
         logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
         datMu.col(l) = arma::exp( logMu_l );
+
+        weibullLambda.col(l) = datMu.col(l) / std::tgamma(1. + 1./kappa);
+        weibullS.col(l) = arma::exp(        
+            -arma::pow( dataclass.datTime / weibullLambda.col(l), kappa )    
+        );
     }
 
     // quantity 3
     arma::mat datProportion = dataclass.datProportionConst;
+    arma::mat alphas = arma::zeros<arma::mat>(N, L);
     if(proportion_model)
     {
-        arma::mat alphas = arma::zeros<arma::mat>(N, L);
-
         for(unsigned int l=0; l<L; ++l)
         {
             alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetas.submat(1, l, p, l) );
@@ -400,17 +406,6 @@ Rcpp::List run_mcmc(
         alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
         alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
         datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
-    }
-
-    arma::mat weibullS = arma::zeros<arma::mat>(N, L);
-    arma::mat weibullLambda = arma::zeros<arma::mat>(N, L);
-
-    for(unsigned int l=0; l<L; ++l)
-    {
-        arma::vec lambdas = arma::pow( dataclass.datTime / (datMu.col(l) / std::tgamma(1. + 1./kappa)), kappa );
-        lambdas.elem(arma::find(lambdas > upperbound)).fill(upperbound);
-        weibullS.col(l) = arma::exp( -lambdas );
-        weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
     }
 
     // initializing posterior mean
@@ -795,7 +790,7 @@ Rcpp::List run_mcmc(
     {
         gammas.ones();
         etas.ones();
-        
+
         for (unsigned int m=0; m<nIter; ++m)
         {
             if ((m+1) % cTotalLength == 0) {
@@ -856,20 +851,22 @@ Rcpp::List run_mcmc(
                         datTheta,
                         weibullS,
                         weibullLambda,
+                        alphas,
                         dataclass
                     );
 
                     // update Dirichlet concentrations and proportions based on new zetas
-                    arma::mat alphas = arma::zeros<arma::mat>(N, L);
+                    // // DONE in ARMS_Gibbs::arms_gibbs_zetaFull()
+                    // arma::mat alphas = arma::zeros<arma::mat>(N, L);
 
-                    for(unsigned int l=0; l<L; ++l)
-                    {
-                        arma::vec zetaMask_l = zetas.submat(1, l, p, l);
-                        alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l );
-                    }
+                    // for(unsigned int l=0; l<L; ++l)
+                    // {
+                    //     arma::vec zetaMask_l = zetas.submat(1, l, p, l);
+                    //     alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l );
+                    // }
 
-                    alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
-                    alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+                    // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
+                    // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
                     datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
                 }
                 else
@@ -911,24 +908,26 @@ Rcpp::List run_mcmc(
                 datMu,
                 datProportion,
                 weibullS,
+                weibullLambda,
                 dataclass
             );
 
-            #ifdef _OPENMP
-            #pragma omp parallel for
-            #endif
+            // #ifdef _OPENMP
+            // #pragma omp parallel for
+            // #endif
 
-            // update Weibull quantities based on new betas
-            for(unsigned int l=0; l<L; ++l)
-            {
-                arma::vec betaMask_l = betas.submat(1, l, p, l);
-                arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
-                logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+            // // update Weibull quantities based on new betas
+            // // DONE in ARMS_Gibbs::arms_gibbs_betaFull()
+            // for(unsigned int l=0; l<L; ++l)
+            // {
+            //     arma::vec betaMask_l = betas.submat(1, l, p, l);
+            //     arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
+            //     logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
 
-                datMu.col(l) = arma::exp( logMu_l );
-                weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
-                weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
-            }
+            //     datMu.col(l) = arma::exp( logMu_l );
+            //     weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
+            //     weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
+            // }
 
             // save results for un-thinned posterior mean
             if(m >= burnin)
@@ -956,6 +955,10 @@ Rcpp::List run_mcmc(
                         betas,
                         kappa,
                         proportion_model,
+                        alphas,
+                        datProportion,
+                        weibullS,
+                        weibullLambda,
                         dataclass,
                         log_likelihood
                 );

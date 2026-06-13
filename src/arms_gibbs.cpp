@@ -496,7 +496,8 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
     arma::vec& datTheta,
     arma::mat datMu,
     arma::mat& datProportion,
-    arma::mat weibullS,
+    arma::mat& weibullS,
+    arma::mat& weibullLambda,
     const DataClass &dataclass
 )
 {
@@ -585,9 +586,10 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
             }    
             logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);    
             datMu.col(l) = arma::exp(logMu_l);   
+            weibullLambda.col(l) = datMu.col(l) / std::tgamma(1. + 1./kappa);
             weibullS.col(l) = arma::exp(        
                 -arma::pow(            
-                    dataclass.datTime / (datMu.col(l) / std::tgamma(1.0 + 1.0 / kappa)),           
+                    dataclass.datTime / weibullLambda.col(l),           
                     kappa        
                 )    
             );
@@ -909,6 +911,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     arma::vec& datTheta,
     arma::mat weibullS,
     arma::mat& weibullLambda,
+    arma::mat& alphas,
     const DataClass& dataclass
 )
 {
@@ -955,7 +958,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     // ------------------------------------------------------------------
     // Compute current full alpha matrix once.
     // ------------------------------------------------------------------
-    arma::mat alphas(N, L, arma::fill::zeros);
+    // arma::mat alphas(N, L, arma::fill::zeros);
 
     for (unsigned int ll = 0; ll < L; ++ll)
     {
