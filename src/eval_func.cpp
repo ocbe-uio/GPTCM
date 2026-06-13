@@ -290,54 +290,115 @@ double EvalFunction::log_dens_zetas(
 // log-density for coefficient betas without BVS
 double EvalFunction::log_dens_betasFull(
     double par,
-    void *abc_data)
+    void* abc_data
+)
 {
-    double h = 0.;
-
-    // Allocation of a zero-initialized memory block of (num*size) bytes
     auto mydata_parm = static_cast<dataS*>(abc_data);
 
-    arma::uvec datEvent(const_cast<unsigned int*>(mydata_parm->datEvent), mydata_parm->N, false);
-    arma::vec datTime(const_cast<double*>(mydata_parm->datTime), mydata_parm->N, false);
-    arma::mat datX(const_cast<double*>(mydata_parm->datX), mydata_parm->N, mydata_parm->p, false);
+    arma::uvec datEvent(
+        const_cast<unsigned int*>(mydata_parm->datEvent),
+        mydata_parm->N,
+        false
+    );
 
-    arma::mat pars(mydata_parm->currentPars, mydata_parm->p+1, mydata_parm->L, true);
-    pars(mydata_parm->jj, mydata_parm->l) = par;
+    arma::vec datTime(
+        const_cast<double*>(mydata_parm->datTime),
+        mydata_parm->N,
+        false
+    );
 
-    arma::mat mu_tmp(mydata_parm->datMu, mydata_parm->N, mydata_parm->L, true);
-    arma::vec logMu_l = pars(0, mydata_parm->l) + datX * pars.submat(1, mydata_parm->l, mydata_parm->p, mydata_parm->l);
-    logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
-    mu_tmp.col(mydata_parm->l) = arma::exp(logMu_l);
+    arma::mat datX(
+        const_cast<double*>(mydata_parm->datX),
+        mydata_parm->N,
+        mydata_parm->p,
+        false
+    );
 
-    arma::mat weibullS_tmp(mydata_parm->weibullS, mydata_parm->N, mydata_parm->L, true);
-    arma::mat weibull_lambdas = mu_tmp / std::tgamma(1. + 1./mydata_parm->kappa);
-    weibullS_tmp.col(mydata_parm->l) = arma::exp( - arma::pow(
-                                           datTime / weibull_lambdas.col(mydata_parm->l),
-                                           mydata_parm->kappa) );
+    // Copy baseline logMu_l. Do not modify the MCMC state inside density.
+    arma::vec logMu_l_tmp(
+        const_cast<double*>(mydata_parm->logMu_l),
+        mydata_parm->N,
+        true
+    );
 
-    // compute log density
+    double delta = par - mydata_parm->old_par;
+
     double tau = mydata_parm->tauSq;
-    if(mydata_parm->jj == 0)
+
+    if (mydata_parm->jj == 0)
     {
         tau = mydata_parm->tau0Sq;
+        logMu_l_tmp += delta;
     }
-    double logprior = - par * par / tau / 2.;
-
-    arma::vec logpost_first = arma::zeros<arma::vec>(mydata_parm->N);
-    arma::mat datProportion(mydata_parm->datProportion, mydata_parm->N, mydata_parm->L, false);
-    for(unsigned int ll=0; ll<(mydata_parm->L); ++ll)
+    else
     {
-        logpost_first += datProportion.col(ll) % (mydata_parm->kappa / weibull_lambdas.col(ll)) %
-                         arma::pow(datTime/weibull_lambdas.col(ll), mydata_parm->kappa - 1.0) % weibullS_tmp.col(ll);
+        logMu_l_tmp += datX.col(mydata_parm->jj - 1) * delta;
     }
 
-    double logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
-    double logpost_second_sum = arma::accu(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) %
-                                           datProportion.col(mydata_parm->l) % weibullS_tmp.col(mydata_parm->l));
+    logMu_l_tmp.elem(arma::find(logMu_l_tmp > upperbound)).fill(upperbound);
 
-    h = logpost_first_sum +
-        logpost_second_sum +
-        logprior;
+    double logprior = -par * par / tau / 2.0;
+
+    arma::mat mu_tmp(
+        mydata_parm->datMu,
+        mydata_parm->N,
+        mydata_parm->L,
+        true
+    );
+
+    mu_tmp.col(mydata_parm->l) = arma::exp(logMu_l_tmp);
+
+    arma::mat weibullS_tmp(
+        mydata_parm->weibullS,
+        mydata_parm->N,
+        mydata_parm->L,
+        true
+    );
+
+    arma::mat weibull_lambdas =
+        mu_tmp / std::tgamma(1.0 + 1.0 / mydata_parm->kappa);
+
+    weibullS_tmp.col(mydata_parm->l) = arma::exp(
+        -arma::pow(
+            datTime / weibull_lambdas.col(mydata_parm->l),
+            mydata_parm->kappa
+        )
+    );
+
+    arma::mat datProportion(
+        mydata_parm->datProportion,
+        mydata_parm->N,
+        mydata_parm->L,
+        false
+    );
+
+    arma::vec logpost_first(mydata_parm->N, arma::fill::zeros);
+
+    for (unsigned int ll = 0; ll < mydata_parm->L; ++ll)
+    {
+        logpost_first +=
+            datProportion.col(ll) %
+            (mydata_parm->kappa / weibull_lambdas.col(ll)) %
+            arma::pow(
+                datTime / weibull_lambdas.col(ll),
+                mydata_parm->kappa - 1.0
+            ) %
+            weibullS_tmp.col(ll);
+    }
+
+    // Numerical protection before log().
+    logpost_first.elem(arma::find(logpost_first < lowerbound)).fill(lowerbound);
+
+    double logpost_first_sum = arma::accu(arma::log(logpost_first.elem(arma::find(datEvent))));
+
+    double logpost_second_sum =
+        arma::accu(
+            arma::vec(mydata_parm->datTheta, mydata_parm->N, false) %
+            datProportion.col(mydata_parm->l) %
+            weibullS_tmp.col(mydata_parm->l)
+    );
+
+    double h = logpost_first_sum + logpost_second_sum + logprior;
 
     return h;
 }

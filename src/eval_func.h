@@ -13,6 +13,7 @@
 typedef struct common_data
 {
     // members
+    double old_par;
     double *currentPars;
     unsigned int *gammaIndicator;
 
@@ -46,6 +47,7 @@ typedef struct common_data
     bool invGamma;
     double *datTheta;
     double *datMu;
+    double *logMu_l;
     const double *datX;
     double *datProportion;
     const double *datProportionConst;
