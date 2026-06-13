@@ -3,6 +3,7 @@
 ### GPTCM 2.0.1 (2026-06-13)
 
 * Separate MCMC loop for `BVS = FALSE` to speed up the running without variable selection
+* TODO: improve `BVS_Sampler::loglikelihood()` like `BVS_Sampler::loglikelihood_noBVS()`
 
 ### GPTCM 2.0.0 (2026-06-03)
 

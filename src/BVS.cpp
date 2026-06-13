@@ -213,8 +213,8 @@ void BVS_Sampler::loglikelihood(
             arma::sum( (alphas - 1.0) % arma::log(dataclass.datProportionConst), 1 );
     }
 
-    log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
-    log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
+    log_f_pop.elem(dataclass.eventIndex).fill(0.);
+    log_survival_pop.elem(dataclass.eventIndex).fill(0.);
     loglik = log_f_pop + log_survival_pop + log_dirichlet;
 }
 
@@ -297,8 +297,8 @@ void BVS_Sampler::loglikelihood_noBVS(
             arma::sum( (alphas - 1.0) % arma::log(dataclass.datProportionConst), 1 );
     }
 
-    log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
-    log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
+    log_f_pop.elem(dataclass.eventIndex).fill(0.);
+    log_survival_pop.elem(dataclass.eventIndex).fill(0.);
     loglik = log_f_pop + log_survival_pop + log_dirichlet;
 }
 
@@ -957,7 +957,7 @@ double BVS_Sampler::logPbetaK(
             logpost_second_sum = arma::sum(datTheta % tmp);
     }
 
-    double logpost_first_sum = arma::sum( arma::log( logpost_first.elem(arma::find(dataclass.datEvent)) ) );
+    double logpost_first_sum = arma::sum( arma::log( logpost_first.elem(dataclass.eventIndex) ) );
 
     logP = logpost_first_sum + logpost_second_sum + logprior;
 
@@ -1007,7 +1007,7 @@ double BVS_Sampler::logPzetaK(
         logpost_second += tmp;
     }
 
-    double logpost_first_sum = arma::sum( arma::log( logpost_first.elem(arma::find(dataclass.datEvent)) ) );
+    double logpost_first_sum = arma::sum( arma::log( logpost_first.elem(dataclass.eventIndex) ) );
 
     double logpost_second_sum = arma::sum(datTheta % logpost_second);
 

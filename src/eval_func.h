@@ -56,7 +56,9 @@ typedef struct common_data
     const double *datX;
     double *datProportion;
     const double *datProportionConst;
-    const unsigned int *datEvent;
+    // const unsigned int *datEvent;
+    const unsigned int *eventIndex;
+    unsigned int nEventIndex;
     const double *datTime;
     double *weibullS;
     double *weibullLambda;

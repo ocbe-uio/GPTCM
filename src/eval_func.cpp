@@ -56,7 +56,7 @@ double EvalFunction::log_dens_xis(
     //std::cout << "...X:\n" << X << "\n";
 
     arma::mat datX(const_cast<double*>(mydata_parm->datX), mydata_parm->N, mydata_parm->p, false);
-    arma::uvec datEvent(const_cast<unsigned int*>(mydata_parm->datEvent), mydata_parm->N, false);
+    arma::uvec eventIndex(const_cast<unsigned int*>(mydata_parm->eventIndex), mydata_parm->nEventIndex, false);
 
     //arma::vec logTheta = mydata_parm->datX * xis;
     arma::vec logTheta = datX * xis;
@@ -64,7 +64,7 @@ double EvalFunction::log_dens_xis(
     arma::vec thetas = arma::exp( logTheta );
 
     //double logpost_first = arma::accu( logTheta.elem(arma::find(mydata_parm->datEvent)) );
-    double logpost_first = arma::accu( logTheta.elem(arma::find(datEvent)) );
+    double logpost_first = arma::accu( logTheta.elem(eventIndex) );
     arma::vec logpost_second = arma::zeros<arma::vec>(mydata_parm->N);
     arma::mat datProportion(mydata_parm->datProportion, mydata_parm->N, mydata_parm->L, false);
     arma::mat weibullS(mydata_parm->weibullS, mydata_parm->N, mydata_parm->L, false);
@@ -106,7 +106,7 @@ double EvalFunction::log_dens_betas(
     // *mydata_parm = *(dataS *)abc_data;
     auto mydata_parm = static_cast<dataS*>(abc_data);
 
-    arma::uvec datEvent(const_cast<unsigned int*>(mydata_parm->datEvent), mydata_parm->N, false);
+    arma::uvec eventIndex(const_cast<unsigned int*>(mydata_parm->eventIndex), mydata_parm->nEventIndex, false);
     arma::vec datTime(const_cast<double*>(mydata_parm->datTime), mydata_parm->N, false);
     arma::mat datX(const_cast<double*>(mydata_parm->datX), mydata_parm->N, mydata_parm->p, false);
     arma::umat gammaIndicator(const_cast<unsigned int*>(mydata_parm->gammaIndicator), mydata_parm->p+1, mydata_parm->L, false);
@@ -159,7 +159,7 @@ double EvalFunction::log_dens_betas(
     }
 
     //double logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(mydata_parm->datEvent)) ) );
-    double logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
+    double logpost_first_sum = arma::accu( arma::log( logpost_first.elem(eventIndex) ) );
 
     //double logpost_second_sum = arma::accu(mydata_parm->datTheta %
     //  mydata_parm->datProportion.col(mydata_parm->l) % weibullS_tmp.col(mydata_parm->l));
@@ -199,7 +199,7 @@ double EvalFunction::log_dens_zetas(
     auto mydata_parm = static_cast<dataS*>(abc_data);
 
     arma::cube datX(const_cast<double*>(mydata_parm->datX), mydata_parm->N, mydata_parm->p, mydata_parm->L, false);
-    arma::uvec datEvent(const_cast<unsigned int*>(mydata_parm->datEvent), mydata_parm->N, false);
+    arma::uvec eventIndex(const_cast<unsigned int*>(mydata_parm->eventIndex), mydata_parm->nEventIndex, false);
     arma::mat datProportionConst_tmp(const_cast<double*>(mydata_parm->datProportionConst), mydata_parm->N, mydata_parm->L, false);
     arma::umat gammaIndicator(const_cast<unsigned int*>(mydata_parm->gammaIndicator), mydata_parm->p+1, mydata_parm->L, false);
 
@@ -247,7 +247,7 @@ double EvalFunction::log_dens_zetas(
     }
 
     double logpost_first_sum = 0.;
-    logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
+    logpost_first_sum = arma::accu( arma::log( logpost_first.elem(eventIndex) ) );
 
     double logpost_second_sum = 0.;
     logpost_second_sum = arma::accu(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) % logpost_second);
@@ -295,9 +295,9 @@ double EvalFunction::log_dens_betasFull(
 {
     auto mydata_parm = static_cast<dataS*>(abc_data);
 
-    arma::uvec datEvent(
-        const_cast<unsigned int*>(mydata_parm->datEvent),
-        mydata_parm->N,
+    arma::uvec eventIndex(
+        const_cast<unsigned int*>(mydata_parm->eventIndex),
+        mydata_parm->nEventIndex,
         false
     );
 
@@ -389,7 +389,7 @@ double EvalFunction::log_dens_betasFull(
     // Numerical protection before log().
     logpost_first.elem(arma::find(logpost_first < lowerbound)).fill(lowerbound);
 
-    double logpost_first_sum = arma::accu(arma::log(logpost_first.elem(arma::find(datEvent))));
+    double logpost_first_sum = arma::accu(arma::log(logpost_first.elem(eventIndex)));
 
     double logpost_second_sum =
         arma::accu(
@@ -428,9 +428,9 @@ double EvalFunction::log_dens_zetasFull(
     // IMPORTANT:
     // This assumes datEvent is stored as unsigned int memory.
     // If datEvent is arma::vec/double, use arma::vec + find(datEvent == 1).
-    arma::uvec datEvent(
-        const_cast<unsigned int*>(mydata_parm->datEvent),
-        N,
+    arma::uvec eventIndex(
+        const_cast<unsigned int*>(mydata_parm->eventIndex),
+        mydata_parm->nEventIndex,
         false
     );
 
@@ -574,7 +574,7 @@ double EvalFunction::log_dens_zetasFull(
 
     double logpost_first_sum =
         arma::accu(
-            arma::log(logpost_first.elem(arma::find(datEvent)))
+            arma::log(logpost_first.elem(eventIndex))
         );
 
     double logpost_second_sum =
@@ -697,7 +697,7 @@ double EvalFunction::log_dens_kappa(
     arma::mat datMu(mydata_parm->datMu, mydata_parm->N, mydata_parm->L, false);
     arma::mat datProportion(mydata_parm->datProportion, mydata_parm->N, mydata_parm->L, false);
     arma::vec datTime(const_cast<double*>(mydata_parm->datTime), mydata_parm->N, false);
-    arma::uvec datEvent(const_cast<unsigned int*>(mydata_parm->datEvent), mydata_parm->N, false);
+    arma::uvec eventIndex(const_cast<unsigned int*>(mydata_parm->eventIndex), mydata_parm->nEventIndex, false);
     for(unsigned int ll=0; ll<(mydata_parm->L); ++ll)
     {
         arma::vec weibull_lambdas_tmp = datMu.col(ll) / std::tgamma(1.0+1.0/par);
@@ -714,7 +714,7 @@ double EvalFunction::log_dens_kappa(
     }
 
     //logpost_first %= arma::pow(datTime, par - 1.0) * par;
-    logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
+    logpost_first_sum = arma::accu( arma::log( logpost_first.elem(eventIndex) ) );
 
     logpost_second_sum = arma::accu(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) % logpost_second);
 
