@@ -48,6 +48,11 @@ typedef struct common_data
     double *datTheta;
     double *datMu;
     double *logMu_l;
+    double* logAlpha_l;
+    double* alpha_l;
+    double* alphas;
+    double* alphaRowsum;
+
     const double *datX;
     double *datProportion;
     const double *datProportionConst;

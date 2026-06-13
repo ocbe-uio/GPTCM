@@ -221,7 +221,7 @@ double EvalFunction::log_dens_zetas(
     }
     alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
     alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-    arma::vec alphas_Rowsum = arma::sum(alphas, 1);
+    arma::vec alphaRowsum_tmp = arma::sum(alphas, 1);
 // /*
     // compute log prior
     double w = mydata_parm->wSq;
@@ -240,8 +240,8 @@ double EvalFunction::log_dens_zetas(
     //weibullS.elem(arma::find(weibullS < lowerbound)).fill(lowerbound);
     for(unsigned int ll=0; ll<(mydata_parm->L); ++ll)
     {
-        //arma::vec tmp = datProportionTmp.col(ll) / alphas_Rowsum %  weibullS.col(ll);
-        arma::vec tmp = alphas.col(ll) / alphas_Rowsum %  weibullS.col(ll);
+        //arma::vec tmp = datProportionTmp.col(ll) / alphaRowsum_tmp %  weibullS.col(ll);
+        arma::vec tmp = alphas.col(ll) / alphaRowsum_tmp %  weibullS.col(ll);
         logpost_first += arma::pow(weibull_lambdas.col(ll), - mydata_parm->kappa) % tmp;
         logpost_second += tmp;
     }
@@ -262,14 +262,14 @@ double EvalFunction::log_dens_zetas(
       {
         rowSum_lgamma_alphas += std::lgamma(alphas(i,ll));
       }
-      log_dirichlet[i] = std::lgamma(alphas_Rowsum[i]) - rowSum_lgamma_alphas +
+      log_dirichlet[i] = std::lgamma(alphaRowsum_tmp[i]) - rowSum_lgamma_alphas +
         arma::accu((alphas.row(i)-1.0) % arma::log(datProportionConst_tmp.row(i)));
     }
     double log_dirichlet_sum = arma::accu(log_dirichlet)
     */
     double log_dirichlet_sum = 0.;
     log_dirichlet_sum = arma::accu(
-                            arma::lgamma(alphas_Rowsum) - arma::sum(arma::lgamma(alphas), 1) +
+                            arma::lgamma(alphaRowsum_tmp) - arma::sum(arma::lgamma(alphas), 1) +
                             arma::sum( (alphas - 1.0) % arma::log(datProportionConst_tmp), 1 )
                         );
 
@@ -407,65 +407,210 @@ double EvalFunction::log_dens_betasFull(
 // log-density for coefficient zetas without BVS
 double EvalFunction::log_dens_zetasFull(
     double par,
-    void *abc_data)
+    void* abc_data
+)
 {
-    double h = 0.;
-
     auto mydata_parm = static_cast<dataS*>(abc_data);
 
-    arma::cube datX(const_cast<double*>(mydata_parm->datX), mydata_parm->N, mydata_parm->p, mydata_parm->L, false);
-    arma::uvec datEvent(const_cast<unsigned int*>(mydata_parm->datEvent), mydata_parm->N, false);
-    arma::mat datProportionConst_tmp(const_cast<double*>(mydata_parm->datProportionConst), mydata_parm->N, mydata_parm->L, false);
+    const unsigned int N = mydata_parm->N;
+    const unsigned int p = mydata_parm->p;
+    const unsigned int L = mydata_parm->L;
+    const unsigned int l = mydata_parm->l;
+    const unsigned int jj = mydata_parm->jj;
 
-    arma::mat pars(mydata_parm->currentPars, mydata_parm->p+1, mydata_parm->L, true);
-    pars(mydata_parm->jj, mydata_parm->l) = par;
+    arma::mat datX(
+        const_cast<double*>(mydata_parm->datX),
+        N,
+        p,
+        false
+    );
 
-    // update proportions based on proposal
-    arma::mat alphas = arma::zeros<arma::mat>(mydata_parm->N, mydata_parm->L);
+    // IMPORTANT:
+    // This assumes datEvent is stored as unsigned int memory.
+    // If datEvent is arma::vec/double, use arma::vec + find(datEvent == 1).
+    arma::uvec datEvent(
+        const_cast<unsigned int*>(mydata_parm->datEvent),
+        N,
+        false
+    );
 
-    for(unsigned int ll=0; ll<(mydata_parm->L); ++ll)
+    arma::mat datProportionConst_tmp(
+        const_cast<double*>(mydata_parm->datProportionConst),
+        N,
+        L,
+        false
+    );
+
+    arma::mat alphas_base(
+        const_cast<double*>(mydata_parm->alphas),
+        N,
+        L,
+        false
+    );
+
+    arma::vec alphaRowsum_base(
+        const_cast<double*>(mydata_parm->alphaRowsum),
+        N,
+        false
+    );
+
+    arma::vec logAlpha_l_base(
+        const_cast<double*>(mydata_parm->logAlpha_l),
+        N,
+        false
+    );
+
+    arma::vec alpha_l_base(
+        const_cast<double*>(mydata_parm->alpha_l),
+        N,
+        false
+    );
+
+    arma::mat weibullS(
+        mydata_parm->weibullS,
+        N,
+        L,
+        false
+    );
+
+    arma::mat weibull_lambdas(
+        mydata_parm->weibullLambda,
+        N,
+        L,
+        false
+    );
+
+    arma::vec datTheta(
+        mydata_parm->datTheta,
+        N,
+        false
+    );
+
+    // ------------------------------------------------------------------
+    // Candidate alpha_l based on proposed par.
+    // Do not mutate current cached state inside density.
+    // ------------------------------------------------------------------
+    arma::vec logAlpha_l_candidate = logAlpha_l_base;
+
+    double delta = par - mydata_parm->old_par;
+
+    if (jj == 0)
     {
-        alphas.col(ll) = arma::exp( pars(0, ll) + datX.slice(ll) * pars.submat(1, ll, mydata_parm->p, ll) );
+        logAlpha_l_candidate += delta;
     }
-    alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
-    alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-    arma::vec alphas_Rowsum = arma::sum(alphas, 1);
+    else
+    {
+        logAlpha_l_candidate += datX.col(jj - 1) * delta;
+    }
 
-    // compute log prior
+    logAlpha_l_candidate.elem(
+        arma::find(logAlpha_l_candidate > upperbound3)
+    ).fill(upperbound3);
+
+    logAlpha_l_candidate.elem(
+        arma::find(logAlpha_l_candidate < std::log(lowerbound))
+    ).fill(std::log(lowerbound));
+
+    arma::vec alpha_l_candidate = arma::exp(logAlpha_l_candidate);
+
+    alpha_l_candidate.elem(
+        arma::find(alpha_l_candidate > upperbound3)
+    ).fill(upperbound3);
+
+    alpha_l_candidate.elem(
+        arma::find(alpha_l_candidate < lowerbound)
+    ).fill(lowerbound);
+
+    arma::vec alphaRowsum_candidate =
+        alphaRowsum_base - alpha_l_base + alpha_l_candidate;
+
+    alphaRowsum_candidate.elem(
+        arma::find(alphaRowsum_candidate < lowerbound)
+    ).fill(lowerbound);
+
+    // ------------------------------------------------------------------
+    // Prior.
+    // ------------------------------------------------------------------
     double w = mydata_parm->wSq;
-    if(mydata_parm->jj == 0)
+
+    if (jj == 0)
     {
         w = mydata_parm->w0Sq;
     }
-    double logprior = - par * par / w / 2.;
 
-    // non-cured density related censored part
-    arma::vec logpost_first = arma::zeros<arma::vec>(mydata_parm->N);
-    arma::vec logpost_second = arma::zeros<arma::vec>(mydata_parm->N);
-    arma::mat weibullS(mydata_parm->weibullS, mydata_parm->N, mydata_parm->L, false);
-    arma::mat weibull_lambdas(mydata_parm->weibullLambda, mydata_parm->N, mydata_parm->L, false);
+    double logprior = -par * par / w / 2.0;
 
-    for(unsigned int ll=0; ll<(mydata_parm->L); ++ll)
+    // ------------------------------------------------------------------
+    // Survival part through candidate proportions.
+    // ------------------------------------------------------------------
+    arma::vec logpost_first(N, arma::fill::zeros);
+    arma::vec logpost_second(N, arma::fill::zeros);
+
+    for (unsigned int ll = 0; ll < L; ++ll)
     {
-        //arma::vec tmp = datProportionTmp.col(ll) / alphas_Rowsum %  weibullS.col(ll);
-        arma::vec tmp = alphas.col(ll) / alphas_Rowsum %  weibullS.col(ll);
-        logpost_first += arma::pow(weibull_lambdas.col(ll), - mydata_parm->kappa) % tmp;
-        logpost_second += tmp;
+        arma::vec prop_ll;
+
+        if (ll == l)
+        {
+            prop_ll = alpha_l_candidate / alphaRowsum_candidate;
+        }
+        else
+        {
+            prop_ll = alphas_base.col(ll) / alphaRowsum_candidate;
+        }
+
+        prop_ll.elem(arma::find(prop_ll < lowerbound)).fill(lowerbound);
+
+        logpost_first +=
+            arma::pow(weibull_lambdas.col(ll), -mydata_parm->kappa) %
+            prop_ll;
+
+        logpost_second += prop_ll % weibullS.col(ll);
     }
 
-    double logpost_first_sum = 0.;
-    logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
+    logpost_first.elem(
+        arma::find(logpost_first < lowerbound)
+    ).fill(lowerbound);
 
-    double logpost_second_sum = 0.;
-    logpost_second_sum = arma::accu(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) % logpost_second);
+    double logpost_first_sum =
+        arma::accu(
+            arma::log(logpost_first.elem(arma::find(datEvent)))
+        );
 
-    double log_dirichlet_sum = 0.;
-    log_dirichlet_sum = arma::accu(
-                            arma::lgamma(alphas_Rowsum) - arma::sum(arma::lgamma(alphas), 1) +
-                            arma::sum( (alphas - 1.0) % arma::log(datProportionConst_tmp), 1 )
-                        );
+    double logpost_second_sum =
+        arma::accu(datTheta % logpost_second);
 
-    h = logprior + logpost_first_sum + logpost_second_sum + log_dirichlet_sum;
+    // ------------------------------------------------------------------
+    // Dirichlet part with candidate alpha_l and candidate row sums.
+    // ------------------------------------------------------------------
+    arma::mat propConst = datProportionConst_tmp;
+    propConst.elem(arma::find(propConst < lowerbound)).fill(lowerbound);
+
+    arma::vec log_dirichlet_vec = arma::lgamma(alphaRowsum_candidate);
+
+    for (unsigned int ll = 0; ll < L; ++ll)
+    {
+        if (ll == l)
+        {
+            log_dirichlet_vec -= arma::lgamma(alpha_l_candidate);
+            log_dirichlet_vec +=
+                (alpha_l_candidate - 1.0) % arma::log(propConst.col(ll));
+        }
+        else
+        {
+            log_dirichlet_vec -= arma::lgamma(alphas_base.col(ll));
+            log_dirichlet_vec +=
+                (alphas_base.col(ll) - 1.0) % arma::log(propConst.col(ll));
+        }
+    }
+
+    double log_dirichlet_sum = arma::accu(log_dirichlet_vec);
+
+    double h =
+        logprior +
+        logpost_first_sum +
+        logpost_second_sum +
+        log_dirichlet_sum;
 
     return h;
 }

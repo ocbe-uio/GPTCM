@@ -909,7 +909,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     arma::vec& datTheta,
     arma::mat weibullS,
     arma::mat& weibullLambda,
-    const DataClass &dataclass
+    const DataClass& dataclass
 )
 {
     // dimensions
@@ -921,16 +921,24 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     double minD = armsPar.zetaMin;
     double maxD = armsPar.zetaMax;
 
-    // reallocate struct variables
-    std::vector<double> xinit(armsPar.ninit); // Use std::vector instead of VLA
-    arma::vec xinit0 = arma::linspace( minD+1.0e-10, maxD-1.0e-10, armsPar.ninit );
+    std::vector<double> xinit(armsPar.ninit);
+    arma::vec xinit0 = arma::linspace(
+        minD + 1.0e-10,
+        maxD - 1.0e-10,
+        armsPar.ninit
+    );
+
     for (unsigned int i = 0; i < armsPar.ninit; ++i)
+    {
         xinit[i] = xinit0[i];
+    }
 
     if (!dirichlet)
-        Rprintf("Warning: In arms_gibbs_zeta(), Dirichlet modeling with logit/alr-link is not implement!\n");
+    {
+        Rprintf("Warning: In arms_gibbs_zetaFull(), Dirichlet modeling with logit/alr-link is not implemented!\n");
+    }
 
-    dataS *mydata = (dataS *)malloc(sizeof (dataS));
+    dataS* mydata = static_cast<dataS*>(malloc(sizeof(dataS)));
 
     mydata->currentPars = currentPars.memptr();
     mydata->p = p;
@@ -941,48 +949,164 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     mydata->datTheta = datTheta.memptr();
     mydata->weibullS = weibullS.memptr();
     mydata->weibullLambda = weibullLambda.memptr();
-    mydata->datX = dataclass.datX.memptr();
     mydata->datProportionConst = dataclass.datProportionConst.memptr();
     mydata->datEvent = dataclass.datEvent.memptr();
+
+    // ------------------------------------------------------------------
+    // Compute current full alpha matrix once.
+    // ------------------------------------------------------------------
+    arma::mat alphas(N, L, arma::fill::zeros);
+
+    for (unsigned int ll = 0; ll < L; ++ll)
+    {
+        arma::vec logAlpha_ll =
+            currentPars(0, ll) +
+            dataclass.datX.slice(ll) * currentPars.submat(1, ll, p, ll);
+
+        logAlpha_ll.elem(arma::find(logAlpha_ll > upperbound3)).fill(upperbound3);
+        logAlpha_ll.elem(arma::find(logAlpha_ll < std::log(lowerbound))).fill(std::log(lowerbound));
+
+        alphas.col(ll) = arma::exp(logAlpha_ll);
+    }
+
+    alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
+    alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+
+    arma::vec alphaRowsum = arma::sum(alphas, 1);
+    alphaRowsum.elem(arma::find(alphaRowsum < lowerbound)).fill(lowerbound);
+
+    mydata->alphas = alphas.memptr();
+    mydata->alphaRowsum = alphaRowsum.memptr();
+
+    // Work vectors for current cell type l.
+    arma::vec logAlpha_l(N, arma::fill::zeros);
+    arma::vec alpha_l(N, arma::fill::zeros);
 
     for (unsigned int l = 0; l < L; ++l)
     {
         // Gibbs sampling
+        mydata->l = l;
         mydata->wSq = wSq[l];
-        for (unsigned int j = 0; j < p+1; ++j)
+        mydata->datX = dataclass.datX.slice(l).memptr();
+
+        // Current baseline log-alpha and alpha for this l.
+        logAlpha_l =
+            currentPars(0, l) +
+            dataclass.datX.slice(l) * currentPars.submat(1, l, p, l);
+
+        logAlpha_l.elem(arma::find(logAlpha_l > upperbound3)).fill(upperbound3);
+        logAlpha_l.elem(arma::find(logAlpha_l < std::log(lowerbound))).fill(std::log(lowerbound));
+
+        alpha_l = arma::exp(logAlpha_l);
+        alpha_l.elem(arma::find(alpha_l > upperbound3)).fill(upperbound3);
+        alpha_l.elem(arma::find(alpha_l < lowerbound)).fill(lowerbound);
+
+        // Keep full alpha matrix consistent.
+        alphas.col(l) = alpha_l;
+        alphaRowsum = arma::sum(alphas, 1);
+        alphaRowsum.elem(arma::find(alphaRowsum < lowerbound)).fill(lowerbound);
+
+        mydata->logAlpha_l = logAlpha_l.memptr();
+        mydata->alpha_l = alpha_l.memptr();
+        mydata->alphas = alphas.memptr();
+        mydata->alphaRowsum = alphaRowsum.memptr();
+
+        for (unsigned int j = 0; j < p + 1; ++j)
         {
             mydata->jj = j;
-            mydata->l = l;
-            double xprev = currentPars(j, l);
+
+            double old_par = currentPars(j, l);
+            mydata->old_par = old_par;
+
+            double xprev = old_par;
             std::vector<double> xsamp(armsPar.nsamp);
 
             double qcent[1], xcent[1];
             int neval, ncent = 0;
-
-            int err;
             double convex = armsPar.convex;
-            err = ARMS::arms (
-                            xinit.data(), armsPar.ninit, &minD, &maxD,
-                            EvalFunction::log_dens_zetasFull, mydata,
-                            &convex, armsPar.npoint,
-                            armsPar.metropolis, &xprev, xsamp.data(),
-                            armsPar.nsamp, qcent, xcent, ncent, &neval);
 
-            // check ARMS validity
+            int err = ARMS::arms(
+                xinit.data(),
+                armsPar.ninit,
+                &minD,
+                &maxD,
+                EvalFunction::log_dens_zetasFull,
+                mydata,
+                &convex,
+                armsPar.npoint,
+                armsPar.metropolis,
+                &xprev,
+                xsamp.data(),
+                armsPar.nsamp,
+                qcent,
+                xcent,
+                ncent,
+                &neval
+            );
+
             if (err > 0)
-                Rprintf("In arms_gibbs_zeta(): error code in ARMS = %d.\n", err);
-            if (std::isnan(xsamp[armsPar.nsamp-1]))
-                Rprintf("In arms_gibbs_zeta(): NaN generated, possibly due to overflow in (log-)density (e.g. with densities involving exp(exp(...))).\n");
-            if (xsamp[armsPar.nsamp-1] < minD || xsamp[armsPar.nsamp-1] > maxD)
-                Rprintf("In arms_gibbs_zeta(): %d-th sample out of range [%f, %f] (fused domain). Got %f.\n", armsPar.nsamp, minD, maxD, xsamp[armsPar.nsamp-1]);
+            {
+                Rprintf("In arms_gibbs_zetaFull(): error code in ARMS = %d.\n", err);
+            }
 
-            currentPars(j, l) = xsamp[armsPar.nsamp - 1];
+            if (std::isnan(xsamp[armsPar.nsamp - 1]))
+            {
+                Rprintf("In arms_gibbs_zetaFull(): NaN generated, possibly due to overflow.\n");
+            }
+
+            if (xsamp[armsPar.nsamp - 1] < minD || xsamp[armsPar.nsamp - 1] > maxD)
+            {
+                Rprintf(
+                    "In arms_gibbs_zetaFull(): %d-th sample out of range [%f, %f]. Got %f.\n",
+                    armsPar.nsamp,
+                    minD,
+                    maxD,
+                    xsamp[armsPar.nsamp - 1]
+                );
+            }
+
+            double new_par = xsamp[armsPar.nsamp - 1];
+            currentPars(j, l) = new_par;
+
+            // ----------------------------------------------------------
+            // Accepted update: update cached logAlpha_l, alpha_l,
+            // alphas.col(l), and alphaRowsum.
+            // ----------------------------------------------------------
+            double accepted_delta = new_par - old_par;
+
+            arma::vec old_alpha_l = alpha_l;
+
+            if (j == 0)
+            {
+                logAlpha_l += accepted_delta;
+            }
+            else
+            {
+                logAlpha_l += dataclass.datX.slice(l).col(j - 1) * accepted_delta;
+            }
+
+            logAlpha_l.elem(arma::find(logAlpha_l > upperbound3)).fill(upperbound3);
+            logAlpha_l.elem(arma::find(logAlpha_l < std::log(lowerbound))).fill(std::log(lowerbound));
+
+            alpha_l = arma::exp(logAlpha_l);
+            alpha_l.elem(arma::find(alpha_l > upperbound3)).fill(upperbound3);
+            alpha_l.elem(arma::find(alpha_l < lowerbound)).fill(lowerbound);
+
+            alphaRowsum = alphaRowsum - old_alpha_l + alpha_l;
+            alphaRowsum.elem(arma::find(alphaRowsum < lowerbound)).fill(lowerbound);
+
+            alphas.col(l) = alpha_l;
+
+            // Refresh pointers explicitly.
+            mydata->logAlpha_l = logAlpha_l.memptr();
+            mydata->alpha_l = alpha_l.memptr();
+            mydata->alphas = alphas.memptr();
+            mydata->alphaRowsum = alphaRowsum.memptr();
         }
     }
 
     free(mydata);
 }
-
 
 //' Univariate ARMS for kappa
 //'
