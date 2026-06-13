@@ -500,7 +500,7 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
 
     double kappa,
     arma::vec& datTheta,
-    arma::mat datMu,
+    arma::mat& datMu,
     arma::mat& datProportion,
     arma::mat& weibullS,
     arma::mat& weibullLambda,
@@ -921,7 +921,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     double kappa,
     bool dirichlet,
     arma::vec& datTheta,
-    arma::mat weibullS,
+    arma::mat& weibullS,
     arma::mat& weibullLambda,
     arma::mat& alphas,
     const DataClass& dataclass

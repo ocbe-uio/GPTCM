@@ -952,15 +952,13 @@ Rcpp::List run_mcmc(
                 arma::mat zetaMask = zetas;
                 
                 BVS_Sampler::loglikelihood_noBVS(
-                        xi,
-                        zetas,
-                        betas,
                         kappa,
                         proportion_model,
                         alphas,
                         datProportion,
                         weibullS,
                         weibullLambda,
+                        datTheta,
                         dataclass,
                         log_likelihood
                 );
