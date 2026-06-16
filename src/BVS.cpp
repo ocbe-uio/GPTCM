@@ -18,14 +18,12 @@
 //     eta * zeta.
 //   - Inactive coefficients remain in the state. Under full Carlin--Chib they
 //     should be drawn from pseudo-priors in the beta/zeta update step.
-//   - Because no pseudo-prior hyperparameters are currently passed into BVS.cpp,
-//     this file uses the slab prior N(0, tauSq_l) / N(0, wSq_l) also as the
+//   - By default using the slab prior N(0, tauSq_l) / N(0, wSq_l)  as the
 //     default pseudo-prior. With that default the augmented-prior correction
 //     cancels, and the gamma/eta update is the masked-likelihood conditional MH
 //     special case of Carlin--Chib.
-//   - To obtain the main mixing benefit of Carlin--Chib, add pseudo-prior means
-//     and variances to hyperparS / BVS.h / drive.cpp, then modify
-//     logPseudoPriorNormal() below accordingly.
+//   - To obtain the main mixing benefit of Carlin--Chib, specify pseudo-prior 
+//     (means and) variances to hyperpar->augBetaVar, hyperpar->augZetaVar.
 // -----------------------------------------------------------------------------
 
 namespace {
@@ -310,6 +308,7 @@ void BVS_Sampler::sampleGamma(
     arma::mat& logP_gamma_,
     unsigned int& gamma_acc_count_,
     arma::vec& log_likelihood_,
+    bool CMH,
 
     const armsParmClass& armsPar,
     void *hyperpar_,
@@ -471,19 +470,30 @@ void BVS_Sampler::sampleGamma(
 
     double logLikelihoodRatio = arma::accu(proposedLikelihood) - arma::accu(currentLikelihood);
 
-    double logAugBetaCurrent = logAugBetaPriorColumn(
-        betas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
-        gammas_.col(componentUpdateIdx),
-        tauSq_[componentUpdateIdx]
-    );
+    double logAugBetaCurrent = 0.0;
+    double logAugBetaProposed = 0.0;
+    double logAugBetaPriorRatio = 0.0;
 
-    double logAugBetaProposed = logAugBetaPriorColumn(
-        betas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
-        proposedGamma.col(componentUpdateIdx),
-        tauSq_[componentUpdateIdx]
-    );
+    // choose to use conditional MH or Carlin-Chib augmented MH
+    if( !CMH )
+    {
+        double augVar = hyperpar->augBetaVar;
+        if( augVar == 0. ) augVar = tauSq_[componentUpdateIdx];
+        // std::cout << "augZetaVar=" << augVar;
+        logAugBetaCurrent = logAugBetaPriorColumn(
+            betas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
+            gammas_.col(componentUpdateIdx),
+            augVar
+        );
 
-    double logAugBetaPriorRatio = logAugBetaProposed - logAugBetaCurrent;
+        logAugBetaProposed = logAugBetaPriorColumn(
+            betas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
+            proposedGamma.col(componentUpdateIdx),
+            augVar
+        );
+
+        logAugBetaPriorRatio = logAugBetaProposed - logAugBetaCurrent;
+    }
 
     double logAccProb = logLikelihoodRatio +
                         logPriorGammaRatio +
@@ -546,6 +556,7 @@ void BVS_Sampler::sampleEta(
     arma::mat& logP_eta_,
     unsigned int& eta_acc_count_,
     arma::vec& log_likelihood_,
+    bool CMH,
 
     const armsParmClass& armsPar,
     void *hyperpar_,
@@ -704,19 +715,30 @@ void BVS_Sampler::sampleEta(
 
     double logLikelihoodRatio = arma::accu(proposedLikelihood) - arma::accu(currentLikelihood);
 
-    double logAugZetaCurrent = logAugZetaPriorColumn(
-        zetas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
-        etas_.col(componentUpdateIdx),
-        wSq_[componentUpdateIdx]
-    );
+    double logAugZetaCurrent = 0.0;
+    double logAugZetaProposed = 0.0;
+    double logAugZetaPriorRatio = 0.0;
 
-    double logAugZetaProposed = logAugZetaPriorColumn(
-        zetas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
-        proposedEta.col(componentUpdateIdx),
-        wSq_[componentUpdateIdx]
-    );
+    // use conditional MH or Carlin-Chib augmented MH
+    if( !CMH )
+    {
+        double augVar = hyperpar->augZetaVar;
+        if( augVar == 0. ) augVar = wSq_[componentUpdateIdx];
+        // std::cout << "augZetaVar=" << augVar;
+        logAugZetaCurrent = logAugZetaPriorColumn(
+            zetas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
+            etas_.col(componentUpdateIdx),
+            augVar
+        );
 
-    double logAugZetaPriorRatio = logAugZetaProposed - logAugZetaCurrent;
+        logAugZetaProposed = logAugZetaPriorColumn(
+            zetas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
+            proposedEta.col(componentUpdateIdx),
+            augVar
+        );
+
+        logAugZetaPriorRatio = logAugZetaProposed - logAugZetaCurrent;
+    }
 
     double logAccProb = logLikelihoodRatio +
                         logPriorEtaRatio +

@@ -17,6 +17,7 @@ run_mcmc(
   dirichlet,
   proportion_model,
   BVS,
+  CMH,
   threads,
   gamma_prior,
   gamma_sampler,
@@ -56,6 +57,8 @@ run_mcmc(
 \item{proportion_model}{logical value for modeling the proportions data}
 
 \item{BVS}{logical value for implementing Bayesian variable selection}
+
+\item{CMH}{logical value for conditional MH or Carlin-Chib augmented MH for Bayesian variable selection}
 
 \item{threads}{maximum threads used for parallelization. Default is 1}
 

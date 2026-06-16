@@ -27,6 +27,8 @@
 #' parametrization of the Dirichlet regression model
 #' @param hyperpar a list of relevant hyperparameters
 #' @param BVS logical value for implementing Bayesian variable selection
+#' @param CMH logical value for conditional MH or Carlin-Chib augmented MH for 
+#' Bayesian variable selection
 #' @param threads maximum threads used for parallelization. Default is 1
 #' @param kappaIGamma logical value for using inverse-gamma prior (\code{TRUE})
 #' or gamma prior (\code{FALSE}) for Weibull's shape parameter
@@ -90,6 +92,7 @@ GPTCM <- function(dat,
                   dirichlet = TRUE,
                   hyperpar = NULL,
                   BVS = TRUE,
+                  CMH = FALSE,
                   threads = 1,
                   kappaIGamma = FALSE,
                   kappaSampler = "arms",
@@ -244,6 +247,13 @@ GPTCM <- function(dat,
   }
   hyperpar$v0A <- hyperpar$vA
   hyperpar$v0B <- hyperpar$vB
+  
+  if (!"augBetaVar" %in% names(hyperpar)) {
+    hyperpar$augBetaVar <- 0
+  }
+  if (!"augZetaVar" %in% names(hyperpar)) {
+    hyperpar$augZetaVar <- 0
+  }
 
   # transform proportions data if including values very close to 0 or 1
   # This is the same as in DirichletReg::DR_data
@@ -319,6 +329,7 @@ GPTCM <- function(dat,
     dirichlet,
     proportion.model,
     BVS,
+    CMH,
     threads,
     gammaPrior,
     gammaSampler,

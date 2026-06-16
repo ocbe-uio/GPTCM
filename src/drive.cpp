@@ -34,6 +34,7 @@
 //' @param dirichlet not yet implemented
 //' @param proportion_model logical value for modeling the proportions data
 //' @param BVS logical value for implementing Bayesian variable selection
+//' @param CMH logical value for conditional MH or Carlin-Chib augmented MH for Bayesian variable selection
 //' @param threads maximum threads used for parallelization. Default is 1
 //' @param gamma_prior one of \code{c("bernoulli", "MRF")}
 //' @param gamma_sampler one of \code{c("mc3", "bandit")}
@@ -62,6 +63,7 @@ Rcpp::List run_mcmc(
     bool dirichlet,
     bool proportion_model,
     bool BVS,
+    bool CMH,
     int threads,
     const std::string& gamma_prior,
     const std::string& gamma_sampler,
@@ -152,6 +154,9 @@ Rcpp::List run_mcmc(
     // pi and rho are now latent variables.
     // The fixed hyperparameters hyperparList["pi"] and hyperparList["rho"]
     // are no longer used here.
+
+    hyperpar->augBetaVar = Rcpp::as<double>(hyperparList["augBetaVar"]);
+    hyperpar->augZetaVar = Rcpp::as<double>(hyperparList["augZetaVar"]);
 
     double vSq = Rcpp::as<double>(hyperparList["vSq"]);
     hyperpar->vA = Rcpp::as<double>(hyperparList["vA"]);
@@ -530,6 +535,7 @@ Rcpp::List run_mcmc(
                             logP_eta,
                             eta_acc_count,
                             log_likelihood,
+                            CMH,
 
                             armsPar,
                             hyperpar,
@@ -644,6 +650,7 @@ Rcpp::List run_mcmc(
                     logP_gamma,
                     gamma_acc_count,
                     log_likelihood,
+                    CMH,
 
                     armsPar,
                     hyperpar,

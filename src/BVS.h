@@ -46,6 +46,9 @@ typedef struct HyperparData
     double rhoA;
     double rhoB;
 
+    double augBetaVar;
+    double augZetaVar;
+
     // double vSq;
     double vA;
     double vB;
@@ -133,6 +136,7 @@ public:
         arma::mat& logP_gamma_,
         unsigned int& gamma_acc_count_,
         arma::vec& log_likelihood_,
+        bool CMH,
 
         // int n,
         // int nsamp,
@@ -174,6 +178,7 @@ public:
         arma::mat& logP_eta_,
         unsigned int& eta_acc_count_,
         arma::vec& log_likelihood_,
+        bool CMH,
 
         const armsParmClass& armsPar,
         void *hyperpar_,

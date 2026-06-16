@@ -1,5 +1,16 @@
 <div style="text-align: left;">
 
+### GPTCM 2.0.3 (2026-06-16)
+
+* enable both conditional MH sampling and Carlin-Chib augmented MH for BVS
+* TODO: add /test to be sure every change results in ok BVS
+* TODO: improve `BVS_Sampler::loglikelihood()` like `BVS_Sampler::loglikelihood_noBVS()`
+* TODO: clean inline functions in `BVS.cpp`
+
+### GPTCM 2.0.2 (2026-06-16)
+
+* back to version with `arma::find(datEvent)` due to some introduced bugs using `eventIndex = arma::find(datEvent)`
+
 ### GPTCM 2.0.1 (2026-06-13)
 
 * Separate MCMC loop for `BVS = FALSE` to speed up the running without variable selection

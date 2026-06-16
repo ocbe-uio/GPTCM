@@ -14,6 +14,7 @@ GPTCM(
   dirichlet = TRUE,
   hyperpar = NULL,
   BVS = TRUE,
+  CMH = FALSE,
   threads = 1,
   kappaIGamma = FALSE,
   kappaSampler = "arms",
@@ -52,6 +53,9 @@ parametrization of the Dirichlet regression model}
 \item{hyperpar}{a list of relevant hyperparameters}
 
 \item{BVS}{logical value for implementing Bayesian variable selection}
+
+\item{CMH}{logical value for conditional MH or Carlin-Chib augmented MH for 
+Bayesian variable selection}
 
 \item{threads}{maximum threads used for parallelization. Default is 1}
 
