@@ -17,8 +17,8 @@ void ARMS_Gibbs::arms_gibbs_xi(
     arma::vec& currentPars,
     double v0Sq,
     double vSq,
-    arma::mat datProportion,
-    arma::mat weibullS,
+    arma::mat& datProportion,
+    arma::mat& weibullS,
     const DataClass &dataclass)
 {
     // number of parameters to be updated
@@ -130,7 +130,7 @@ void ARMS_Gibbs::arms_gibbs_xi(
 
         */
         double xsamp = currentPars[j];
-        slice_sample (
+        slice_sample(
             EvalFunction::log_dens_xis,
             mydata,
             xsamp,
@@ -178,9 +178,10 @@ void ARMS_Gibbs::arms_gibbs_beta(
 
     double kappa,
     arma::vec& datTheta,
-    arma::mat datMu,
+    arma::mat& datMu,
     arma::mat& datProportion,
-    arma::mat weibullS,
+    arma::mat& weibullS,
+    arma::mat& weibullLambda,
     // const arma::cube datX,
     // const arma::uvec datEvent,
     // const arma::vec datTime,
@@ -242,6 +243,9 @@ void ARMS_Gibbs::arms_gibbs_beta(
 
     // arma::vec tauSq_tmp = arma::ones<arma::vec>(L);
 
+    arma::vec logMu_l = arma::zeros<arma::vec>(N);
+    mydata->logMu_l = logMu_l.memptr();
+
     // not easy to parallize the following for-loop due to data dependencies
     for (unsigned int l = 0; l < L; ++l)
     {
@@ -252,6 +256,10 @@ void ARMS_Gibbs::arms_gibbs_beta(
         mydata->tauSq = tauSq[l];
         // tauSq_tmp[l] = sampleW(tauA, tauB, currentPars.col(l));
         // mydata->tauSq = tauSq_tmp[l];
+        // arma::vec betaMask_l = currentPars.submat(1, l, p, l);
+        // betaMask_l.elem(arma::find(gammas.submat(1, l, p, l) == 0)).fill(0.0);
+        logMu_l = currentPars(0, l) + dataclass.datX.slice(l) * 
+            (currentPars.submat(1, l, p, l) % gammas.submat(1, l, p, l)) ;
         for (unsigned int j = 0; j < p+1; ++j)
         {
             if (!gammas(j, l))
@@ -271,28 +279,13 @@ void ARMS_Gibbs::arms_gibbs_beta(
 
                 mydata->datX = dataclass.datX.slice(l).memptr();
 
-                // update quantities needed for ARMS updates
-                // if put 'create_mydata' out of for-loop, the following updates can for elements of pointer *mydata
-                
-                // arma::vec logMu_l = dataclass.datX.slice(l) * currentPars.col(l);
-                arma::vec logMu_l = currentPars(0, l) + dataclass.datX.slice(l) * (currentPars.submat(1, l, p, l) % gammas.submat(1, l, p, l));
-                logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
-                datMu.col(l) = arma::exp( logMu_l );
-                // arma::vec lambdas = datMu.col(l) / std::tgamma(1. + 1./kappa);
-                // weibullS.col(l) = arma::exp( -arma::pow(datTime / lambdas, kappa) );
-                arma::vec lambdas = arma::pow( dataclass.datTime / (datMu.col(l) / std::tgamma(1. + 1./kappa)), kappa);
-                lambdas.elem(arma::find(lambdas > upperbound)).fill(upperbound);
-                weibullS.col(l) = arma::exp( -lambdas );
-                //weibullS.elem(arma::find(weibullS < lowerbound)).fill(lowerbound); // remove later on if using smaller upperbound for lambdas
-
-                // mydata->currentPars = currentPars.memptr();
-                // mydata->datMu = datMu.memptr(); // update this due to its change with updated coefficients
-                // mydata->weibullS = weibullS.memptr(); // update this due to its change with updated coefficients
 
                 // parameters for ARMS
                 //double initi = currentPars(j, l);  //samp(j, i)
                 //double *xprev; xprev = &initi;
-                double xprev = currentPars(j, l);
+                double old_par = currentPars(j, l);
+                // mydata->old_par = old_par;
+                double xprev = old_par;
                 // double *xsamp = (double*)malloc(armsPar.nsamp * sizeof(double));
                 std::vector<double> xsamp(armsPar.nsamp);
 
@@ -332,7 +325,44 @@ void ARMS_Gibbs::arms_gibbs_beta(
                 // }
                 // std::cout <<  "/n";
 
-                currentPars(j, l) = xsamp[armsPar.nsamp - 1];
+                double new_par = xsamp[armsPar.nsamp - 1];
+                currentPars(j, l) = new_par;
+
+
+                // update quantities needed for ARMS updates
+
+                // if put 'create_mydata' out of for-loop, the following updates can for elements of pointer *mydata
+                
+                // arma::vec logMu_l = currentPars(0, l) + dataclass.datX.slice(l) * (currentPars.submat(1, l, p, l) % gammas.submat(1, l, p, l));
+
+                double accepted_delta = new_par - old_par;
+                if (j == 0) {        
+                    logMu_l += accepted_delta;    
+                } else {        
+                    logMu_l += dataclass.datX.slice(l).col(j - 1) * accepted_delta;
+                }    
+
+                logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+                datMu.col(l) = arma::exp( logMu_l );
+                // arma::vec lambdas = datMu.col(l) / std::tgamma(1. + 1./kappa);
+                // weibullS.col(l) = arma::exp( -arma::pow(datTime / lambdas, kappa) );
+                // weibullLambda.col(l) = arma::pow( dataclass.datTime / (datMu.col(l) / std::tgamma(1. + 1./kappa)), kappa);
+                // weibullLambda.elem(arma::find(lambdas > upperbound)).fill(upperbound);
+  
+                weibullLambda.col(l) = datMu.col(l) / std::tgamma(1. + 1./kappa);
+                weibullS.col(l) = arma::exp(        
+                    -arma::pow(            
+                        dataclass.datTime / weibullLambda.col(l),           
+                        kappa        
+                    )    
+                );
+                
+                // weibullS.col(l) = arma::exp( -weibullLambda.col(l) );
+                //weibullS.elem(arma::find(weibullS < lowerbound)).fill(lowerbound); // remove later on if using smaller upperbound for lambdas
+
+                // mydata->currentPars = currentPars.memptr();
+                // mydata->datMu = datMu.memptr(); // update this due to its change with updated coefficients
+                // mydata->weibullS = weibullS.memptr(); // update this due to its change with updated coefficients
 
                 // free(xsamp);
             }
@@ -368,9 +398,9 @@ void ARMS_Gibbs::arms_gibbs_betaK(
 
     double kappa,
     arma::vec& datTheta,
-    arma::mat datMu,
+    arma::mat& datMu,
     arma::mat& datProportion,
-    arma::mat weibullS,
+    arma::mat& weibullS,
     const DataClass &dataclass
     // double& logPosteriorBeta
 )
@@ -435,13 +465,6 @@ void ARMS_Gibbs::arms_gibbs_betaK(
 
             mydata->datX = dataclass.datX.slice(l).memptr();
 
-            // arma::vec logMu_l = dataclass.datX.slice(l) * currentPars.col(l);
-            arma::vec logMu_l = currentPars(0, l) + dataclass.datX.slice(l) * (currentPars.submat(1, l, p, l) % gammas.submat(1, l, p, l));
-            logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
-            datMu.col(l) = arma::exp( logMu_l );
-            arma::vec lambdas = arma::pow( dataclass.datTime / (datMu.col(l) / std::tgamma(1. + 1./kappa)), kappa);
-            lambdas.elem(arma::find(lambdas > upperbound)).fill(upperbound);
-            weibullS.col(l) = arma::exp( -lambdas );
             double xprev = currentPars(j, l);
             std::vector<double> xsamp(armsPar.nsamp);
 
@@ -477,6 +500,16 @@ void ARMS_Gibbs::arms_gibbs_betaK(
 
             currentPars(j, l) = xsamp[armsPar.nsamp - 1];
 
+            // Update relevant quantities based on updated 'currentPars'
+
+            // arma::vec logMu_l = dataclass.datX.slice(l) * currentPars.col(l);
+            arma::vec logMu_l = currentPars(0, l) + dataclass.datX.slice(l) * (currentPars.submat(1, l, p, l) % gammas.submat(1, l, p, l));
+            logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+            datMu.col(l) = arma::exp( logMu_l );
+            arma::vec lambdas = arma::pow( dataclass.datTime / (datMu.col(l) / std::tgamma(1. + 1./kappa)), kappa);
+            lambdas.elem(arma::find(lambdas > upperbound)).fill(upperbound);
+            weibullS.col(l) = arma::exp( -lambdas );
+
         }
     }
 
@@ -494,7 +527,7 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
 
     double kappa,
     arma::vec& datTheta,
-    arma::mat datMu,
+    arma::mat& datMu,
     arma::mat& datProportion,
     arma::mat& weibullS,
     arma::mat& weibullLambda,
@@ -623,7 +656,7 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     double kappa,
     bool dirichlet,
     arma::vec& datTheta,
-    arma::mat weibullS,
+    arma::mat& weibullS,
     arma::mat& weibullLambda,
     const DataClass &dataclass
     // double& logPosteriorZeta
@@ -791,7 +824,7 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
     double kappa,
     bool dirichlet,
     arma::vec& datTheta,
-    arma::mat weibullS,
+    arma::mat& weibullS,
     arma::mat& weibullLambda,
     const DataClass &dataclass
     // double& logPosteriorZeta
@@ -909,7 +942,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     double kappa,
     bool dirichlet,
     arma::vec& datTheta,
-    arma::mat weibullS,
+    arma::mat& weibullS,
     arma::mat& weibullLambda,
     arma::mat& alphas,
     const DataClass& dataclass
@@ -1126,9 +1159,9 @@ void ARMS_Gibbs::arms_kappa(
     double kappaA,
     double kappaB,
     bool invGamma,
-    arma::vec datTheta,
-    arma::mat datMu,
-    arma::mat datProportion,
+    arma::vec& datTheta,
+    arma::mat& datMu,
+    arma::mat& datProportion,
     const DataClass &dataclass)
 {
     // dimensions
@@ -1288,7 +1321,7 @@ void ARMS_Gibbs::slice_sample(
         }
         while (cnt < 1e4);
 
-        if (cnt == 1e4) Rcpp::stop("slice_sample_cpp loop did not finish");
+        if (cnt == 1e4) Rcpp::stop("Error: 'slice_sample_cpp' loop did not finish");
 
         x = xs;
         logy = logys;

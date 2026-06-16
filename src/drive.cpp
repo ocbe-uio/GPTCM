@@ -504,59 +504,56 @@ Rcpp::List run_mcmc(
                         wSq[l] = sampleV(hyperpar->wA, hyperpar->wB, zetas.submat(1,l,p,l));
                     }
 
-                    if(BVS)
+                    // ============================================================
+                    // Update latent Bernoulli probabilities rho | eta
+                    // ============================================================
+
+                    if(etaPrior == Eta_Prior_Type::bernoulli)
                     {
-                        // ============================================================
-                        // Update latent Bernoulli probabilities rho | eta
-                        // ============================================================
-
-                        if(etaPrior == Eta_Prior_Type::bernoulli)
+                        for(unsigned int l=0; l<L; ++l)
                         {
-                            for(unsigned int l=0; l<L; ++l)
+                            double s_l = arma::accu(etas.col(l));
+
+                            rho[l] = R::rbeta(hyperpar->rhoA + s_l,
+                                            hyperpar->rhoB + static_cast<double>(p) - s_l);
+
+                            // Recompute logP_eta so it is consistent with current rho.
+                            for(unsigned int j=0; j<p; ++j)
                             {
-                                double s_l = arma::accu(etas.col(l));
-
-                                rho[l] = R::rbeta(hyperpar->rhoA + s_l,
-                                                hyperpar->rhoB + static_cast<double>(p) - s_l);
-
-                                // Recompute logP_eta so it is consistent with current rho.
-                                for(unsigned int j=0; j<p; ++j)
-                                {
-                                    logP_eta(j, l) = BVS_Sampler::logPDFBernoulli(etas(j, l), rho[l]);
-                                }
+                                logP_eta(j, l) = BVS_Sampler::logPDFBernoulli(etas(j, l), rho[l]);
                             }
                         }
-
-                        // logZ_eta.fill(std::numeric_limits<double>::quiet_NaN());
-                        BVS_Sampler::sampleEta(
-                            etas,
-                            etaPrior,
-                            etaSampler,
-                            logP_eta,
-                            eta_acc_count,
-                            log_likelihood,
-                            CMH,
-
-                            armsPar,
-                            hyperpar,
-
-                            zetas,
-                            betas,
-                            gammas,
-                            xi,
-                            kappa,
-                            w0Sq,
-                            wSq,
-                            rho,
-                            logZ_eta,
-
-                            dirichlet,
-                            datTheta,
-                            weibullS,
-                            weibullLambda,
-                            dataclass
-                        );
                     }
+
+                    // logZ_eta.fill(std::numeric_limits<double>::quiet_NaN());
+                    BVS_Sampler::sampleEta(
+                        etas,
+                        etaPrior,
+                        etaSampler,
+                        logP_eta,
+                        eta_acc_count,
+                        log_likelihood,
+                        CMH,
+
+                        armsPar,
+                        hyperpar,
+
+                        zetas,
+                        betas,
+                        gammas,
+                        xi,
+                        kappa,
+                        w0Sq,
+                        wSq,
+                        rho,
+                        logZ_eta,
+
+                        dirichlet,
+                        datTheta,
+                        weibullS,
+                        weibullLambda,
+                        dataclass
+                    );
 
                     // One more round update besides sampleEta()
                     ARMS_Gibbs::arms_gibbs_zeta(
@@ -590,8 +587,7 @@ Rcpp::List run_mcmc(
                 }
                 else
                 {
-                    Rprintf("Warning: In arms_gibbs_zeta(), Dirichlet modeling with logit/alr-link is not implement!\n");
-                    break;
+                    Rcpp::stop("Error: In arms_gibbs_zeta(), Dirichlet modeling with logit/alr-link is not yet implemented!\n");
                 }
             }
 
@@ -619,61 +615,55 @@ Rcpp::List run_mcmc(
             // Update latent Bernoulli probabilities pi | gamma
             // ============================================================
 
-            if(BVS)
+            if(gammaPrior == Gamma_Prior_Type::bernoulli)
             {
-                if(gammaPrior == Gamma_Prior_Type::bernoulli)
+                for(unsigned int l=0; l<L; ++l)
                 {
-                    for(unsigned int l=0; l<L; ++l)
+                    double s_l = arma::accu(gammas.col(l));
+
+                    pi[l] = R::rbeta(hyperpar->piA + s_l,
+                                    hyperpar->piB + static_cast<double>(p) - s_l);
+
+                    // Recompute logP_gamma so it is consistent with current pi.
+                    for(unsigned int j=0; j<p; ++j)
                     {
-                        double s_l = arma::accu(gammas.col(l));
-
-                        pi[l] = R::rbeta(hyperpar->piA + s_l,
-                                        hyperpar->piB + static_cast<double>(p) - s_l);
-
-                        // Recompute logP_gamma so it is consistent with current pi.
-                        for(unsigned int j=0; j<p; ++j)
-                        {
-                            logP_gamma(j, l) = BVS_Sampler::logPDFBernoulli(gammas(j, l), pi[l]);
-                        }
+                        logP_gamma(j, l) = BVS_Sampler::logPDFBernoulli(gammas(j, l), pi[l]);
                     }
                 }
-            //}
+            }
 
             // update gammas -- variable selection indicators
-            //if(BVS)
-            //{
-                // logZ_gamma.fill(std::numeric_limits<double>::quiet_NaN());
-                BVS_Sampler::sampleGamma(
-                    gammas,
-                    gammaPrior,
-                    gammaSampler,
-                    logP_gamma,
-                    gamma_acc_count,
-                    log_likelihood,
-                    CMH,
+            // logZ_gamma.fill(std::numeric_limits<double>::quiet_NaN());
+            BVS_Sampler::sampleGamma(
+                gammas,
+                gammaPrior,
+                gammaSampler,
+                logP_gamma,
+                gamma_acc_count,
+                log_likelihood,
+                CMH,
 
-                    armsPar,
-                    hyperpar,
+                armsPar,
+                hyperpar,
 
-                    xi,
-                    zetas,
-                    etas,
-                    betas,
-                    kappa,
-                    tau0Sq,
-                    tauSq,
-                    pi,        
-                    logZ_gamma,
+                xi,
+                zetas,
+                etas,
+                betas,
+                kappa,
+                tau0Sq,
+                tauSq,
+                pi,        
+                logZ_gamma,
 
-                    proportion_model,
+                proportion_model,
 
-                    datProportion,
-                    datTheta,
-                    datMu,
-                    weibullS,
-                    dataclass
-                );
-            }
+                datProportion,
+                datTheta,
+                datMu,
+                weibullS,
+                dataclass
+            );
 
             // update betas in non-cure fraction
             ARMS_Gibbs::arms_gibbs_beta(
@@ -689,25 +679,28 @@ Rcpp::List run_mcmc(
                 datMu,
                 datProportion,
                 weibullS,
+                weibullLambda,
                 dataclass
             );
 
-            #ifdef _OPENMP
-            #pragma omp parallel for
-            #endif
+            // // Done in ARMS_Gibbs::arms_gibbs_beta()
 
-            // update Weibull quantities based on new betas
-            for(unsigned int l=0; l<L; ++l)
-            {
-                arma::vec betaMask_l = betas.submat(1, l, p, l);
-                betaMask_l.elem(arma::find(gammas.col(l) == 0)).fill(0.0);
-                arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
-                logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+            // #ifdef _OPENMP
+            // #pragma omp parallel for
+            // #endif
 
-                datMu.col(l) = arma::exp( logMu_l );
-                weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
-                weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
-            }
+            // // update Weibull quantities based on new betas
+            // for(unsigned int l=0; l<L; ++l)
+            // {
+            //     arma::vec betaMask_l = betas.submat(1, l, p, l);
+            //     betaMask_l.elem(arma::find(gammas.col(l) == 0)).fill(0.0);
+            //     arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
+            //     logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+
+            //     datMu.col(l) = arma::exp( logMu_l );
+            //     weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
+            //     weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
+            // }
 
             // save results for un-thinned posterior mean
             if(m >= burnin)
@@ -748,41 +741,52 @@ Rcpp::List run_mcmc(
 
                 arma::mat betaMask = betas;
                 arma::mat zetaMask = zetas;
-                if(BVS)
+
+                betaMask = betas % arma::join_cols(arma::ones<arma::urowvec>(L), gammas);
+                gamma_mcmc.row(1+nIter_thin_count) = arma::vectorise(gammas).t();
+
+                if(gammaPrior == Gamma_Prior_Type::bernoulli)
                 {
-                    betaMask = betas % arma::join_cols(arma::ones<arma::urowvec>(L), gammas);
-                    gamma_mcmc.row(1+nIter_thin_count) = arma::vectorise(gammas).t();
+                    pi_mcmc.row(1+nIter_thin_count) = pi.t();
+                }
 
-                    if(gammaPrior == Gamma_Prior_Type::bernoulli)
+                if(proportion_model)
+                {
+                    zetaMask = zetas % arma::join_cols(arma::ones<arma::urowvec>(L), etas);
+                    eta_mcmc.row(1+nIter_thin_count) = arma::vectorise(etas).t();
+
+                    if(etaPrior == Eta_Prior_Type::bernoulli)
                     {
-                        pi_mcmc.row(1+nIter_thin_count) = pi.t();
-                    }
-
-                    if(proportion_model)
-                    {
-                        zetaMask = zetas % arma::join_cols(arma::ones<arma::urowvec>(L), etas);
-                        eta_mcmc.row(1+nIter_thin_count) = arma::vectorise(etas).t();
-
-                        if(etaPrior == Eta_Prior_Type::bernoulli)
-                        {
-                            rho_mcmc.row(1+nIter_thin_count) = rho.t();
-                        }
+                        rho_mcmc.row(1+nIter_thin_count) = rho.t();
                     }
                 }
-                else
-                {
-                    BVS_Sampler::loglikelihood(
+
+                // TODO: pass this log-likelihood to sampleGamma() and sampleEta()
+                // BVS_Sampler::loglikelihood(
+                //     xi,
+                //     zetas,
+                //     betas,
+                //     etas,
+                //     gammas,
+                //     kappa,
+                //     proportion_model,
+                //     dataclass,
+                //     log_likelihood
+                // );
+                BVS_Sampler::loglikelihood_noBVS(
                         xi,
                         zetas,
                         betas,
-                        etas,
-                        gammas,
                         kappa,
                         proportion_model,
+                        alphas,
+                        datProportion,
+                        weibullS,
+                        weibullLambda,
                         dataclass,
                         log_likelihood
-                    );
-                }
+                );
+                
 
                 loglikelihood_mcmc.row(1+nIter_thin_count) = log_likelihood.t();
 

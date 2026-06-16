@@ -26,8 +26,8 @@ public:
         arma::vec& currentPars,
         double v0Sq,
         double vSq,
-        arma::mat datProportion,
-        arma::mat weibullS,
+        arma::mat& datProportion,
+        arma::mat& weibullS,
         const DataClass& dataclass
     );
 
@@ -42,9 +42,10 @@ public:
 
         double kappa,
         arma::vec& datTheta,
-        arma::mat datMu,
+        arma::mat& datMu,
         arma::mat& datProportion,
-        arma::mat weibullS,
+        arma::mat& weibullS,
+        arma::mat& weibullLambda,
         const DataClass& dataclass
         // double& logPosteriorBeta
     );
@@ -61,9 +62,9 @@ public:
 
         double kappa,
         arma::vec& datTheta,
-        arma::mat datMu,
+        arma::mat& datMu,
         arma::mat& datProportion,
-        arma::mat weibullS,
+        arma::mat& weibullS,
         const DataClass& dataclass
         // double& logPosteriorBeta
     );
@@ -75,7 +76,7 @@ public:
         double& tau0Sq,
         double kappa,
         arma::vec& datTheta,
-        arma::mat datMu,
+        arma::mat& datMu,
         arma::mat& datProportion,
         arma::mat& weibullS,
         arma::mat& weibullLambda,
@@ -93,7 +94,7 @@ public:
         double kappa,
         bool dirichlet,
         arma::vec& datTheta,
-        arma::mat weibullS,
+        arma::mat& weibullS,
         arma::mat& weibullLambda,
         const DataClass& dataclass
         // double& logPosteriorZeta
@@ -111,7 +112,7 @@ public:
         double kappa,
         bool dirichlet,
         arma::vec& datTheta,
-        arma::mat weibullS,
+        arma::mat& weibullS,
         arma::mat& weibullLambda,
         const DataClass& dataclass
         // double& logPosteriorZeta
@@ -125,7 +126,7 @@ public:
         double kappa,
         bool dirichlet,
         arma::vec& datTheta,
-        arma::mat weibullS,
+        arma::mat& weibullS,
         arma::mat& weibullLambda,
         arma::mat& alphas,
         const DataClass& dataclass
@@ -137,9 +138,9 @@ public:
         double kappaA,
         double kappaB,
         bool invGamma,
-        arma::vec datTheta,
-        arma::mat datMu,
-        arma::mat datProportion,
+        arma::vec& datTheta,
+        arma::mat& datMu,
+        arma::mat& datProportion,
         const DataClass& dataclass
     );
 
