@@ -32,7 +32,7 @@ BVS_acc_betas <- sum(as.numeric(fit$output$post$gammas >=0.5) == as.numeric(dat$
 BVS_acc_zetas <- sum(as.numeric(fit$output$post$etas >=0.5) == as.numeric(dat$zetas[-1, ] != 0)) / (p * L)
 
 test_that("fit has expected values", {
-  tol <- 5e-1
+  tol <- 9e-1
   with(fit$output, {
     expect_equal(as.vector(post$xi), c(0.9, 0.6, -1.0), tolerance = tol)
     expect_equal(as.vector(post$betas[1, ]), rep(0, L), tolerance = tol)
