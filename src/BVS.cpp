@@ -92,7 +92,7 @@ void BVS_Sampler::loglikelihood(
     unsigned int p = dataclass.datX.n_cols;
     unsigned int L = dataclass.datX.n_slices;
 
-    arma::mat updateProportions = dataclass.datProportionConst;
+    arma::mat datProportion = dataclass.datProportionConst;
     arma::mat alphas = arma::zeros<arma::mat>(N, L);
     arma::vec alphas_Rowsum;
     if(proportion_model)
@@ -110,7 +110,7 @@ void BVS_Sampler::loglikelihood(
         alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
         alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
         alphas_Rowsum = arma::sum(alphas, 1);
-        updateProportions = alphas / arma::repmat(alphas_Rowsum, 1, L);
+        datProportion = alphas / arma::repmat(alphas_Rowsum, 1, L);
     }
 
     arma::vec logTheta = dataclass.datX0 * xi;
@@ -132,9 +132,9 @@ void BVS_Sampler::loglikelihood(
         arma::vec weibullS_l = arma::exp( - arma::pow( dataclass.datTime / weibull_lambdas_l, kappa) );
         arma::vec weibull_pdf = arma::exp(-kappa * arma::log(weibull_lambdas_l) - arma::pow(dataclass.datTime/weibull_lambdas_l, kappa));
 
-        survival_pop += updateProportions.col(l) % weibullS_l;
+        survival_pop += datProportion.col(l) % weibullS_l;
 
-        f += kappa * arma::pow(dataclass.datTime, kappa - 1.0) % updateProportions.col(l) % weibull_pdf;
+        f += kappa * arma::pow(dataclass.datTime, kappa - 1.0) % datProportion.col(l) % weibull_pdf;
     }
 
     // summarize density of the Weibull's survival part
@@ -156,18 +156,20 @@ void BVS_Sampler::loglikelihood(
     loglik = log_f_pop + log_survival_pop + log_dirichlet;
 }
 
-// loglikelihood for 'BVS = FALSE'
+// loglikelihood given all relevant quantities
 void BVS_Sampler::loglikelihood_noBVS(
-    const arma::vec& xi,
-    const arma::mat& zetas,
-    const arma::mat& betas,
+    // const arma::vec& xi,
+    // const arma::mat& zetas,
+    // const arma::mat& betas,
     double kappa,
 
     bool proportion_model,
     arma::mat& alphas,
-    arma::mat& updateProportions,
+    arma::mat& datProportion,
     arma::mat& weibullS,
     arma::mat& weibullLambda,
+    arma::mat& logTheta,
+    arma::mat& datTheta,
     const DataClass &dataclass,
     arma::vec& loglik)
 {
@@ -176,7 +178,7 @@ void BVS_Sampler::loglikelihood_noBVS(
     // unsigned int p = dataclass.datX.n_cols;
     unsigned int L = dataclass.datX.n_slices;
 
-    // arma::mat updateProportions = dataclass.datProportionConst;
+    // arma::mat datProportion = dataclass.datProportionConst;
     // arma::mat alphas = arma::zeros<arma::mat>(N, L);
     // arma::vec alphas_Rowsum;
     // if(proportion_model)
@@ -193,12 +195,12 @@ void BVS_Sampler::loglikelihood_noBVS(
     //     alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
     //     alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
     //     alphas_Rowsum = arma::sum(alphas, 1);
-    //     updateProportions = alphas / arma::repmat(alphas_Rowsum, 1, L);
+    //     datProportion = alphas / arma::repmat(alphas_Rowsum, 1, L);
     // }
 
-    arma::vec logTheta = dataclass.datX0 * xi;
-    logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
-    arma::vec thetas = arma::exp( logTheta );
+    // arma::vec logTheta = dataclass.datX0 * xi;
+    // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+    // arma::vec thetas = arma::exp( logTheta );
 
     arma::vec f = arma::zeros<arma::vec>(N);
     arma::vec survival_pop = arma::zeros<arma::vec>(N);
@@ -215,13 +217,13 @@ void BVS_Sampler::loglikelihood_noBVS(
         // arma::vec weibull_pdf = arma::exp(-kappa * arma::log(weibull_lambdas_l) - arma::pow(dataclass.datTime/weibull_lambdas_l, kappa));
         arma::vec weibull_pdf = arma::exp(-kappa * arma::log(weibullLambda.col(l)) - arma::pow(dataclass.datTime/weibullLambda.col(l), kappa));
 
-        survival_pop += updateProportions.col(l) % weibullS.col(l);
+        survival_pop += datProportion.col(l) % weibullS.col(l);
 
-        f += kappa * arma::pow(dataclass.datTime, kappa - 1.0) % updateProportions.col(l) % weibull_pdf;
+        f += kappa * arma::pow(dataclass.datTime, kappa - 1.0) % datProportion.col(l) % weibull_pdf;
     }
 
     // summarize density of the Weibull's survival part
-    arma::vec log_survival_pop = - thetas % (1. - survival_pop);
+    arma::vec log_survival_pop = - datTheta % (1. - survival_pop);
     f.elem(arma::find(f < lowerbound)).fill(lowerbound);
     arma::vec log_f_pop = logTheta + arma::log(f) + log_survival_pop;
 
@@ -257,7 +259,7 @@ void BVS_Sampler::sampleGamma(
     const arma::mat& zetas_,
     const arma::umat& etas_,
     arma::mat& betas_,
-    double kappa_,
+    double kappa,
     double tau0Sq_,
     const arma::vec& tauSq_,
     const arma::vec& pi,
@@ -390,7 +392,7 @@ void BVS_Sampler::sampleGamma(
         betas_,
         etas_,
         gammas_,
-        kappa_,
+        kappa,
         proportion_model,
         dataclass,
         currentLikelihood
@@ -402,7 +404,7 @@ void BVS_Sampler::sampleGamma(
         betas_,
         etas_,
         proposedGamma,
-        kappa_,
+        kappa,
         proportion_model,
         dataclass,
         proposedLikelihood
@@ -504,7 +506,7 @@ void BVS_Sampler::sampleEta(
     const arma::mat& betas_,
     const arma::umat& gammas_,
     const arma::vec& xi_,
-    double kappa_,
+    double kappa,
     double w0Sq_,
     arma::vec wSq_,
     const arma::vec& rho,
@@ -635,7 +637,7 @@ void BVS_Sampler::sampleEta(
         betas_,
         etas_,
         gammas_,
-        kappa_,
+        kappa,
         dirichlet,
         dataclass,
         currentLikelihood
@@ -647,7 +649,7 @@ void BVS_Sampler::sampleEta(
         betas_,
         proposedEta,
         gammas_,
-        kappa_,
+        kappa,
         dirichlet,
         dataclass,
         proposedLikelihood
