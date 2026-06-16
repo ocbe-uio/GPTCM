@@ -13,10 +13,10 @@ License: GPL-3
 VignetteBuilder: knitr
 Depends: R (>= 4.1.0)
 Encoding: UTF-8
-LinkingTo: Rcpp, RcppArmadillo
+LinkingTo: Rcpp, RcppArmadillo, testthat
 Imports: Rcpp, survival, riskRegression, ggplot2, ggridges, miCoPTCM,
         loo, mvnfast, Matrix, scales, utils, stats, graphics
-Suggests: knitr, survminer
+Suggests: knitr, survminer, testthat
 NeedsCompilation: yes
 SystemRequirements: C++17
 Config/roxygen2/version: 8.0.0
