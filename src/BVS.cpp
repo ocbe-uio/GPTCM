@@ -213,16 +213,16 @@ void BVS_Sampler::loglikelihood(
             arma::sum( (alphas - 1.0) % arma::log(dataclass.datProportionConst), 1 );
     }
 
-    log_f_pop.elem(dataclass.eventIndex).fill(0.);
-    log_survival_pop.elem(dataclass.eventIndex).fill(0.);
+    log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
+    log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
     loglik = log_f_pop + log_survival_pop + log_dirichlet;
 }
 
 // loglikelihood for 'BVS = FALSE'
 void BVS_Sampler::loglikelihood_noBVS(
-    // const arma::vec& xi,
-    // const arma::mat& zetas,
-    // const arma::mat& betas,
+    const arma::vec& xi,
+    const arma::mat& zetas,
+    const arma::mat& betas,
     double kappa,
 
     bool proportion_model,
@@ -230,7 +230,6 @@ void BVS_Sampler::loglikelihood_noBVS(
     arma::mat& updateProportions,
     arma::mat& weibullS,
     arma::mat& weibullLambda,
-    arma::vec& thetas,
     const DataClass &dataclass,
     arma::vec& loglik)
 {
@@ -259,9 +258,9 @@ void BVS_Sampler::loglikelihood_noBVS(
     //     updateProportions = alphas / arma::repmat(alphas_Rowsum, 1, L);
     // }
 
-    // arma::vec logTheta = dataclass.datX0 * xi;
-    // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
-    // arma::vec thetas = arma::exp( logTheta );
+    arma::vec logTheta = dataclass.datX0 * xi;
+    logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+    arma::vec thetas = arma::exp( logTheta );
 
     arma::vec f = arma::zeros<arma::vec>(N);
     arma::vec survival_pop = arma::zeros<arma::vec>(N);
@@ -286,7 +285,7 @@ void BVS_Sampler::loglikelihood_noBVS(
     // summarize density of the Weibull's survival part
     arma::vec log_survival_pop = - thetas % (1. - survival_pop);
     f.elem(arma::find(f < lowerbound)).fill(lowerbound);
-    arma::vec log_f_pop = arma::log(thetas) + arma::log(f) + log_survival_pop;
+    arma::vec log_f_pop = logTheta + arma::log(f) + log_survival_pop;
 
     // summarize density of the Dirichlet part
     arma::vec log_dirichlet = arma::zeros<arma::vec>(N);
@@ -297,12 +296,10 @@ void BVS_Sampler::loglikelihood_noBVS(
             arma::lgamma(alphas_Rowsum) - arma::sum(arma::lgamma(alphas), 1) +
             arma::sum( (alphas - 1.0) % arma::log(dataclass.datProportionConst), 1 );
     }
-    // Default: censored observations get survival contribution.
-    loglik = log_survival_pop + log_dirichlet;
 
-    // Observed events get density contribution.
-    loglik.elem(dataclass.eventIndex) = log_f_pop.elem(dataclass.eventIndex) + log_dirichlet.elem(dataclass.eventIndex);
-
+    log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
+    log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
+    loglik = log_f_pop + log_survival_pop + log_dirichlet;
 }
 
 
@@ -960,7 +957,7 @@ double BVS_Sampler::logPbetaK(
             logpost_second_sum = arma::sum(datTheta % tmp);
     }
 
-    double logpost_first_sum = arma::sum( arma::log( logpost_first.elem(dataclass.eventIndex) ) );
+    double logpost_first_sum = arma::sum( arma::log( logpost_first.elem(arma::find(dataclass.datEvent)) ) );
 
     logP = logpost_first_sum + logpost_second_sum + logprior;
 
@@ -1010,7 +1007,7 @@ double BVS_Sampler::logPzetaK(
         logpost_second += tmp;
     }
 
-    double logpost_first_sum = arma::sum( arma::log( logpost_first.elem(dataclass.eventIndex) ) );
+    double logpost_first_sum = arma::sum( arma::log( logpost_first.elem(arma::find(dataclass.datEvent)) ) );
 
     double logpost_second_sum = arma::sum(datTheta % logpost_second);
 

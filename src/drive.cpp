@@ -95,9 +95,7 @@ Rcpp::List run_mcmc(
     unsigned int L = datX.n_slices;
 
     // input constant data sets in a class
-    arma::uvec eventIndex = arma::find(datEvent);
-    DataClass dataclass(eventIndex, datTime, datX, datX0, datProportionConst);
-    // DataClass dataclass(datEvent, datTime, datX, datX0, datProportionConst);
+    DataClass dataclass(datEvent, datTime, datX, datX0, datProportionConst);
 
     // arms parameters in a class
     int metropolis = 1;
@@ -952,13 +950,15 @@ Rcpp::List run_mcmc(
                 arma::mat zetaMask = zetas;
                 
                 BVS_Sampler::loglikelihood_noBVS(
+                        xi,
+                        zetas,
+                        betas,
                         kappa,
                         proportion_model,
                         alphas,
                         datProportion,
                         weibullS,
                         weibullLambda,
-                        datTheta,
                         dataclass,
                         log_likelihood
                 );

@@ -62,9 +62,7 @@ void ARMS_Gibbs::arms_gibbs_xi(
     mydata->datProportion = datProportion.memptr();
     mydata->weibullS = weibullS.memptr();
     mydata->datX = dataclass.datX0.memptr();
-    // mydata->datEvent = dataclass.datEvent.memptr();
-    mydata->eventIndex = dataclass.eventIndex.memptr();
-    mydata->nEventIndex = dataclass.eventIndex.n_elem;
+    mydata->datEvent = dataclass.datEvent.memptr();
 
     // define how many ARMS samples to draw for currentPars
     // arma::mat samp = arma::zeros<arma::mat>(p, armsPar.n + 1);
@@ -239,9 +237,7 @@ void ARMS_Gibbs::arms_gibbs_beta(
     mydata->datMu = datMu.memptr();
     mydata->datProportion = datProportion.memptr();
     mydata->weibullS = weibullS.memptr();
-    // mydata->datEvent = dataclass.datEvent.memptr();
-    mydata->eventIndex = dataclass.eventIndex.memptr();
-    mydata->nEventIndex = dataclass.eventIndex.n_elem;
+    mydata->datEvent = dataclass.datEvent.memptr();
     mydata->datTime = dataclass.datTime.memptr();
 
     // arma::vec tauSq_tmp = arma::ones<arma::vec>(L);
@@ -416,9 +412,7 @@ void ARMS_Gibbs::arms_gibbs_betaK(
     mydata->datMu = datMu.memptr();
     mydata->datProportion = datProportion.memptr();
     mydata->weibullS = weibullS.memptr();
-    // mydata->datEvent = dataclass.datEvent.memptr();
-    mydata->eventIndex = dataclass.eventIndex.memptr();
-    mydata->nEventIndex = dataclass.eventIndex.n_elem;
+    mydata->datEvent = dataclass.datEvent.memptr();
     mydata->datTime = dataclass.datTime.memptr();
 
     unsigned int l = k;
@@ -500,7 +494,7 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
 
     double kappa,
     arma::vec& datTheta,
-    arma::mat& datMu,
+    arma::mat datMu,
     arma::mat& datProportion,
     arma::mat& weibullS,
     arma::mat& weibullLambda,
@@ -536,9 +530,7 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
     mydata->datMu = datMu.memptr();
     mydata->datProportion = datProportion.memptr();
     mydata->weibullS = weibullS.memptr();
-    // mydata->datEvent = dataclass.datEvent.memptr();
-    mydata->eventIndex = dataclass.eventIndex.memptr();
-    mydata->nEventIndex = dataclass.eventIndex.n_elem;
+    mydata->datEvent = dataclass.datEvent.memptr();
     mydata->datTime = dataclass.datTime.memptr();
 
     arma::vec logMu_l = arma::zeros<arma::vec>(N);
@@ -692,9 +684,7 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     mydata->datX = dataclass.datX.memptr();
     mydata->datProportionConst = dataclass.datProportionConst.memptr();
     //mydata->datProportion = datProportion.memptr();
-    // mydata->datEvent = dataclass.datEvent.memptr();
-    mydata->eventIndex = dataclass.eventIndex.memptr();
-    mydata->nEventIndex = dataclass.eventIndex.n_elem;
+    mydata->datEvent = dataclass.datEvent.memptr();
 
     // arma::vec wSq_tmp = arma::ones<arma::vec>(L);
 
@@ -847,9 +837,7 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
     mydata->weibullLambda = weibullLambda.memptr();
     mydata->datX = dataclass.datX.memptr();
     mydata->datProportionConst = dataclass.datProportionConst.memptr();
-    // mydata->datEvent = dataclass.datEvent.memptr();
-    mydata->eventIndex = dataclass.eventIndex.memptr();
-    mydata->nEventIndex = dataclass.eventIndex.n_elem;
+    mydata->datEvent = dataclass.datEvent.memptr();
 
     unsigned int l = k;
     // Gibbs sampling. No need to update variance, since this is only used for updating zetas conditional on proposal etas in M-H sampler
@@ -921,7 +909,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     double kappa,
     bool dirichlet,
     arma::vec& datTheta,
-    arma::mat& weibullS,
+    arma::mat weibullS,
     arma::mat& weibullLambda,
     arma::mat& alphas,
     const DataClass& dataclass
@@ -965,9 +953,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     mydata->weibullS = weibullS.memptr();
     mydata->weibullLambda = weibullLambda.memptr();
     mydata->datProportionConst = dataclass.datProportionConst.memptr();
-    // mydata->datEvent = dataclass.datEvent.memptr();
-    mydata->eventIndex = dataclass.eventIndex.memptr();
-    mydata->nEventIndex = dataclass.eventIndex.n_elem;
+    mydata->datEvent = dataclass.datEvent.memptr();
 
     // ------------------------------------------------------------------
     // Compute current full alpha matrix once.
@@ -1181,9 +1167,7 @@ void ARMS_Gibbs::arms_kappa(
     mydata->datTheta = datTheta.memptr();
     mydata->datMu = datMu.memptr();
     mydata->datProportion = datProportion.memptr();
-    // mydata->datEvent = dataclass.datEvent.memptr();
-    mydata->eventIndex = dataclass.eventIndex.memptr();
-    mydata->nEventIndex = dataclass.eventIndex.n_elem;
+    mydata->datEvent = dataclass.datEvent.memptr();
     mydata->datTime = dataclass.datTime.memptr();
 
     // define how many ARMS samples to draw for currentPars; first one as intial value

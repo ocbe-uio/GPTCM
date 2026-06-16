@@ -28,8 +28,7 @@ class DataClass
 {
 public:
     // Use const for immutable members
-    // const arma::uvec datEvent;
-    const arma::uvec eventIndex;
+    const arma::uvec datEvent;
     const arma::vec datTime;
     const arma::cube datX;
     const arma::mat datX0;
@@ -44,7 +43,7 @@ public:
 
     // Constructor to initialize the constants
     DataClass(
-        const arma::uvec& eventIndex_,
+        const arma::uvec& datEvent_,
         const arma::vec& datTime_,
         const arma::cube& datX_,
         const arma::mat& datX0_,
@@ -55,7 +54,7 @@ public:
         // std::shared_ptr<arma::mat> weibullLambda_,
         // std::shared_ptr<arma::mat> weibullS_
     ) :
-        eventIndex(eventIndex_),
+        datEvent(datEvent_),
         datTime(datTime_),
         datX(datX_),
         datX0(datX0_),
