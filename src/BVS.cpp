@@ -26,111 +26,51 @@
 //     (means and) variances to hyperpar->augBetaVar, hyperpar->augZetaVar.
 // -----------------------------------------------------------------------------
 
-namespace {
 /*
-arma::mat maskBetasByGamma(const arma::mat& betas, const arma::umat& gammas)
-{
-    arma::mat out = betas;
-    const unsigned int L = gammas.n_cols;
+namespace {
 
-    for(unsigned int l = 0; l < L; ++l)
+    arma::mat maskBetasByGamma(const arma::mat& betas, const arma::umat& gammas)
     {
-        arma::uvec off_l = arma::find(gammas.col(l) == 0);
-        if(!off_l.is_empty())
+        arma::mat out = betas;
+        const unsigned int L = gammas.n_cols;
+
+        for(unsigned int l = 0; l < L; ++l)
         {
-            for(arma::uword ii = 0; ii < off_l.n_elem; ++ii)
+            arma::uvec off_l = arma::find(gammas.col(l) == 0);
+            if(!off_l.is_empty())
             {
-                out(1 + off_l[ii], l) = 0.0;
+                for(arma::uword ii = 0; ii < off_l.n_elem; ++ii)
+                {
+                    out(1 + off_l[ii], l) = 0.0;
+                }
             }
         }
+
+        return out;
     }
 
-    return out;
-}
-
-arma::mat maskZetasByEta(const arma::mat& zetas, const arma::umat& etas)
-{
-    arma::mat out = zetas;
-    const unsigned int L = etas.n_cols;
-
-    for(unsigned int l = 0; l < L; ++l)
+    arma::mat maskZetasByEta(const arma::mat& zetas, const arma::umat& etas)
     {
-        arma::uvec off_l = arma::find(etas.col(l) == 0);
-        if(!off_l.is_empty())
+        arma::mat out = zetas;
+        const unsigned int L = etas.n_cols;
+
+        for(unsigned int l = 0; l < L; ++l)
         {
-            for(arma::uword ii = 0; ii < off_l.n_elem; ++ii)
+            arma::uvec off_l = arma::find(etas.col(l) == 0);
+            if(!off_l.is_empty())
             {
-                out(1 + off_l[ii], l) = 0.0;
+                for(arma::uword ii = 0; ii < off_l.n_elem; ++ii)
+                {
+                    out(1 + off_l[ii], l) = 0.0;
+                }
             }
         }
+
+        return out;
     }
-
-    return out;
-}
-*/
-
-inline double logNormalScalar(double x, double mean, double var)
-{
-    const double eps = 1e-12;
-    var = std::max(var, eps);
-    double z = x - mean;
-    return -0.5 * std::log(2.0 * M_PI) - 0.5 * std::log(var) - 0.5 * z * z / var;
-}
-
-inline double logSlabPriorNormal(double x, double var)
-{
-    return logNormalScalar(x, 0.0, var);
-}
-
-inline double logPseudoPriorNormal(double x, double var)
-{
-    // Default pseudo-prior: same as slab prior.
-    // Replace this by N(pseudo_mean[j,l], pseudo_var[j,l]) if pseudo-prior
-    // hyperparameters are added to hyperparS / BVS.h / drive.cpp.
-    return logNormalScalar(x, 0.0, var);
-}
-
-double logAugBetaPriorColumn(
-    const arma::vec& beta_col_nonintercept,
-    const arma::uvec& gamma_col,
-    double slab_var)
-{
-    double out = 0.0;
-    const unsigned int p = gamma_col.n_elem;
-
-    for(unsigned int j = 0; j < p; ++j)
-    {
-        double b = beta_col_nonintercept[j];
-        if(gamma_col[j] == 1)
-            out += logSlabPriorNormal(b, slab_var);
-        else
-            out += logPseudoPriorNormal(b, slab_var);
-    }
-
-    return out;
-}
-
-double logAugZetaPriorColumn(
-    const arma::vec& zeta_col_nonintercept,
-    const arma::uvec& eta_col,
-    double slab_var)
-{
-    double out = 0.0;
-    const unsigned int p = eta_col.n_elem;
-
-    for(unsigned int j = 0; j < p; ++j)
-    {
-        double z = zeta_col_nonintercept[j];
-        if(eta_col[j] == 1)
-            out += logSlabPriorNormal(z, slab_var);
-        else
-            out += logPseudoPriorNormal(z, slab_var);
-    }
-
-    return out;
-}
 
 } // anonymous namespace
+*/
 
 // TODO: loglikelihood can be updated in 'ARMS_Gibbs::logPbetas()' and 'ARMS_Gibbs::logPzetas()',
 //          so that it does not need to updated twice in 'BVS_Sampler::sampleGamma()' and 'BVS_Sampler::sampleEta()'.
@@ -1147,6 +1087,67 @@ double BVS_Sampler::logPDFNormal(
     double tmp = (double)k * std::log(sigmaSq);
 
     return -0.5*(double)k*log(2.*M_PI) -0.5*tmp - 0.5 * arma::as_scalar( x.t() * x ) / sigmaSq;
+}
+
+double BVS_Sampler::logPDFNormal(double x, double mean, double var)
+{
+    const double eps = 1e-12;
+    var = std::max(var, eps);
+    double z = x - mean;
+    
+    return -0.5 * std::log(2.0 * M_PI) - 0.5 * std::log(var) - 0.5 * z * z / var;
+}
+
+double BVS_Sampler::logSlabPriorNormal(double x, double var)
+{
+    return logPDFNormal(x, 0.0, var);
+}
+
+double BVS_Sampler::logPseudoPriorNormal(double x, double var)
+{
+    // Default pseudo-prior: same as slab prior.
+    // Replace this by N(pseudo_mean[j,l], pseudo_var[j,l]) if pseudo-prior with different mean and var
+    return logPDFNormal(x, 0.0, var);
+}
+
+double BVS_Sampler::logAugBetaPriorColumn(
+    const arma::vec& beta_col_nonintercept,
+    const arma::uvec& gamma_col,
+    double slab_var)
+{
+    double out = 0.0;
+    const unsigned int p = gamma_col.n_elem;
+
+    for(unsigned int j = 0; j < p; ++j)
+    {
+        double b = beta_col_nonintercept[j];
+        if(gamma_col[j] == 1)
+            out += logSlabPriorNormal(b, slab_var);
+        else
+            out += logPseudoPriorNormal(b, slab_var);
+    }
+
+    return out;
+}
+
+double BVS_Sampler::logAugZetaPriorColumn(
+    const arma::vec& zeta_col_nonintercept,
+    const arma::uvec& eta_col,
+    double slab_var)
+{
+    double out = 0.0;
+    const unsigned int p = eta_col.n_elem;
+
+    for(unsigned int j = 0; j < p; ++j)
+    {
+        double z = zeta_col_nonintercept[j];
+        if(eta_col[j] == 1)
+            out += logSlabPriorNormal(z, slab_var);
+        else
+            out += logPseudoPriorNormal(z, slab_var);
+    }
+
+    return out;
 }
 
 

@@ -243,6 +243,34 @@ private:
         double sigmaSq
     );
 
+    static double logPDFNormal(
+        double x, 
+        double mean, 
+        double var
+    );
+
+    static double logSlabPriorNormal(
+        double x, 
+        double var
+    );
+
+    static double logPseudoPriorNormal(
+        double x, 
+        double var
+    );
+
+    static double logAugBetaPriorColumn(
+        const arma::vec& beta_col_nonintercept,
+        const arma::uvec& gamma_col,
+        double slab_var
+    );
+
+    static double logAugZetaPriorColumn(
+        const arma::vec& zeta_col_nonintercept,
+        const arma::uvec& eta_col,
+        double slab_var
+    );
+
     static double gammaMC3Proposal(
         unsigned int p,
         arma::umat& mutantGammas,
