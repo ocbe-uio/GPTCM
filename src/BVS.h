@@ -49,22 +49,16 @@ typedef struct HyperparData
     double augBetaVar;
     double augZetaVar;
 
-    // double vSq;
     double vA;
     double vB;
-    // double v0Sq;
     double v0A;
     double v0B;
-    // double tau0Sq;
     double tau0A;
     double tau0B;
-    // double tauSq;
     double tauA;
     double tauB;
-    // double wSq;
     double wA;
     double wB;
-    // double w0Sq;
     double w0A;
     double w0B;
     bool w0IGamma;
@@ -96,16 +90,11 @@ public:
 
         bool proportion_model,
         const DataClass &dataclass,
-        arma::vec& loglik//,
-        //arma::vec& loglik0 // log-density of survival data
+        arma::vec& loglik
     );
 
     static void loglikelihood_noBVS(
-        // const arma::vec& xi,
-        // const arma::mat& zetas,
-        // const arma::mat& betas,
         double kappa,
-
         bool proportion_model,
         arma::mat& alphas,
         arma::mat& updateProportions,
@@ -117,20 +106,6 @@ public:
         arma::vec& loglik
     );
 
-    /*
-    // log-density of survival data
-    static void loglikelihood0(
-        const arma::vec& xi,
-        const arma::mat& zetas,
-        const arma::mat& betas,
-        double kappa,
-
-        bool proportion_model,
-        const DataClass &dataclass,
-        arma::vec& loglik
-    );
-    */
-
     static void sampleGamma(
         arma::umat& gammas_,
         Gamma_Prior_Type gamma_prior,
@@ -139,17 +114,8 @@ public:
         unsigned int& gamma_acc_count_,
         arma::vec& log_likelihood_,
         bool CMH,
-
-        // int n,
-        // int nsamp,
-        // int ninit,
-        // int metropolis,
-        // bool simple,
-        // double convex,
-        // int npoint,
         const armsParmClass& armsPar,
         void *hyperpar_,
-
         const arma::vec& xi_,
         const arma::mat& zetas_,
         const arma::umat& etas_,
@@ -159,11 +125,7 @@ public:
         const arma::vec& tauSq_,
         const arma::vec& pi,
         arma::vec& logZ_gamma,
-        
-
         bool proportion_model,
-
-        // double& logPosteriorBeta,
         arma::mat& datProportion,
         arma::vec& datTheta,
         const arma::mat& datMu,
@@ -181,7 +143,6 @@ public:
         unsigned int& eta_acc_count_,
         arma::vec& log_likelihood_,
         bool CMH,
-
         const armsParmClass& armsPar,
         void *hyperpar_,
         arma::mat& zetas_,
@@ -193,10 +154,7 @@ public:
         arma::vec wSq_,
         const arma::vec& rho,
         arma::vec& logZ_eta,
-
         bool dirichlet,
-
-        // double& logPosteriorZeta,
         arma::vec& datTheta,
         const arma::mat& weibullS,
         arma::mat& weibullLambda,
@@ -204,12 +162,6 @@ public:
     );
 
     static double logPDFBernoulli(unsigned int x, double pi);
-    // static double lBeta(double a,double b);
-    // static double logPDFBeta(double x, double a, double b);
-
-    // static void banditInit(unsigned int p, unsigned int L, unsigned int N);
-
-    // static void banditInitEta(unsigned int p, unsigned int L, unsigned int N);
 
 private:
     // HyperparData hyperpar_;
@@ -304,12 +256,6 @@ private:
         const arma::vec& weights,
         unsigned int sampleSize
     );
-/*
-    static arma::uvec randWeightedIndexSampleWithoutReplacement(
-        unsigned int populationSize,
-        unsigned int sampleSize
-    );
-*/
 
     static unsigned int randWeightedIndexSampleWithoutReplacement(
         const arma::vec& weights
@@ -344,34 +290,5 @@ private:
     );
 };
 
-// function logPDFMRF() is not yet used
-// double logPDFMRF(const arma::umat& externalGamma, const arma::mat& mrfG, double a, double b );
-
-/*
-// Bandit-sampling related quantities for gammas
-static unsigned int n_updates_bandit;
-static arma::mat banditZeta;
-static arma::mat banditAlpha;
-static arma::mat banditBeta;
-static arma::vec mismatch;
-static arma::vec normalised_mismatch;
-static arma::vec normalised_mismatch_backwards;
-
-static double banditLimit;
-static double banditIncrement;
-
-
-// Bandit-sampling related quantities for etas
-static unsigned int n_updates_bandit2;
-static arma::mat banditZeta2;
-static arma::mat banditAlpha2;
-static arma::mat banditBeta2;
-static arma::vec mismatch2;
-static arma::vec normalised_mismatch2;
-static arma::vec normalised_mismatch_backwards2;
-
-static double banditLimit2;
-static double banditIncrement2;
-*/
 
 #endif

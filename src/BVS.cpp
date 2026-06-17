@@ -178,47 +178,13 @@ void BVS_Sampler::loglikelihood_noBVS(
     // unsigned int p = dataclass.datX.n_cols;
     unsigned int L = dataclass.datX.n_slices;
 
-    // arma::mat datProportion = dataclass.datProportionConst;
-    // arma::mat alphas = arma::zeros<arma::mat>(N, L);
-    // arma::vec alphas_Rowsum;
-    // if(proportion_model)
-    // {
-    //     #ifdef _OPENMP
-    //     #pragma omp parallel for
-    //     #endif
-
-    //     for(unsigned int l=0; l<L; ++l)
-    //     {
-    //         arma::vec zetaMask_l = zetas.submat(1, l, p, l);
-    //         alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l );
-    //     }
-    //     alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
-    //     alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-    //     alphas_Rowsum = arma::sum(alphas, 1);
-    //     datProportion = alphas / arma::repmat(alphas_Rowsum, 1, L);
-    // }
-
-    // arma::vec logTheta = dataclass.datX0 * xi;
-    // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
-    // arma::vec thetas = arma::exp( logTheta );
-
     arma::vec f = arma::zeros<arma::vec>(N);
     arma::vec survival_pop = arma::zeros<arma::vec>(N);
 
     for(unsigned int l=0; l<L; ++l)
     {
-        // arma::vec betaMask_l = betas.submat(1, l, p, l);
-        // arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
-        // logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
-        // arma::vec mu_l = arma::exp(logMu_l);
-
-        // arma::vec weibull_lambdas_l = mu_l / std::tgamma(1. + 1./kappa);
-        // arma::vec weibullS_l = arma::exp( - arma::pow( dataclass.datTime / weibull_lambdas_l, kappa) );
-        // arma::vec weibull_pdf = arma::exp(-kappa * arma::log(weibull_lambdas_l) - arma::pow(dataclass.datTime/weibull_lambdas_l, kappa));
         arma::vec weibull_pdf = arma::exp(-kappa * arma::log(weibullLambda.col(l)) - arma::pow(dataclass.datTime/weibullLambda.col(l), kappa));
-
         survival_pop += datProportion.col(l) % weibullS.col(l);
-
         f += kappa * arma::pow(dataclass.datTime, kappa - 1.0) % datProportion.col(l) % weibull_pdf;
     }
 
@@ -251,10 +217,8 @@ void BVS_Sampler::sampleGamma(
     unsigned int& gamma_acc_count_,
     arma::vec& log_likelihood_,
     bool CMH,
-
     const armsParmClass& armsPar,
     void *hyperpar_,
-
     const arma::vec& xi_,
     const arma::mat& zetas_,
     const arma::umat& etas_,
@@ -264,10 +228,7 @@ void BVS_Sampler::sampleGamma(
     const arma::vec& tauSq_,
     const arma::vec& pi,
     arma::vec& logZ_gamma_,
-
     bool proportion_model,
-
-    // double& logPosteriorBeta,
     arma::mat& datProportion,
     arma::vec& datTheta,
     const arma::mat& datMu,

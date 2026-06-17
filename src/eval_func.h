@@ -25,8 +25,6 @@ typedef struct common_data
 
     double v0Sq;
     double vSq;
-    // double vA;
-    // double vB;
     double tau0Sq;
     double tauSq;
     double w0Sq;
@@ -34,12 +32,6 @@ typedef struct common_data
     double phi;
     double Delta;
     bool dirichlet;
-
-    // double mrfA;
-    // double mrfB;
-    // double mrfG;
-    // double piA;
-    // double piB;
 
     double kappa;
     double kappaA;
@@ -109,16 +101,6 @@ public:
         void *abc_data
     );
 
-    /*
-    static double pdfTruncNorm
-    (
-        double x,
-        double m,
-        double sd,
-        double lower,
-        double upper
-    );
-    */
 };
 
 #endif

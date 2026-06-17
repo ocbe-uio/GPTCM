@@ -1,11 +1,10 @@
 <div style="text-align: left;">
 
-### GPTCM 2.0.3 (2026-06-16)
+### GPTCM 2.0.3 (2026-06-17)
 
 * enable both conditional MH sampling and Carlin-Chib augmented MH for BVS
 * add testthat 
 * TODO: improve `BVS_Sampler::loglikelihood()` like `BVS_Sampler::loglikelihood_noBVS()`
-* TODO: clean inline functions in `BVS.cpp`
 
 ### GPTCM 2.0.2 (2026-06-16)
 
