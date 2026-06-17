@@ -47,7 +47,7 @@ double EvalFunction::log_dens_xis(
     logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
     arma::vec thetas = arma::exp( logTheta );
 
-    double logpost_first = arma::accu( logTheta.elem(arma::find(datEvent)) );
+    double logpost_first = arma::sum( logTheta.elem(arma::find(datEvent)) );
     arma::vec logpost_second = arma::zeros<arma::vec>(mydata_parm->N);
     arma::mat datProportion(mydata_parm->datProportion, mydata_parm->N, mydata_parm->L, false);
     arma::mat weibullS(mydata_parm->weibullS, mydata_parm->N, mydata_parm->L, false);
@@ -55,7 +55,7 @@ double EvalFunction::log_dens_xis(
 
 
 
-    double logpost_second_sum = - arma::accu(thetas % (1. - logpost_second));
+    double logpost_second_sum = - arma::sum(thetas % (1. - logpost_second));
 
     h = logpost_first + logpost_second_sum + logprior;
 
@@ -117,9 +117,9 @@ double EvalFunction::log_dens_betas(
                          arma::pow(datTime/weibull_lambdas.col(ll), mydata_parm->kappa - 1.0) % weibullS_tmp.col(ll);
     }
 
-    double logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
+    double logpost_first_sum = arma::sum( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
 
-    double logpost_second_sum = arma::accu(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) %
+    double logpost_second_sum = arma::sum(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) %
                                            datProportion.col(mydata_parm->l) % weibullS_tmp.col(mydata_parm->l));
 
     h = logpost_first_sum +
@@ -144,7 +144,7 @@ double EvalFunction::log_dens_zetas(
 
     arma::cube datX(const_cast<double*>(mydata_parm->datX), mydata_parm->N, mydata_parm->p, mydata_parm->L, false);
     arma::uvec datEvent(const_cast<unsigned int*>(mydata_parm->datEvent), mydata_parm->N, false);
-    arma::mat datProportionConst_tmp(const_cast<double*>(mydata_parm->datProportionConst), mydata_parm->N, mydata_parm->L, false);
+    arma::mat datProportionConst(const_cast<double*>(mydata_parm->datProportionConst), mydata_parm->N, mydata_parm->L, false);
     arma::umat gammaIndicator(const_cast<unsigned int*>(mydata_parm->gammaIndicator), mydata_parm->p+1, mydata_parm->L, false);
 
     arma::mat pars(mydata_parm->currentPars, mydata_parm->p+1, mydata_parm->L, true);
@@ -187,16 +187,16 @@ double EvalFunction::log_dens_zetas(
     }
 
     double logpost_first_sum = 0.;
-    logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
+    logpost_first_sum = arma::sum( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
 
     double logpost_second_sum = 0.;
-    logpost_second_sum = arma::accu(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) % logpost_second);
+    logpost_second_sum = arma::sum(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) % logpost_second);
 
     // Dirichlet density
     double log_dirichlet_sum = 0.;
-    log_dirichlet_sum = arma::accu(
+    log_dirichlet_sum = arma::sum(
                             arma::lgamma(alphaRowsum_tmp) - arma::sum(arma::lgamma(alphas), 1) +
-                            arma::sum( (alphas - 1.0) % arma::log(datProportionConst_tmp), 1 )
+                            arma::sum( (alphas - 1.0) % arma::log(datProportionConst), 1 )
                         );
 
     h = logprior + logpost_first_sum + logpost_second_sum + log_dirichlet_sum;
@@ -304,13 +304,10 @@ double EvalFunction::log_dens_betasFull(
             weibullS_tmp.col(ll);
     }
 
-    // Numerical protection before log().
-    logpost_first.elem(arma::find(logpost_first < lowerbound)).fill(lowerbound);
-
-    double logpost_first_sum = arma::accu(arma::log(logpost_first.elem(arma::find(datEvent))));
+    double logpost_first_sum = arma::sum(arma::log(logpost_first.elem(arma::find(datEvent))));
 
     double logpost_second_sum =
-        arma::accu(
+        arma::sum(
             arma::vec(mydata_parm->datTheta, mydata_parm->N, false) %
             datProportion.col(mydata_parm->l) %
             weibullS_tmp.col(mydata_parm->l)
@@ -349,7 +346,7 @@ double EvalFunction::log_dens_zetasFull(
         false
     );
 
-    arma::mat datProportionConst_tmp(
+    arma::mat datProportionConst(
         const_cast<double*>(mydata_parm->datProportionConst),
         N,
         L,
@@ -484,23 +481,17 @@ double EvalFunction::log_dens_zetasFull(
         logpost_second += prop_ll;
     }
 
-    logpost_first.elem(
-        arma::find(logpost_first < lowerbound)
-    ).fill(lowerbound);
-
     double logpost_first_sum =
-        arma::accu(
+        arma::sum(
             arma::log(logpost_first.elem(arma::find(datEvent)))
         );
 
     double logpost_second_sum =
-        arma::accu(datTheta % logpost_second);
+        arma::sum(datTheta % logpost_second);
 
     // ------------------------------------------------------------------
     // Dirichlet part with candidate alpha_l and candidate row sums.
     // ------------------------------------------------------------------
-    arma::mat propConst = datProportionConst_tmp;
-    propConst.elem(arma::find(propConst < lowerbound)).fill(lowerbound);
 
     arma::vec log_dirichlet_vec = arma::lgamma(alphaRowsum_candidate);
 
@@ -510,17 +501,17 @@ double EvalFunction::log_dens_zetasFull(
         {
             log_dirichlet_vec -= arma::lgamma(alpha_l_candidate);
             log_dirichlet_vec +=
-                (alpha_l_candidate - 1.0) % arma::log(propConst.col(ll));
+                (alpha_l_candidate - 1.0) % arma::log(datProportionConst.col(ll));
         }
         else
         {
             log_dirichlet_vec -= arma::lgamma(alphas_base.col(ll));
             log_dirichlet_vec +=
-                (alphas_base.col(ll) - 1.0) % arma::log(propConst.col(ll));
+                (alphas_base.col(ll) - 1.0) % arma::log(datProportionConst.col(ll));
         }
     }
 
-    double log_dirichlet_sum = arma::accu(log_dirichlet_vec);
+    double log_dirichlet_sum = arma::sum(log_dirichlet_vec);
 
     double h =
         logprior +
@@ -574,9 +565,9 @@ double EvalFunction::log_dens_kappa(
         logpost_second += datProportion.col(ll) % weibullS_tmp;
     }
 
-    logpost_first_sum = arma::accu( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
+    logpost_first_sum = arma::sum( arma::log( logpost_first.elem(arma::find(datEvent)) ) );
 
-    logpost_second_sum = arma::accu(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) % logpost_second);
+    logpost_second_sum = arma::sum(arma::vec(mydata_parm->datTheta, mydata_parm->N, false) % logpost_second);
 
     h = logprior + logpost_first_sum + logpost_second_sum;
 

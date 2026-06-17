@@ -358,7 +358,7 @@ void BVS_Sampler::sampleGamma(
         proposedLikelihood
     );
 
-    double logLikelihoodRatio = arma::accu(proposedLikelihood) - arma::accu(currentLikelihood);
+    double logLikelihoodRatio = arma::sum(proposedLikelihood) - arma::sum(currentLikelihood);
 
     double logAugBetaCurrent = 0.0;
     double logAugBetaProposed = 0.0;
@@ -608,7 +608,7 @@ void BVS_Sampler::sampleEta(
         proposedLikelihood
     );
 
-    double logLikelihoodRatio = arma::accu(proposedLikelihood) - arma::accu(currentLikelihood);
+    double logLikelihoodRatio = arma::sum(proposedLikelihood) - arma::sum(currentLikelihood);
 
     double logAugZetaCurrent = 0.0;
     double logAugZetaProposed = 0.0;
