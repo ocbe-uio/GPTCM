@@ -100,8 +100,8 @@ public:
         arma::mat& updateProportions,
         arma::mat& weibullS,
         arma::mat& weibullLambda,
-        arma::mat& logTheta,
-        arma::mat& datTheta,
+        arma::vec& logTheta,
+        arma::vec& datTheta,
         const DataClass &dataclass,
         arma::vec& loglik
     );
@@ -114,6 +114,8 @@ public:
         unsigned int& gamma_acc_count_,
         arma::vec& log_likelihood_,
         bool CMH,
+        arma::mat& gammaBanditAlpha,
+        arma::mat& gammaBanditBeta,
         const armsParmClass& armsPar,
         void *hyperpar_,
         const arma::vec& xi_,
@@ -126,10 +128,11 @@ public:
         const arma::vec& pi,
         arma::vec& logZ_gamma,
         bool proportion_model,
-        arma::mat& datProportion,
-        arma::vec& datTheta,
-        const arma::mat& datMu,
-        const arma::mat& weibullS,
+        // arma::mat& datProportion,
+        // arma::vec& datTheta,
+        arma::mat& datMu,
+        arma::mat& weibullS,
+        arma::mat& weibullLambda,
         const DataClass &dataclass
     );
 
@@ -143,6 +146,8 @@ public:
         unsigned int& eta_acc_count_,
         arma::vec& log_likelihood_,
         bool CMH,
+        arma::mat& etaBanditAlpha,
+        arma::mat& etaBanditBeta,
         const armsParmClass& armsPar,
         void *hyperpar_,
         arma::mat& zetas_,
@@ -236,7 +241,7 @@ private:
     static double gammaBanditProposal(
         unsigned int p,
         arma::umat& mutantGammas,
-        const arma::umat gammas_,
+        const arma::umat& gammas_,
         arma::uvec& updateIdx,
         unsigned int componentUpdateIdx_,
         arma::mat& banditAlpha
@@ -245,7 +250,7 @@ private:
     static double etaBanditProposal(
         unsigned int p,
         arma::umat& mutantEtas,
-        const arma::umat etas_,
+        const arma::umat& etas_,
         arma::uvec& updateIdx,
         unsigned int componentUpdateIdx_,
         arma::mat& banditAlpha2

@@ -6,6 +6,40 @@
 
 #include <cstdio>
 
+#ifdef _OPENMP
+#include <omp.h>
+
+class OmpRngLockGuard {
+public:
+    explicit OmpRngLockGuard(int threads)
+        : initialized_(false)
+    {
+        if (threads < 1) {
+            Rcpp::stop("'threads' must be >= 1.");
+        }
+
+        omp_set_max_active_levels(1);
+        omp_set_num_threads(threads);
+
+        if (threads > 1) {
+            omp_init_lock(&RNGlock);
+            initialized_ = true;
+        }
+    }
+
+    ~OmpRngLockGuard()
+    {
+        if (initialized_) {
+            omp_destroy_lock(&RNGlock);
+        }
+    }
+
+private:
+    bool initialized_;
+};
+
+#endif
+
 /*
 typedef struct HyperparData
 {

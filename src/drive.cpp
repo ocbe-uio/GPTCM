@@ -5,11 +5,12 @@
 #include "arms_gibbs.h"
 #include "BVS.h"
 #include "global.h"
+#include "drive.h"
 
-#ifdef _OPENMP
- extern omp_lock_t RNGlock; /*defined in global.h*/
- #include <omp.h>
-#endif
+// #ifdef _OPENMP
+//  extern omp_lock_t RNGlock; /*defined in global.h*/
+//  #include <omp.h>
+// #endif
 
 #include <Rcpp.h>
 // [[Rcpp::plugins(openmp)]]
@@ -81,13 +82,10 @@ Rcpp::List run_mcmc(
     const arma::mat& datProportionConst)
 {
     #ifdef _OPENMP
-    if( threads == 1 ){
-        omp_set_max_active_levels( 1 );
-        omp_set_num_threads( 1 );
-    } else {
-        omp_init_lock(&RNGlock);
-        omp_set_max_active_levels( 1 );
-        omp_set_num_threads( threads );
+    OmpRngLockGuard omp_rng_guard(threads);
+    #else
+    if (threads != 1) {
+        Rcpp::warning("OpenMP is not available; running with one thread.");
     }
     #endif
 
@@ -195,8 +193,7 @@ Rcpp::List run_mcmc(
         gammaSampler = Gamma_Sampler_Type::mc3;
     else
     {
-        Rprintf("ERROR: Wrong type of Gamma Sampler given!");
-        return 1;
+        Rcpp::stop("Wrong type of Gamma Sampler given!");
     }
 
     Gamma_Prior_Type gammaPrior;
@@ -206,8 +203,7 @@ Rcpp::List run_mcmc(
         gammaPrior = Gamma_Prior_Type::mrf;
     else
     {
-        Rprintf("ERROR: Wrong type of Gamma Prior given!");
-        return 1;
+        Rcpp::stop("Wrong type of Gamma Prior given!");
     }
 
     // Eta sampler
@@ -218,8 +214,7 @@ Rcpp::List run_mcmc(
         etaSampler = Eta_Sampler_Type::mc3;
     else
     {
-        Rprintf("ERROR: Wrong type of Eta Sampler given!");
-        return 1;
+        Rcpp::stop("Wrong type of Eta Sampler given!");
     }
 
     Eta_Prior_Type etaPrior;
@@ -229,8 +224,7 @@ Rcpp::List run_mcmc(
         etaPrior = Eta_Prior_Type::mrf;
     else
     {
-        Rprintf("ERROR: Wrong type of Eta Prior given!");
-        return 1;
+        Rcpp::stop("Wrong type of Eta Prior given!");
     }
 
     // initial values of key parameters
@@ -413,6 +407,13 @@ Rcpp::List run_mcmc(
         datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
     }
 
+    // quantities for multi-armed bandit algorithm
+    arma::mat gammaBanditAlpha(p, L, arma::fill::value(0.5));
+    arma::mat gammaBanditBeta(p, L, arma::fill::value(0.5));
+
+    arma::mat etaBanditAlpha(p, L, arma::fill::value(0.5));
+    arma::mat etaBanditBeta(p, L, arma::fill::value(0.5));
+
     // initializing posterior mean
     double kappa_post = 0.;
     arma::vec xi_post = arma::zeros<arma::vec>(arma::size(xi));
@@ -533,11 +534,11 @@ Rcpp::List run_mcmc(
                         logP_eta,
                         eta_acc_count,
                         log_likelihood,
-                        CMH,
-
+                        CMH, 
+                        etaBanditAlpha,
+                        etaBanditBeta,
                         armsPar,
                         hyperpar,
-
                         zetas,
                         betas,
                         gammas,
@@ -547,7 +548,6 @@ Rcpp::List run_mcmc(
                         wSq,
                         rho,
                         logZ_eta,
-
                         dirichlet,
                         datTheta,
                         weibullS,
@@ -561,6 +561,7 @@ Rcpp::List run_mcmc(
                         zetas,
                         w0Sq,
                         wSq,
+                        hyperpar->augZetaVar,
                         etas,
 
                         kappa,
@@ -572,8 +573,7 @@ Rcpp::List run_mcmc(
                     );
 
                     // update Dirichlet concentrations and proportions based on new zetas
-                    arma::mat alphas = arma::zeros<arma::mat>(N, L);
-
+                    // TODO: pass componentUpdateIdx to here, then no need for-loop for 1:L
                     for(unsigned int l=0; l<L; ++l)
                     {
                         arma::vec zetaMask_l = zetas.submat(1, l, p, l);
@@ -642,10 +642,10 @@ Rcpp::List run_mcmc(
                 gamma_acc_count,
                 log_likelihood,
                 CMH,
-
+                gammaBanditAlpha,
+                gammaBanditBeta,
                 armsPar,
                 hyperpar,
-
                 xi,
                 zetas,
                 etas,
@@ -655,13 +655,10 @@ Rcpp::List run_mcmc(
                 tauSq,
                 pi,        
                 logZ_gamma,
-
                 proportion_model,
-
-                datProportion,
-                datTheta,
                 datMu,
                 weibullS,
+                weibullLambda,
                 dataclass
             );
 
@@ -671,6 +668,7 @@ Rcpp::List run_mcmc(
                 betas,
                 tauSq,
                 tau0Sq,
+                hyperpar->augBetaVar,
 
                 gammas,
 
@@ -738,6 +736,7 @@ Rcpp::List run_mcmc(
                 wSq_mcmc[1+nIter_thin_count] = wSq[0];
                 kappa_mcmc[1+nIter_thin_count] = kappa;
                 tauSq_mcmc[1+nIter_thin_count] = tauSq[0];
+                vSq_mcmc[1+nIter_thin_count] = vSq;
 
                 arma::mat betaMask = betas;
                 arma::mat zetaMask = zetas;
@@ -762,21 +761,7 @@ Rcpp::List run_mcmc(
                 }
 
                 // TODO: pass this log-likelihood to sampleGamma() and sampleEta()
-                // BVS_Sampler::loglikelihood(
-                //     xi,
-                //     zetas,
-                //     betas,
-                //     etas,
-                //     gammas,
-                //     kappa,
-                //     proportion_model,
-                //     dataclass,
-                //     log_likelihood
-                // );
                 BVS_Sampler::loglikelihood_noBVS(
-                        // xi,
-                        // zetas,
-                        // betas,
                         kappa,
                         proportion_model,
                         alphas,
@@ -958,14 +943,12 @@ Rcpp::List run_mcmc(
                 wSq_mcmc[1+nIter_thin_count] = wSq[0];
                 kappa_mcmc[1+nIter_thin_count] = kappa;
                 tauSq_mcmc[1+nIter_thin_count] = tauSq[0];
+                vSq_mcmc[1+nIter_thin_count] = vSq;
 
                 arma::mat betaMask = betas;
                 arma::mat zetaMask = zetas;
                 
                 BVS_Sampler::loglikelihood_noBVS(
-                        // xi,
-                        // zetas,
-                        // betas,
                         kappa,
                         proportion_model,
                         alphas,

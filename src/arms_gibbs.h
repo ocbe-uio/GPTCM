@@ -35,9 +35,9 @@ public:
         const armsParmClass& armsPar,
         arma::mat& currentPars,
         arma::vec& tauSq,
-        double& tau0Sq,
+        double tau0Sq,
+        double augVar,
 
-        // const arma::umat& gammas,
         arma::umat gammas,
 
         double kappa,
@@ -70,7 +70,7 @@ public:
         const armsParmClass& armsPar,
         arma::mat& currentPars,
         arma::vec& tauSq,
-        double& tau0Sq,
+        double tau0Sq,
         double kappa,
         arma::vec& datTheta,
         arma::mat& datMu,
@@ -83,8 +83,9 @@ public:
     static void arms_gibbs_zeta(
         const armsParmClass& armsPar,
         arma::mat& currentPars,
-        double& w0Sq,
+        double w0Sq,
         arma::vec& wSq,
+        double augVar,
         arma::umat etas,
         double kappa,
         bool dirichlet,
@@ -112,7 +113,7 @@ public:
     static void arms_gibbs_zetaFull(
         const armsParmClass& armsPar,
         arma::mat& currentPars,
-        double& w0Sq,
+        double w0Sq,
         arma::vec& wSq,
         double kappa,
         bool dirichlet,

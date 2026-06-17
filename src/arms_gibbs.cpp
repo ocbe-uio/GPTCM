@@ -84,7 +84,8 @@ void ARMS_Gibbs::arms_gibbs_beta(
     const armsParmClass& armsPar,
     arma::mat& currentPars,
     arma::vec& tauSq,
-    double& tau0Sq,
+    double tau0Sq,
+    double augVar,
     arma::umat gammas,
     double kappa,
     arma::vec& datTheta,
@@ -145,8 +146,12 @@ void ARMS_Gibbs::arms_gibbs_beta(
         {
             if (!gammas(j, l))
             {
-                if (j > 0)
-                    currentPars(j, l) = R::rnorm(0., std::sqrt(tauSq[l]));
+                if (j > 0) 
+                {
+                    // currentPars(j, l) = R::rnorm(0., std::sqrt(tauSq[l]));
+                    if( augVar == 0. ) augVar = tauSq[l];
+                    currentPars(j, l) = R::rnorm(0., std::sqrt(augVar));
+                }
             }
             else
             {
@@ -330,7 +335,7 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
     const armsParmClass& armsPar,
     arma::mat& currentPars,
     arma::vec& tauSq,
-    double& tau0Sq,
+    double tau0Sq,
     double kappa,
     arma::vec& datTheta,
     arma::mat& datMu,
@@ -451,8 +456,9 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
 void ARMS_Gibbs::arms_gibbs_zeta(
     const armsParmClass& armsPar,
     arma::mat& currentPars,
-    double& w0Sq,
+    double w0Sq,
     arma::vec& wSq,
+    double augVar,
 
     arma::umat etas,
 
@@ -519,7 +525,11 @@ void ARMS_Gibbs::arms_gibbs_zeta(
             if (!etas(j, l))
             {
                 if (j > 0)
-                    currentPars(j, l) = R::rnorm(0., std::sqrt(wSq[l]));
+                {
+                    // currentPars(j, l) = R::rnorm(0., std::sqrt(wSq[l]));
+                    if( augVar == 0. ) augVar = wSq[l];
+                    currentPars(j, l) = R::rnorm(0., std::sqrt(augVar));
+                }
             }
             else
             {
@@ -663,7 +673,7 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
 void ARMS_Gibbs::arms_gibbs_zetaFull(
     const armsParmClass& armsPar,
     arma::mat& currentPars,
-    double& w0Sq,
+    double w0Sq,
     arma::vec& wSq,
 
     double kappa,
@@ -987,7 +997,7 @@ void ARMS_Gibbs::slice_sample(
         }
         while (cnt < 1e4);
 
-        if (cnt == 1e4) Rcpp::stop("Error: 'slice_sample_cpp' loop did not finish");
+        if (cnt == 1e4) Rcpp::stop("slice_sample_cpp loop did not finish");
 
         x = xs;
         logy = logys;

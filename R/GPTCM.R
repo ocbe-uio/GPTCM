@@ -104,8 +104,14 @@ GPTCM <- function(dat,
                   initial = NULL,
                   arms.list = NULL) {
   # Validation
-  stopifnot(burnin < nIter)
-  stopifnot(burnin >= 0)
+  if (nIter <= 0)    
+    stop("'nIter' must be positive.");
+  if (burnin >= nIter)    
+    stop("'burnin' must be smaller than 'nIter'.");
+  if (thin <= 0)    
+    stop("'thin' must be positive.");
+  if (tick <= 0)    
+    stop("'tick' must be positive.");
 
   n <- dim(dat$X)[1]
   p <- dim(dat$X)[2]

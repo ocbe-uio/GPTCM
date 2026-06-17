@@ -475,12 +475,13 @@ double EvalFunction::log_dens_zetasFull(
         }
 
         prop_ll.elem(arma::find(prop_ll < lowerbound)).fill(lowerbound);
+        prop_ll %= weibullS.col(ll);
 
         logpost_first +=
             arma::pow(weibull_lambdas.col(ll), -mydata_parm->kappa) %
             prop_ll;
 
-        logpost_second += prop_ll % weibullS.col(ll);
+        logpost_second += prop_ll;
     }
 
     logpost_first.elem(

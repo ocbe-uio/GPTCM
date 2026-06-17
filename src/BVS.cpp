@@ -168,8 +168,8 @@ void BVS_Sampler::loglikelihood_noBVS(
     arma::mat& datProportion,
     arma::mat& weibullS,
     arma::mat& weibullLambda,
-    arma::mat& logTheta,
-    arma::mat& datTheta,
+    arma::vec& logTheta,
+    arma::vec& datTheta,
     const DataClass &dataclass,
     arma::vec& loglik)
 {
@@ -217,6 +217,8 @@ void BVS_Sampler::sampleGamma(
     unsigned int& gamma_acc_count_,
     arma::vec& log_likelihood_,
     bool CMH,
+    arma::mat& gammaBanditAlpha,
+    arma::mat& gammaBanditBeta,
     const armsParmClass& armsPar,
     void *hyperpar_,
     const arma::vec& xi_,
@@ -229,18 +231,15 @@ void BVS_Sampler::sampleGamma(
     const arma::vec& pi,
     arma::vec& logZ_gamma_,
     bool proportion_model,
-    arma::mat& datProportion,
-    arma::vec& datTheta,
-    const arma::mat& datMu,
-    const arma::mat& weibullS,
+    // arma::mat& datProportion,
+    // arma::vec& datTheta,
+    arma::mat& datMu,
+    arma::mat& weibullS,
+    arma::mat& weibullLambda,
     const DataClass &dataclass)
 {
     (void)armsPar;
     (void)tau0Sq_;
-    (void)datProportion;
-    (void)datTheta;
-    (void)datMu;
-    (void)weibullS;
     (void)logZ_gamma_; // kept in signature for compatibility with the previous AIS version
 
     std::unique_ptr<hyperparS> hyperpar = std::make_unique<hyperparS>();
@@ -255,8 +254,8 @@ void BVS_Sampler::sampleGamma(
     unsigned int p = gammas_.n_rows;
     unsigned int L = gammas_.n_cols;
 
-    static arma::mat banditAlpha = arma::mat(p, L, arma::fill::value(0.5));
-    static arma::mat banditBeta = arma::mat(p, L, arma::fill::value(0.5));
+    // static arma::mat gammaBanditAlpha = arma::mat(p, L, arma::fill::value(0.5));
+    // static arma::mat gammaBanditBeta = arma::mat(p, L, arma::fill::value(0.5));
 
     unsigned int componentUpdateIdx = static_cast<unsigned int>( R::runif( 0, L ) );
     arma::uvec singleIdx_k = { componentUpdateIdx };
@@ -264,7 +263,7 @@ void BVS_Sampler::sampleGamma(
     switch( gamma_sampler )
     {
     case Gamma_Sampler_Type::bandit:
-        logProposalRatio += gammaBanditProposal( p, proposedGamma, gammas_, updateIdx, componentUpdateIdx, banditAlpha );
+        logProposalRatio += gammaBanditProposal( p, proposedGamma, gammas_, updateIdx, componentUpdateIdx, gammaBanditAlpha );
         break;
 
     case Gamma_Sampler_Type::mc3:
@@ -414,6 +413,20 @@ void BVS_Sampler::sampleGamma(
 
         log_likelihood_ = proposedLikelihood;
         ++gamma_acc_count_;
+
+        // update quantities needed for ARMS_Gibbs::arms_gibbs_beta() in the main MCMC-loop in drive.cpp
+        arma::vec logMu_k = betas_(0, componentUpdateIdx) + dataclass.datX.slice(componentUpdateIdx) * 
+            (betas_.submat(1, componentUpdateIdx, p, componentUpdateIdx) % gammas_.col(componentUpdateIdx)) ;
+        logMu_k.elem(arma::find(logMu_k > upperbound)).fill(upperbound);
+        datMu.col(componentUpdateIdx) = arma::exp( logMu_k );
+        weibullLambda.col(componentUpdateIdx) = datMu.col(componentUpdateIdx) / std::tgamma(1. + 1./kappa);
+        // weibullLambda.elem(arma::find(lambdas > upperbound)).fill(upperbound);
+        weibullS.col(componentUpdateIdx) = arma::exp(        
+            -arma::pow(            
+                dataclass.datTime / weibullLambda.col(componentUpdateIdx),           
+                kappa        
+            )    
+        );
     }
     else
     {
@@ -431,10 +444,10 @@ void BVS_Sampler::sampleGamma(
 
         for(auto iter: updateIdx)
         {
-            if( banditAlpha(iter,componentUpdateIdx) + banditBeta(iter,componentUpdateIdx) <= banditLimit )
+            if( gammaBanditAlpha(iter,componentUpdateIdx) + gammaBanditBeta(iter,componentUpdateIdx) <= banditLimit )
             {
-                banditAlpha(iter,componentUpdateIdx) += banditIncrement * gammas_(iter,componentUpdateIdx);
-                banditBeta(iter,componentUpdateIdx) += banditIncrement * (1-gammas_(iter,componentUpdateIdx));
+                gammaBanditAlpha(iter,componentUpdateIdx) += banditIncrement * gammas_(iter,componentUpdateIdx);
+                gammaBanditBeta(iter,componentUpdateIdx) += banditIncrement * (1-gammas_(iter,componentUpdateIdx));
             }
         }
     }
@@ -460,6 +473,8 @@ void BVS_Sampler::sampleEta(
     unsigned int& eta_acc_count_,
     arma::vec& log_likelihood_,
     bool CMH,
+    arma::mat& etaBanditAlpha,
+    arma::mat& etaBanditBeta,
 
     const armsParmClass& armsPar,
     void *hyperpar_,
@@ -500,8 +515,8 @@ void BVS_Sampler::sampleEta(
     unsigned int p = etas_.n_rows;
     unsigned int L = etas_.n_cols;
 
-    static arma::mat banditAlpha2 = arma::mat(p, L, arma::fill::value(0.5));
-    static arma::mat banditBeta2 = arma::mat(p, L, arma::fill::value(0.5));
+    // static arma::mat etaBanditAlpha = arma::mat(p, L, arma::fill::value(0.5));
+    // static arma::mat etaBanditBeta = arma::mat(p, L, arma::fill::value(0.5));
 
     unsigned int componentUpdateIdx = static_cast<unsigned int>( R::runif( 0, L ) );
     arma::uvec singleIdx_k = { componentUpdateIdx };
@@ -509,7 +524,7 @@ void BVS_Sampler::sampleEta(
     switch( eta_sampler )
     {
     case Eta_Sampler_Type::bandit:
-        logProposalRatio += etaBanditProposal( p, proposedEta, etas_, updateIdx, componentUpdateIdx, banditAlpha2 );
+        logProposalRatio += etaBanditProposal( p, proposedEta, etas_, updateIdx, componentUpdateIdx, etaBanditAlpha );
         break;
 
     case Eta_Sampler_Type::mc3:
@@ -676,10 +691,10 @@ void BVS_Sampler::sampleEta(
 
         for(auto iter: updateIdx)
         {
-            if( banditAlpha2(iter,componentUpdateIdx) + banditBeta2(iter,componentUpdateIdx) <= banditLimit )
+            if( etaBanditAlpha(iter,componentUpdateIdx) + etaBanditBeta(iter,componentUpdateIdx) <= banditLimit )
             {
-                banditAlpha2(iter,componentUpdateIdx) += banditIncrement * etas_(iter,componentUpdateIdx);
-                banditBeta2(iter,componentUpdateIdx) += banditIncrement * (1-etas_(iter,componentUpdateIdx));
+                etaBanditAlpha(iter,componentUpdateIdx) += banditIncrement * etas_(iter,componentUpdateIdx);
+                etaBanditBeta(iter,componentUpdateIdx) += banditIncrement * (1-etas_(iter,componentUpdateIdx));
             }
         }
     }
@@ -710,22 +725,22 @@ double BVS_Sampler::gammaMC3Proposal(
 double BVS_Sampler::gammaBanditProposal(
     unsigned int p,
     arma::umat& mutantGamma,
-    const arma::umat gammas_,
+    const arma::umat& gammas_,
     arma::uvec& updateIdx,
     unsigned int componentUpdateIdx_,
-    arma::mat& banditAlpha )
+    arma::mat& gammaBanditAlpha )
 {
-    static arma::vec banditZeta = arma::vec(p);
-    static arma::vec mismatch = arma::vec(p);
-    static arma::vec normalised_mismatch = arma::vec(p);
-    static arma::vec normalised_mismatch_backwards = arma::vec(p);
+    arma::vec banditZeta(p, arma::fill::none);
+    arma::vec mismatch(p, arma::fill::none);
+    arma::vec normalised_mismatch;
+    arma::vec normalised_mismatch_backwards;
 
     unsigned int n_updates_bandit = 4;
     double logProposalRatio = 0.;
 
     for(unsigned int j=0; j<p; ++j)
     {
-        banditZeta(j) = R::rbeta(banditAlpha(j,componentUpdateIdx_), banditAlpha(j,componentUpdateIdx_));
+        banditZeta(j) = R::rbeta(gammaBanditAlpha(j,componentUpdateIdx_), gammaBanditAlpha(j,componentUpdateIdx_));
         mismatch(j) = (mutantGamma(j,componentUpdateIdx_)==0) ? banditZeta(j) : (1.-banditZeta(j));
     }
 
@@ -779,66 +794,66 @@ double BVS_Sampler::gammaBanditProposal(
 double BVS_Sampler::etaBanditProposal(
     unsigned int p,
     arma::umat& mutantEta,
-    const arma::umat etas_,
+    const arma::umat& etas_,
     arma::uvec& updateIdx,
     unsigned int componentUpdateIdx_,
-    arma::mat& banditAlpha2)
+    arma::mat& etaBanditAlpha)
 {
-    static arma::vec banditZeta2 = arma::vec(p);
-    static arma::vec mismatch2 = arma::vec(p);
-    static arma::vec normalised_mismatch2 = arma::vec(p);
-    static arma::vec normalised_mismatch_backwards2 = arma::vec(p);
+    arma::vec banditZeta(p, arma::fill::none);
+    arma::vec mismatch(p, arma::fill::none);
+    arma::vec normalised_mismatch;
+    arma::vec normalised_mismatch_backwards;
 
     unsigned int n_updates_bandit = 4;
     double logProposalRatio = 0.;
 
     for(unsigned int j=0; j<p; ++j)
     {
-        banditZeta2(j) = R::rbeta(banditAlpha2(j,componentUpdateIdx_), banditAlpha2(j,componentUpdateIdx_));
-        mismatch2(j) = (mutantEta(j,componentUpdateIdx_)==0) ? banditZeta2(j) : (1.-banditZeta2(j));
+        banditZeta(j) = R::rbeta(etaBanditAlpha(j,componentUpdateIdx_), etaBanditAlpha(j,componentUpdateIdx_));
+        mismatch(j) = (mutantEta(j,componentUpdateIdx_)==0) ? banditZeta(j) : (1.-banditZeta(j));
     }
 
-    normalised_mismatch2 = mismatch2 / arma::sum(mismatch2);
+    normalised_mismatch = mismatch / arma::sum(mismatch);
 
     if( R::runif(0,1) < 0.5 )
     {
         updateIdx = arma::zeros<arma::uvec>(1);
-        updateIdx(0) = randWeightedIndexSampleWithoutReplacement(normalised_mismatch2);
+        updateIdx(0) = randWeightedIndexSampleWithoutReplacement(normalised_mismatch);
 
         mutantEta(updateIdx(0),componentUpdateIdx_) = 1 - etas_(updateIdx(0),componentUpdateIdx_);
 
-        normalised_mismatch_backwards2 = mismatch2;
-        normalised_mismatch_backwards2(updateIdx(0)) = 1. - normalised_mismatch_backwards2(updateIdx(0));
-        normalised_mismatch_backwards2 = normalised_mismatch_backwards2 / arma::sum(normalised_mismatch_backwards2);
+        normalised_mismatch_backwards = mismatch;
+        normalised_mismatch_backwards(updateIdx(0)) = 1. - normalised_mismatch_backwards(updateIdx(0));
+        normalised_mismatch_backwards = normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
 
         logProposalRatio =
-            std::log( normalised_mismatch_backwards2(updateIdx(0)) ) -
-            std::log( normalised_mismatch2(updateIdx(0)) );
+            std::log( normalised_mismatch_backwards(updateIdx(0)) ) -
+            std::log( normalised_mismatch(updateIdx(0)) );
     }
     else
     {
         updateIdx = arma::zeros<arma::uvec>(n_updates_bandit);
-        updateIdx = randWeightedIndexSampleWithoutReplacement(p, normalised_mismatch2, n_updates_bandit);
+        updateIdx = randWeightedIndexSampleWithoutReplacement(p, normalised_mismatch, n_updates_bandit);
 
-        normalised_mismatch_backwards2 = mismatch2;
+        normalised_mismatch_backwards = mismatch;
 
         for(unsigned int i=0; i<n_updates_bandit; ++i)
         {
-            unsigned int j = R::rbinom( 1, banditZeta2(updateIdx(i)));
+            unsigned int j = R::rbinom( 1, banditZeta(updateIdx(i)));
             mutantEta(updateIdx(i),componentUpdateIdx_) = j;
 
-            normalised_mismatch_backwards2(updateIdx(i)) = 1.- normalised_mismatch_backwards2(updateIdx(i));
+            normalised_mismatch_backwards(updateIdx(i)) = 1.- normalised_mismatch_backwards(updateIdx(i));
 
             logProposalRatio +=
-                logPDFBernoulli(etas_(updateIdx(i),componentUpdateIdx_), banditZeta2(updateIdx(i))) -
-                logPDFBernoulli(mutantEta(updateIdx(i),componentUpdateIdx_), banditZeta2(updateIdx(i)));
+                logPDFBernoulli(etas_(updateIdx(i),componentUpdateIdx_), banditZeta(updateIdx(i))) -
+                logPDFBernoulli(mutantEta(updateIdx(i),componentUpdateIdx_), banditZeta(updateIdx(i)));
         }
 
-        normalised_mismatch_backwards2 = normalised_mismatch_backwards2 / arma::sum(normalised_mismatch_backwards2);
+        normalised_mismatch_backwards = normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
 
         logProposalRatio +=
-            logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch_backwards2, updateIdx) -
-            logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch2, updateIdx);
+            logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch_backwards, updateIdx) -
+            logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch, updateIdx);
     }
 
     return logProposalRatio;
