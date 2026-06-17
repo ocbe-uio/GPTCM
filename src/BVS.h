@@ -255,7 +255,8 @@ private:
         const arma::umat& gammas_,
         arma::uvec& updateIdx,
         unsigned int componentUpdateIdx_,
-        arma::mat& banditAlpha
+        arma::mat& banditAlpha,
+        arma::mat& banditBeta
     );
 
     static double etaBanditProposal(
@@ -264,7 +265,8 @@ private:
         const arma::umat& etas_,
         arma::uvec& updateIdx,
         unsigned int componentUpdateIdx_,
-        arma::mat& banditAlpha2
+        arma::mat& banditAlpha,
+        arma::mat& banditBeta
     );
 
     static arma::uvec randWeightedIndexSampleWithoutReplacement(

@@ -255,10 +255,10 @@ GPTCM <- function(dat,
   hyperpar$v0B <- hyperpar$vB
   
   if (!"augBetaVar" %in% names(hyperpar)) {
-    hyperpar$augBetaVar <- 0
+    hyperpar$augBetaVar <- 1
   }
   if (!"augZetaVar" %in% names(hyperpar)) {
-    hyperpar$augZetaVar <- 0
+    hyperpar$augZetaVar <- 1
   }
 
   # transform proportions data if including values very close to 0 or 1

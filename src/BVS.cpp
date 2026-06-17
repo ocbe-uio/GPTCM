@@ -265,7 +265,7 @@ void BVS_Sampler::sampleGamma(
     switch( gamma_sampler )
     {
     case Gamma_Sampler_Type::bandit:
-        logProposalRatio += gammaBanditProposal( p, proposedGamma, gammas_, updateIdx, componentUpdateIdx, gammaBanditAlpha );
+        logProposalRatio += gammaBanditProposal( p, proposedGamma, gammas_, updateIdx, componentUpdateIdx, gammaBanditAlpha, gammaBanditBeta );
         break;
 
     case Gamma_Sampler_Type::mc3:
@@ -434,7 +434,7 @@ void BVS_Sampler::sampleGamma(
 
         for(auto iter: updateIdx)
         {
-            if( gammaBanditAlpha(iter,componentUpdateIdx) + gammaBanditBeta(iter,componentUpdateIdx) <= banditLimit )
+            if( gammaBanditAlpha(iter,componentUpdateIdx) + gammaBanditBeta(iter,componentUpdateIdx) < banditLimit )
             {
                 gammaBanditAlpha(iter,componentUpdateIdx) += banditIncrement * gammas_(iter,componentUpdateIdx);
                 gammaBanditBeta(iter,componentUpdateIdx) += banditIncrement * (1-gammas_(iter,componentUpdateIdx));
@@ -515,7 +515,7 @@ void BVS_Sampler::sampleEta(
     switch( eta_sampler )
     {
     case Eta_Sampler_Type::bandit:
-        logProposalRatio += etaBanditProposal( p, proposedEta, etas_, updateIdx, componentUpdateIdx, etaBanditAlpha );
+        logProposalRatio += etaBanditProposal( p, proposedEta, etas_, updateIdx, componentUpdateIdx, etaBanditAlpha, etaBanditBeta );
         break;
 
     case Eta_Sampler_Type::mc3:
@@ -670,7 +670,7 @@ void BVS_Sampler::sampleEta(
 
         for(auto iter: updateIdx)
         {
-            if( etaBanditAlpha(iter,componentUpdateIdx) + etaBanditBeta(iter,componentUpdateIdx) <= banditLimit )
+            if( etaBanditAlpha(iter,componentUpdateIdx) + etaBanditBeta(iter,componentUpdateIdx) < banditLimit )
             {
                 etaBanditAlpha(iter,componentUpdateIdx) += banditIncrement * etas_(iter,componentUpdateIdx);
                 etaBanditBeta(iter,componentUpdateIdx) += banditIncrement * (1-etas_(iter,componentUpdateIdx));
@@ -707,68 +707,318 @@ double BVS_Sampler::gammaBanditProposal(
     const arma::umat& gammas_,
     arma::uvec& updateIdx,
     unsigned int componentUpdateIdx_,
-    arma::mat& gammaBanditAlpha )
+    arma::mat& gammaBanditAlpha,
+    arma::mat& gammaBanditBeta)
 {
-    arma::vec banditZeta(p, arma::fill::none);
+    arma::vec banditPi(p, arma::fill::none);
     arma::vec mismatch(p, arma::fill::none);
     arma::vec normalised_mismatch;
     arma::vec normalised_mismatch_backwards;
 
-    unsigned int n_updates_bandit = 4;
-    double logProposalRatio = 0.;
+    double logProposalRatio = 0.0;
 
-    for(unsigned int j=0; j<p; ++j)
-    {
-        banditZeta(j) = R::rbeta(gammaBanditAlpha(j,componentUpdateIdx_), gammaBanditAlpha(j,componentUpdateIdx_));
-        mismatch(j) = (mutantGamma(j,componentUpdateIdx_)==0) ? banditZeta(j) : (1.-banditZeta(j));
+    if (p == 0) {
+        Rcpp::stop("'p' must be positive in gammaBanditProposal().");
     }
+
+    /*
+     * Thompson-style draw of latent inclusion probabilities.
+     *
+     * gammaBanditAlpha tracks inclusion counts;
+     * gammaBanditBeta  tracks exclusion counts.
+     */
+    for(unsigned int j = 0; j < p; ++j)
+    {
+        double a = gammaBanditAlpha(j, componentUpdateIdx_);
+        double b = gammaBanditBeta(j, componentUpdateIdx_);
+
+        const double eps = 1e-12;
+        a = std::max(a, eps);
+        b = std::max(b, eps);
+
+        banditPi(j) = R::rbeta(a, b);
+
+        /*
+         * Mismatch weight:
+         *   if gamma_j = 0, weight = pi_j;
+         *   if gamma_j = 1, weight = 1 - pi_j.
+         */
+        mismatch(j) =
+            (gammas_(j, componentUpdateIdx_) == 0)
+                ? banditPi(j)
+                : (1.0 - banditPi(j));
+    }
+
+    const double eps = 1e-12;
+    mismatch.elem(arma::find_nonfinite(mismatch)).fill(0.0);
+    mismatch.elem(arma::find(mismatch < eps)).fill(eps);
 
     normalised_mismatch = mismatch / arma::sum(mismatch);
 
-    if( R::runif(0,1) < 0.5 )
+    /*
+     * Option A:
+     *   - with probability 0.5, single deterministic flip;
+     *   - with probability 0.5, multi deterministic flip with J > 1.
+     *
+     * For p == 1, only the single-flip move is possible.
+     */
+    bool singleMove = true;
+
+    if (p >= 2) {
+        singleMove = (R::runif(0.0, 1.0) < 0.5);
+    }
+
+    if (singleMove)
     {
         updateIdx = arma::zeros<arma::uvec>(1);
         updateIdx(0) = randWeightedIndexSampleWithoutReplacement(normalised_mismatch);
 
-        mutantGamma(updateIdx(0),componentUpdateIdx_) = 1 - gammas_(updateIdx(0),componentUpdateIdx_);
+        unsigned int idx = updateIdx(0);
 
+        mutantGamma(idx, componentUpdateIdx_) =
+            1 - gammas_(idx, componentUpdateIdx_);
+
+        /*
+         * Backward mismatch under the proposed state.
+         * Only flipped coordinates change their mismatch weight.
+         */
         normalised_mismatch_backwards = mismatch;
-        normalised_mismatch_backwards(updateIdx(0)) = 1. - normalised_mismatch_backwards(updateIdx(0));
-        normalised_mismatch_backwards = normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
+        normalised_mismatch_backwards(idx) =
+            1.0 - normalised_mismatch_backwards(idx);
+
+        normalised_mismatch_backwards.elem(
+            arma::find(normalised_mismatch_backwards < eps)
+        ).fill(eps);
+
+        normalised_mismatch_backwards =
+            normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
 
         logProposalRatio =
-            std::log( normalised_mismatch_backwards(updateIdx(0)) ) -
-            std::log( normalised_mismatch(updateIdx(0)) );
+            std::log(normalised_mismatch_backwards(idx)) -
+            std::log(normalised_mismatch(idx));
     }
     else
     {
-        updateIdx = arma::zeros<arma::uvec>(n_updates_bandit);
-        updateIdx = randWeightedIndexSampleWithoutReplacement(p, normalised_mismatch, n_updates_bandit);
+        /*
+         * Multi-flip branch.
+         * Use J >= 2 so that this branch is disjoint from the single-flip branch.
+         */
+        unsigned int n_updates_bandit = std::min<unsigned int>(4, p);
+        n_updates_bandit = std::max<unsigned int>(2, n_updates_bandit);
 
-        normalised_mismatch_backwards = mismatch;
+        updateIdx = randWeightedIndexSampleWithoutReplacement(
+            p,
+            normalised_mismatch,
+            n_updates_bandit
+        );
 
-        for(unsigned int i=0; i<n_updates_bandit; ++i)
+        /*
+         * Deterministically flip all selected variables.
+         */
+        for(unsigned int i = 0; i < n_updates_bandit; ++i)
         {
             unsigned int idx = updateIdx(i);
 
-            unsigned int new_val = R::rbinom(1, banditZeta(idx));    
-            mutantGamma(idx, componentUpdateIdx_) = new_val;
-
-            normalised_mismatch_backwards(idx) =
-                (mutantGamma(idx, componentUpdateIdx_) == 0)
-                    ? banditZeta(idx)
-                    : (1.0 - banditZeta(idx));
-
-            logProposalRatio +=
-                logPDFBernoulli(gammas_(idx,componentUpdateIdx_), banditZeta(idx)) -
-                logPDFBernoulli(mutantGamma(idx,componentUpdateIdx_), banditZeta(idx));
+            mutantGamma(idx, componentUpdateIdx_) =
+                1 - gammas_(idx, componentUpdateIdx_);
         }
 
-        normalised_mismatch_backwards = normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
+        /*
+         * Backward mismatch under proposed state.
+         * For every flipped coordinate, mismatch becomes 1 - old mismatch.
+         */
+        normalised_mismatch_backwards = mismatch;
 
-        logProposalRatio +=
-            logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch_backwards, updateIdx) -
-            logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch, updateIdx);
+        for(unsigned int i = 0; i < n_updates_bandit; ++i)
+        {
+            unsigned int idx = updateIdx(i);
+            normalised_mismatch_backwards(idx) =
+                1.0 - normalised_mismatch_backwards(idx);
+        }
+
+        normalised_mismatch_backwards.elem(
+            arma::find(normalised_mismatch_backwards < eps)
+        ).fill(eps);
+
+        normalised_mismatch_backwards =
+            normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
+
+        /*
+         * No Bernoulli-resampling density terms are needed now.
+         * The proposal ratio is only the weighted-without-replacement
+         * set-selection probability backward divided by forward.
+         */
+        logProposalRatio =
+            logPDFWeightedIndexSampleWithoutReplacement(
+                normalised_mismatch_backwards,
+                updateIdx
+            ) -
+            logPDFWeightedIndexSampleWithoutReplacement(
+                normalised_mismatch,
+                updateIdx
+            );
+    }
+
+    return logProposalRatio;
+}
+
+
+double BVS_Sampler::etaBanditProposal(
+    unsigned int p,
+    arma::umat& mutantEta,
+    const arma::umat& etas_,
+    arma::uvec& updateIdx,
+    unsigned int componentUpdateIdx_,
+    arma::mat& etaBanditAlpha,
+    arma::mat& etaBanditBeta)
+{
+    arma::vec banditPi(p, arma::fill::none);
+    arma::vec mismatch(p, arma::fill::none);
+    arma::vec normalised_mismatch;
+    arma::vec normalised_mismatch_backwards;
+
+    double logProposalRatio = 0.0;
+
+    if (p == 0) {
+        Rcpp::stop("'p' must be positive in etaBanditProposal().");
+    }
+
+    /*
+     * Thompson-style draw of latent inclusion probabilities.
+     *
+     * etaBanditAlpha tracks inclusion counts;
+     * etaBanditBeta  tracks exclusion counts.
+     */
+    for(unsigned int j = 0; j < p; ++j)
+    {
+        double a = etaBanditAlpha(j, componentUpdateIdx_);
+        double b = etaBanditBeta(j, componentUpdateIdx_);
+
+        const double eps = 1e-12;
+        a = std::max(a, eps);
+        b = std::max(b, eps);
+
+        banditPi(j) = R::rbeta(a, b);
+
+        /*
+         * Mismatch weight:
+         *   if eta_j = 0, weight = pi_j;
+         *   if eta_j = 1, weight = 1 - pi_j.
+         */
+        mismatch(j) =
+            (etas_(j, componentUpdateIdx_) == 0)
+                ? banditPi(j)
+                : (1.0 - banditPi(j));
+    }
+
+    const double eps = 1e-12;
+    mismatch.elem(arma::find_nonfinite(mismatch)).fill(0.0);
+    mismatch.elem(arma::find(mismatch < eps)).fill(eps);
+
+    normalised_mismatch = mismatch / arma::sum(mismatch);
+
+    /*
+     * Option A:
+     *   - with probability 0.5, single deterministic flip;
+     *   - with probability 0.5, multi deterministic flip with J > 1.
+     *
+     * For p == 1, only the single-flip move is possible.
+     */
+    bool singleMove = true;
+
+    if (p >= 2) {
+        singleMove = (R::runif(0.0, 1.0) < 0.5);
+    }
+
+    if (singleMove)
+    {
+        updateIdx = arma::zeros<arma::uvec>(1);
+        updateIdx(0) = randWeightedIndexSampleWithoutReplacement(normalised_mismatch);
+
+        unsigned int idx = updateIdx(0);
+
+        mutantEta(idx, componentUpdateIdx_) =
+            1 - etas_(idx, componentUpdateIdx_);
+
+        /*
+         * Backward mismatch under proposed state.
+         * Only flipped coordinates change their mismatch weight.
+         */
+        normalised_mismatch_backwards = mismatch;
+        normalised_mismatch_backwards(idx) =
+            1.0 - normalised_mismatch_backwards(idx);
+
+        normalised_mismatch_backwards.elem(
+            arma::find(normalised_mismatch_backwards < eps)
+        ).fill(eps);
+
+        normalised_mismatch_backwards =
+            normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
+
+        logProposalRatio =
+            std::log(normalised_mismatch_backwards(idx)) -
+            std::log(normalised_mismatch(idx));
+    }
+    else
+    {
+        /*
+         * Multi-flip branch.
+         * Use J >= 2 so that this branch is disjoint from the single-flip branch.
+         */
+        unsigned int n_updates_bandit = std::min<unsigned int>(4, p);
+        n_updates_bandit = std::max<unsigned int>(2, n_updates_bandit);
+
+        updateIdx = randWeightedIndexSampleWithoutReplacement(
+            p,
+            normalised_mismatch,
+            n_updates_bandit
+        );
+
+        /*
+         * Deterministically flip all selected variables.
+         */
+        for(unsigned int i = 0; i < n_updates_bandit; ++i)
+        {
+            unsigned int idx = updateIdx(i);
+
+            mutantEta(idx, componentUpdateIdx_) =
+                1 - etas_(idx, componentUpdateIdx_);
+        }
+
+        /*
+         * Backward mismatch under proposed state.
+         * For every flipped coordinate, mismatch becomes 1 - old mismatch.
+         */
+        normalised_mismatch_backwards = mismatch;
+
+        for(unsigned int i = 0; i < n_updates_bandit; ++i)
+        {
+            unsigned int idx = updateIdx(i);
+            normalised_mismatch_backwards(idx) =
+                1.0 - normalised_mismatch_backwards(idx);
+        }
+
+        normalised_mismatch_backwards.elem(
+            arma::find(normalised_mismatch_backwards < eps)
+        ).fill(eps);
+
+        normalised_mismatch_backwards =
+            normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
+
+        /*
+         * No Bernoulli-resampling density terms are needed now.
+         * The proposal ratio is only the weighted-without-replacement
+         * set-selection probability backward divided by forward.
+         */
+        logProposalRatio =
+            logPDFWeightedIndexSampleWithoutReplacement(
+                normalised_mismatch_backwards,
+                updateIdx
+            ) -
+            logPDFWeightedIndexSampleWithoutReplacement(
+                normalised_mismatch,
+                updateIdx
+            );
     }
 
     return logProposalRatio;
@@ -832,79 +1082,6 @@ double BVS_Sampler::mrfEdgeRatio(
     return out;
 }
 
-
-double BVS_Sampler::etaBanditProposal(
-    unsigned int p,
-    arma::umat& mutantEta,
-    const arma::umat& etas_,
-    arma::uvec& updateIdx,
-    unsigned int componentUpdateIdx_,
-    arma::mat& etaBanditAlpha)
-{
-    arma::vec banditZeta(p, arma::fill::none);
-    arma::vec mismatch(p, arma::fill::none);
-    arma::vec normalised_mismatch;
-    arma::vec normalised_mismatch_backwards;
-
-    unsigned int n_updates_bandit = 4;
-    double logProposalRatio = 0.;
-
-    for(unsigned int j=0; j<p; ++j)
-    {
-        banditZeta(j) = R::rbeta(etaBanditAlpha(j,componentUpdateIdx_), etaBanditAlpha(j,componentUpdateIdx_));
-        mismatch(j) = (mutantEta(j,componentUpdateIdx_)==0) ? banditZeta(j) : (1.-banditZeta(j));
-    }
-
-    normalised_mismatch = mismatch / arma::sum(mismatch);
-
-    if( R::runif(0,1) < 0.5 )
-    {
-        updateIdx = arma::zeros<arma::uvec>(1);
-        updateIdx(0) = randWeightedIndexSampleWithoutReplacement(normalised_mismatch);
-
-        mutantEta(updateIdx(0),componentUpdateIdx_) = 1 - etas_(updateIdx(0),componentUpdateIdx_);
-
-        normalised_mismatch_backwards = mismatch;
-        normalised_mismatch_backwards(updateIdx(0)) = 1. - normalised_mismatch_backwards(updateIdx(0));
-        normalised_mismatch_backwards = normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
-
-        logProposalRatio =
-            std::log( normalised_mismatch_backwards(updateIdx(0)) ) -
-            std::log( normalised_mismatch(updateIdx(0)) );
-    }
-    else
-    {
-        updateIdx = arma::zeros<arma::uvec>(n_updates_bandit);
-        updateIdx = randWeightedIndexSampleWithoutReplacement(p, normalised_mismatch, n_updates_bandit);
-
-        normalised_mismatch_backwards = mismatch;
-
-        for(unsigned int i=0; i<n_updates_bandit; ++i)
-        {
-            unsigned int idx = updateIdx(i);
-
-            unsigned int new_val = R::rbinom(1, banditZeta(idx));    
-            mutantEta(idx, componentUpdateIdx_) = new_val;
-
-            normalised_mismatch_backwards(idx) =
-                (mutantEta(idx, componentUpdateIdx_) == 0)
-                    ? banditZeta(idx)
-                    : (1.0 - banditZeta(idx));
-
-            logProposalRatio +=
-                logPDFBernoulli(etas_(idx,componentUpdateIdx_), banditZeta(idx)) -
-                logPDFBernoulli(mutantEta(idx,componentUpdateIdx_), banditZeta(idx));
-        }
-
-        normalised_mismatch_backwards = normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
-
-        logProposalRatio +=
-            logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch_backwards, updateIdx) -
-            logPDFWeightedIndexSampleWithoutReplacement(normalised_mismatch, updateIdx);
-    }
-
-    return logProposalRatio;
-}
 
 
 double BVS_Sampler::logPbetaK(
