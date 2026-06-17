@@ -36,7 +36,8 @@ public:
         arma::mat& currentPars,
         arma::vec& tauSq,
         double tau0Sq,
-        double augVar,
+        const arma::mat& pseudoMean,
+        const arma::mat& pseudoVar,
 
         arma::umat gammas,
 
@@ -85,7 +86,8 @@ public:
         arma::mat& currentPars,
         double w0Sq,
         arma::vec& wSq,
-        double augVar,
+        const arma::mat& pseudoMean,
+        const arma::mat& pseudoVar,
         arma::umat etas,
         double kappa,
         bool dirichlet,

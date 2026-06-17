@@ -15,6 +15,10 @@ GPTCM(
   hyperpar = NULL,
   BVS = TRUE,
   CMH = FALSE,
+  pilot.run = FALSE,
+  nIter0 = 2000,
+  burnin0 = 1000,
+  thin0 = 1,
   threads = 1,
   kappaIGamma = FALSE,
   kappaSampler = "arms",
@@ -56,6 +60,15 @@ parametrization of the Dirichlet regression model}
 
 \item{CMH}{logical value for conditional MH or Carlin-Chib augmented MH for 
 Bayesian variable selection}
+
+\item{pilot.run}{logical value for pilot run to determine Carlin-Chib 
+pseudo-priors hyperparameters}
+
+\item{nIter0}{iterations of pilot run MCMC}
+
+\item{burnin0}{burnin of pilot run MCMC}
+
+\item{thin0}{thinning of pilot run MCMC}
 
 \item{threads}{maximum threads used for parallelization. Default is 1}
 

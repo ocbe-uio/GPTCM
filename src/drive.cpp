@@ -160,8 +160,17 @@ Rcpp::List run_mcmc(
     // The fixed hyperparameters hyperparList["pi"] and hyperparList["rho"]
     // are no longer used here.
 
-    hyperpar->augBetaVar = Rcpp::as<double>(hyperparList["augBetaVar"]);
-    hyperpar->augZetaVar = Rcpp::as<double>(hyperparList["augZetaVar"]);
+    // hyperpar->pseudoVarBeta = Rcpp::as<double>(hyperparList["pseudoVarBeta"]);
+    // hyperpar->pseudoVarZeta = Rcpp::as<double>(hyperparList["pseudoVarZeta"]);
+    arma::mat pseudoMeanBeta = Rcpp::as<arma::mat>(hyperparList["pseudoMeanBeta"]);
+    arma::mat pseudoVarBeta = Rcpp::as<arma::mat>(hyperparList["pseudoVarBeta"]);
+    // hyperpar->pseudoMeanBeta = pseudoMeanBeta.memptr();
+    // hyperpar->pseudoVarBeta = pseudoVarBeta.memptr();
+    arma::mat pseudoMeanZeta = Rcpp::as<arma::mat>(hyperparList["pseudoMeanZeta"]);
+    arma::mat pseudoVarZeta = Rcpp::as<arma::mat>(hyperparList["pseudoVarZeta"]);
+    // hyperpar->pseudoMeanZeta = pseudoMeanZeta.memptr();
+    // hyperpar->pseudoVarZeta = pseudoVarZeta.memptr();
+    bool inactive_var_zero = pseudoVarBeta.is_zero();
 
     double vSq = Rcpp::as<double>(hyperparList["vSq"]);
     hyperpar->vA = Rcpp::as<double>(hyperparList["vA"]);
@@ -428,6 +437,8 @@ Rcpp::List run_mcmc(
     arma::mat beta_post = arma::zeros<arma::mat>(arma::size(betas));
     arma::umat gamma_post = arma::zeros<arma::umat>(arma::size(gammas));
     arma::umat eta_post = arma::zeros<arma::umat>(arma::size(etas));
+    arma::vec tauSq_post = arma::zeros<arma::vec>(arma::size(tauSq));
+    arma::vec wSq_post = arma::zeros<arma::vec>(arma::size(wSq));
 
     arma::mat loglikelihood_mcmc = arma::zeros<arma::mat>(1+nIter_thin, N);
     arma::vec log_likelihood;
@@ -475,7 +486,9 @@ Rcpp::List run_mcmc(
 
             for (unsigned int l=0; l<L; ++l)
             {
-                tauSq[l] = sampleV(hyperpar->tauA, hyperpar->tauB, betas.submat(1,l,p,l));
+                double tauSq_tmp = sampleV(hyperpar->tauA, hyperpar->tauB, betas.submat(1,l,p,l));
+                tauSq[l] = tauSq_tmp;
+                if (inactive_var_zero & !CMH) pseudoVarBeta.col(l).fill(tauSq_tmp);
             }
 
             // update xi variance vSq
@@ -509,7 +522,9 @@ Rcpp::List run_mcmc(
 
                     for (unsigned int l=0; l<L; ++l)
                     {
-                        wSq[l] = sampleV(hyperpar->wA, hyperpar->wB, zetas.submat(1,l,p,l));
+                        double wSq_tmp = sampleV(hyperpar->wA, hyperpar->wB, zetas.submat(1,l,p,l));
+                        wSq[l] = wSq_tmp;
+                        if (inactive_var_zero & !CMH) pseudoVarZeta.col(l).fill(wSq_tmp);
                     }
 
                     // ============================================================
@@ -546,6 +561,8 @@ Rcpp::List run_mcmc(
                         etaBanditBeta,
                         armsPar,
                         hyperpar.get(),
+                        pseudoMeanZeta,
+                        pseudoVarZeta,
                         zetas,
                         betas,
                         gammas,
@@ -568,7 +585,9 @@ Rcpp::List run_mcmc(
                         zetas,
                         w0Sq,
                         wSq,
-                        hyperpar->augZetaVar,
+                        // hyperpar->pseudoVarZeta,
+                        pseudoMeanZeta,
+                        pseudoVarZeta,
                         etas,
 
                         kappa,
@@ -653,6 +672,8 @@ Rcpp::List run_mcmc(
                 gammaBanditBeta,
                 armsPar,
                 hyperpar.get(),
+                pseudoMeanBeta,
+                pseudoVarBeta,
                 xi,
                 zetas,
                 etas,
@@ -675,8 +696,9 @@ Rcpp::List run_mcmc(
                 betas,
                 tauSq,
                 tau0Sq,
-                hyperpar->augBetaVar,
-
+                // hyperpar->pseudoVarBeta,
+                pseudoMeanBeta,
+                pseudoVarBeta,
                 gammas,
 
                 kappa,
@@ -714,6 +736,8 @@ Rcpp::List run_mcmc(
                 zeta_post += zetas;
                 kappa_post += kappa;
                 beta_post += betas;
+                tauSq_post += tauSq;
+                wSq_post += wSq;
 
                 if(BVS)
                 {
@@ -941,6 +965,8 @@ Rcpp::List run_mcmc(
                 zeta_post += zetas;
                 kappa_post += kappa;
                 beta_post += betas;
+                tauSq_post += tauSq;
+                wSq_post += wSq;
             }
 
             // save results of thinned iterations
@@ -1029,6 +1055,8 @@ Rcpp::List run_mcmc(
     kappa_post /= ((double)(nIter - burnin));
     beta_post /= ((double)(nIter - burnin));
     zeta_post /= ((double)(nIter - burnin));
+    tauSq_post /= ((double)(nIter - burnin));
+    wSq_post /= ((double)(nIter - burnin));
 
     Rcpp::List postList = Rcpp::List::create(
         Rcpp::Named("xi") = xi_post,
@@ -1036,7 +1064,9 @@ Rcpp::List run_mcmc(
         Rcpp::Named("betas") = beta_post,
         Rcpp::Named("zetas") = zeta_post,
         Rcpp::Named("gammas") = gamma_post_mean,
-        Rcpp::Named("etas") = eta_post_mean
+        Rcpp::Named("etas") = eta_post_mean,
+        Rcpp::Named("tauSq") = tauSq_post,
+        Rcpp::Named("wSq") = wSq_post
     );
 
     if(BVS && gammaPrior == Gamma_Prior_Type::bernoulli)

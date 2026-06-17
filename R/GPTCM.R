@@ -8,6 +8,7 @@
 #'
 #' @name GPTCM
 #'
+#' @importFrom stats var
 #' @importFrom Rcpp evalCpp
 #'
 #' @param dat input data as a list containing survival data sub-list
@@ -29,6 +30,11 @@
 #' @param BVS logical value for implementing Bayesian variable selection
 #' @param CMH logical value for conditional MH or Carlin-Chib augmented MH for 
 #' Bayesian variable selection
+#' @param pilot.run logical value for pilot run to determine Carlin-Chib 
+#' pseudo-priors hyperparameters
+#' @param nIter0 iterations of pilot run MCMC
+#' @param burnin0 burnin of pilot run MCMC
+#' @param thin0 thinning of pilot run MCMC
 #' @param threads maximum threads used for parallelization. Default is 1
 #' @param kappaIGamma logical value for using inverse-gamma prior (\code{TRUE})
 #' or gamma prior (\code{FALSE}) for Weibull's shape parameter
@@ -93,6 +99,10 @@ GPTCM <- function(dat,
                   hyperpar = NULL,
                   BVS = TRUE,
                   CMH = FALSE,
+                  pilot.run = FALSE,
+                  nIter0 = 2000,
+                  burnin0 = 1000,
+                  thin0 = 1,
                   threads = 1,
                   kappaIGamma = FALSE,
                   kappaSampler = "arms",
@@ -254,11 +264,13 @@ GPTCM <- function(dat,
   hyperpar$v0A <- hyperpar$vA
   hyperpar$v0B <- hyperpar$vB
   
-  if (!"augBetaVar" %in% names(hyperpar)) {
-    hyperpar$augBetaVar <- 1
+  if (!"pseudoVarBeta" %in% names(hyperpar)) {
+    hyperpar$pseudoMeanBeta <- matrix(0, p, L)
+    hyperpar$pseudoVarBeta <- matrix(0, p, L)
   }
-  if (!"augZetaVar" %in% names(hyperpar)) {
-    hyperpar$augZetaVar <- 1
+  if (!"pseudoVarZeta" %in% names(hyperpar)) {
+    hyperpar$pseudoMeanZeta <- matrix(0, p, L)
+    hyperpar$pseudoVarZeta <- matrix(0, p, L)
   }
 
   # transform proportions data if including values very close to 0 or 1
@@ -296,6 +308,86 @@ GPTCM <- function(dat,
     betaMin = hyperpar$bound.neg, betaMax = hyperpar$bound.pos,
     kappaMin = hyperpar$bound.kappa, kappaMax = hyperpar$bound.pos
   )
+  
+  #################
+  ## Pilot run
+  #################
+  if (pilot.run && BVS && !CMH) {
+    
+    ## Pilot run MCMC 
+    message("\u2713 Pilot run to determine Carlin-Chib pseudo priors:")
+    fit0 <- run_mcmc(
+      nIter0,
+      burnin0,
+      thin0,
+      tick,
+      arms.list$n, 
+      arms.list$nsamp, 
+      arms.list$ninit, 
+      arms.list$convex,
+      arms.list$npoint,
+      dirichlet,
+      proportion.model,
+      BVS,
+      CMH,
+      threads,
+      gammaPrior,
+      gammaSampler,
+      etaPrior,
+      etaSampler,
+      initList,
+      rangeList,
+      hyperpar,
+      dat$survObj$event,
+      dat$survObj$time,
+      dat$X,
+      dat$x0,
+      dat$proportion
+    )
+
+    ## summarize estimates 
+    burnin0 <- burnin0 / thin0 + 1
+    min_active <- 50
+    min_var <- 1e-6
+    
+    betas_active <- fit0$betas[-c(1:burnin0), ]
+    betas_active[fit0$gammas[-c(1:burnin0), ] == 0] <- NA
+    #pseudoMeanBeta <- matrix(apply(betas_active, 2, mean, na.rm=T), ncol = L)[-1,]
+    pseudoMeanBeta <- matrix(apply(betas_active, 2, function(x) {
+      ifelse(sum(x != 0, na.rm=T) < min_active, NA, mean(x, na.rm=T))
+    }), ncol = L)[-1,]
+    pseudoMeanBeta[is.na(pseudoMeanBeta)] <- 0
+    pseudoVarBeta <- matrix(apply(betas_active, 2, var, na.rm=T), ncol = L)[-1,]
+    pseudoVarBeta[pseudoMeanBeta == 0] <- NA
+    pseudoVarBeta[pseudoVarBeta < min_var] <- NA
+    pseudoVarBeta <- sapply(1:L, function(l) {
+      if(any(is.na(pseudoVarBeta[, l]))) 
+        pseudoVarBeta[is.na(pseudoVarBeta[, l]), l] <- fit0$post$tauSq[l]
+      pseudoVarBeta[, l]
+    } 
+    )
+    hyperpar$pseudoMeanBeta <- pseudoMeanBeta
+    hyperpar$pseudoVarBeta <- pseudoVarBeta
+    
+    if (dirichlet && proportion.model) {
+      zetas_active <- fit0$zetas[-c(1:burnin0), ]
+      zetas_active[fit0$etas[-c(1:burnin0), ] == 0] <- NA
+      pseudoMeanZeta <- matrix(apply(zetas_active, 2, function(x) {
+        ifelse(sum(x != 0, na.rm=T) < min_active, NA, mean(x, na.rm=T))
+      }), ncol = L)[-1,]
+      pseudoMeanZeta[is.na(pseudoMeanZeta)] <- 0
+      pseudoVarZeta <- matrix(apply(zetas_active, 2, var, na.rm=T), ncol = L)[-1,]
+      pseudoVarZeta[pseudoMeanZeta == 0] <- NA
+      pseudoVarZeta[pseudoVarZeta < min_var] <- NA
+      pseudoVarZeta <- sapply(1:L, function(l) {
+        if(any(is.na(pseudoVarZeta[, l]))) 
+          pseudoVarZeta[is.na(pseudoVarZeta[, l]), l] <- fit0$post$wSq[l]
+        pseudoVarZeta[, l]
+      }) 
+      hyperpar$pseudoMeanZeta <- pseudoMeanZeta
+      hyperpar$pseudoVarZeta <- pseudoVarZeta
+    }
+  }
 
 
   #################
@@ -322,6 +414,7 @@ GPTCM <- function(dat,
   #################
 
   ## MCMC iterations
+  if (pilot.run) message("\u2713 Final run:")
   ret$output <- run_mcmc(
     nIter,
     burnin,

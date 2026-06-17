@@ -24,7 +24,7 @@ test_that("fit has properly class and length", {
   expect_s3_class(fit, "GPTCM")
   expect_length(fit, 3L)
   expect_length(fit$input, 10L)
-  expect_length(fit$input$hyperpar, 34L)
+  expect_length(fit$input$hyperpar, 36L)
   expect_length(fit$output, 15L)
 })
 

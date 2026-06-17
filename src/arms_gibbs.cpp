@@ -86,7 +86,8 @@ void ARMS_Gibbs::arms_gibbs_beta(
     arma::mat& currentPars,
     arma::vec& tauSq,
     double tau0Sq,
-    double augVar,
+    const arma::mat& pseudoMean,
+    const arma::mat& pseudoVar,
     arma::umat gammas,
     double kappa,
     arma::vec& datTheta,
@@ -135,6 +136,8 @@ void ARMS_Gibbs::arms_gibbs_beta(
     arma::vec logMu_l = arma::zeros<arma::vec>(N);
     mydata->logMu_l = logMu_l.memptr();
 
+    // bool inactive_var_zero = pseudoVar.is_zero();
+
     // not easy to parallize the following for-loop due to data dependencies
     for (unsigned int l = 0; l < L; ++l)
     {
@@ -151,8 +154,10 @@ void ARMS_Gibbs::arms_gibbs_beta(
                 if (j > 0) 
                 {
                     // currentPars(j, l) = R::rnorm(0., std::sqrt(tauSq[l]));
-                    double inactive_var = (augVar == 0.0) ? tauSq[l] : augVar;
-                    currentPars(j, l) = R::rnorm(0.0, std::sqrt(inactive_var));
+                    // if (inactive_var_zero) 
+                    //     currentPars(j, l) = R::rnorm(0.0, std::sqrt(tauSq[l]));
+                    // else
+                    currentPars(j, l) = R::rnorm(pseudoMean(j-1,l), std::sqrt(pseudoVar(j-1,l)));
                 }
             }
             else
@@ -461,7 +466,8 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     arma::mat& currentPars,
     double w0Sq,
     arma::vec& wSq,
-    double augVar,
+    const arma::mat& pseudoMean,
+    const arma::mat& pseudoVar,
 
     arma::umat etas,
 
@@ -531,8 +537,8 @@ void ARMS_Gibbs::arms_gibbs_zeta(
                 if (j > 0)
                 {
                     // currentPars(j, l) = R::rnorm(0., std::sqrt(wSq[l]));
-                    double inactive_var = (augVar == 0.0) ? wSq[l] : augVar;
-                    currentPars(j, l) = R::rnorm(0.0, std::sqrt(inactive_var));
+                    // double inactive_var = (pseudoVar == 0.0) ? wSq[l] : pseudoVar;
+                    currentPars(j, l) = R::rnorm(pseudoMean(j-1,l), std::sqrt(pseudoVar(j-1,l)));
                 }
             }
             else

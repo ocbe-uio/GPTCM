@@ -46,8 +46,10 @@ typedef struct HyperparData
     double rhoA;
     double rhoB;
 
-    double augBetaVar;
-    double augZetaVar;
+    // double *augBetaMean;
+    // double *augBetaVar;
+    // double *augZetaMean;
+    // double *augZetaVar;
 
     double vA;
     double vB;
@@ -118,6 +120,8 @@ public:
         arma::mat& gammaBanditBeta,
         const armsParmClass& armsPar,
         void *hyperpar_,
+        const arma::mat& pseudoMean,
+        const arma::mat& pseudoVar,
         const arma::vec& xi_,
         const arma::mat& zetas_,
         const arma::umat& etas_,
@@ -150,6 +154,8 @@ public:
         arma::mat& etaBanditBeta,
         const armsParmClass& armsPar,
         void *hyperpar_,
+        const arma::mat& pseudoMean,
+        const arma::mat& pseudoVar,
         arma::mat& zetas_,
         const arma::mat& betas_,
         const arma::umat& gammas_,
@@ -231,14 +237,16 @@ private:
         const arma::vec& beta_col_nonintercept,
         const arma::uvec& gamma_col,
         double slab_var,
-        double pseudo_var
+        const arma::vec& pseudo_mean,
+        const arma::vec& pseudo_var
     );
 
     static double logAugZetaPriorColumn(
         const arma::vec& zeta_col_nonintercept,
         const arma::uvec& eta_col,
         double slab_var,
-        double pseudo_var
+        const arma::vec& pseudo_mean,
+        const arma::vec& pseudo_var
     );
 
     static double gammaMC3Proposal(

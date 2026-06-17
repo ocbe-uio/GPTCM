@@ -222,6 +222,8 @@ void BVS_Sampler::sampleGamma(
     arma::mat& gammaBanditBeta,
     const armsParmClass& armsPar,
     void *hyperpar_,
+    const arma::mat& pseudoMean,
+    const arma::mat& pseudoVar,
     const arma::vec& xi_,
     const arma::mat& zetas_,
     const arma::umat& etas_,
@@ -367,21 +369,24 @@ void BVS_Sampler::sampleGamma(
     // choose to use conditional MH or Carlin-Chib augmented MH
     if( !CMH )
     {
-        double pseudoVar = hyperpar->augBetaVar;
-        if (pseudoVar == 0.0) pseudoVar = tauSq_[componentUpdateIdx];
+        // arma::vec pseudoMean = augBetaMean.col(componentUpdateIdx);
+        // arma::vec pseudoVar = augBetaVar.col(componentUpdateIdx);
+        // if (pseudoVar.is_zero()) pseudoVar.fill( tauSq_[componentUpdateIdx] );
 
         logAugBetaCurrent = logAugBetaPriorColumn(
             betas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
             gammas_.col(componentUpdateIdx),
             tauSq_[componentUpdateIdx],
-            pseudoVar
+            pseudoMean.col(componentUpdateIdx),
+            pseudoVar.col(componentUpdateIdx)
         );
 
         logAugBetaProposed = logAugBetaPriorColumn(
             betas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
             proposedGamma.col(componentUpdateIdx),
             tauSq_[componentUpdateIdx],
-            pseudoVar
+            pseudoMean.col(componentUpdateIdx),
+            pseudoVar.col(componentUpdateIdx)
         );
 
         logAugBetaPriorRatio = logAugBetaProposed - logAugBetaCurrent;
@@ -468,6 +473,8 @@ void BVS_Sampler::sampleEta(
 
     const armsParmClass& armsPar,
     void *hyperpar_,
+    const arma::mat& pseudoMean,
+    const arma::mat& pseudoVar,
     arma::mat& zetas_,
     const arma::mat& betas_,
     const arma::umat& gammas_,
@@ -617,21 +624,27 @@ void BVS_Sampler::sampleEta(
     // use conditional MH or Carlin-Chib augmented MH
     if( !CMH )
     {
-        double pseudoVar = hyperpar->augZetaVar;
-        if (pseudoVar == 0.0) pseudoVar = wSq_[componentUpdateIdx];
+        // arma::mat augZetaMean(const_cast<double*>(hyperpar->augZetaMean), p, L, false);
+        // arma::mat augZetaVar(const_cast<double*>(hyperpar->augZetaVar), p, L, false);
+
+        // arma::vec pseudoMean = augZetaMean.col(componentUpdateIdx);
+        // arma::vec pseudoVar = augZetaVar.col(componentUpdateIdx);
+        // if (pseudoVar.is_zero()) pseudoVar.fill( wSq_[componentUpdateIdx] );
 
         logAugZetaCurrent = logAugZetaPriorColumn(
             zetas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
             etas_.col(componentUpdateIdx),
             wSq_[componentUpdateIdx],
-            pseudoVar
+            pseudoMean.col(componentUpdateIdx),
+            pseudoVar.col(componentUpdateIdx)
         );
 
         logAugZetaProposed = logAugZetaPriorColumn(
             zetas_.submat(1, componentUpdateIdx, p, componentUpdateIdx),
             proposedEta.col(componentUpdateIdx),
             wSq_[componentUpdateIdx],
-            pseudoVar
+            pseudoMean.col(componentUpdateIdx),
+            pseudoVar.col(componentUpdateIdx)
         );
 
         logAugZetaPriorRatio = logAugZetaProposed - logAugZetaCurrent;
@@ -1375,7 +1388,8 @@ double BVS_Sampler::logAugBetaPriorColumn(
     const arma::vec& beta_col_nonintercept,
     const arma::uvec& gamma_col,
     double slab_var,
-    double pseudo_var)
+    const arma::vec& pseudo_mean,
+    const arma::vec& pseudo_var)
 {
     double out = 0.0;
     for (unsigned int j = 0; j < gamma_col.n_elem; ++j)
@@ -1384,7 +1398,7 @@ double BVS_Sampler::logAugBetaPriorColumn(
         if (gamma_col[j] == 1)
             out += logSlabPriorNormal(b, slab_var);
         else
-            out += logPseudoPriorNormal(b, pseudo_var);
+            out += logPDFNormal(b, pseudo_mean[j], pseudo_var[j]);
     }
     return out;
 }
@@ -1393,7 +1407,8 @@ double BVS_Sampler::logAugZetaPriorColumn(
     const arma::vec& zeta_col_nonintercept,
     const arma::uvec& eta_col,
     double slab_var,
-    double pseudo_var)
+    const arma::vec& pseudo_mean,
+    const arma::vec& pseudo_var)
 {
     double out = 0.0;
     for (unsigned int j = 0; j < eta_col.n_elem; ++j)
@@ -1402,7 +1417,7 @@ double BVS_Sampler::logAugZetaPriorColumn(
         if (eta_col[j] == 1)
             out += logSlabPriorNormal(b, slab_var);
         else
-            out += logPseudoPriorNormal(b, pseudo_var);
+            out += logPDFNormal(b, pseudo_mean[j], pseudo_var[j]);
     }
     return out;
 }

@@ -61,8 +61,8 @@ concentration parameters
 $\boldsymbol\alpha_{l}= \exp(\zeta_{0l} + \mathbf X_{l} \boldsymbol \zeta_l)$,
 $l\in \\{1,...,L\\}$. We use latent indicator variables for Bayesian
 variable selection,
-i.e. $\boldsymbol \gamma_l = 1\\{\boldsymbol \beta_l\ne 0\\}$ and
-$\boldsymbol \eta_l = 1\\{\boldsymbol \zeta_l\ne 0\\}$. Censoring is
+i.e. $\boldsymbol\gamma_l = 1\\{\boldsymbol\beta_l\ne 0\\}$ and
+$\boldsymbol\eta_l = 1\\{\boldsymbol\zeta_l\ne 0\\}$. Censoring is
 generated through an exponential distribution with censoring rate
 $20\%$. The Kaplan–Meier survival curve is as follows. See more details
 in [Zhao et al. (2025)](https://doi.org/10.48550/arXiv.2509.01001).
