@@ -37,7 +37,8 @@ void ARMS_Gibbs::arms_gibbs_xi(
     for (unsigned int i = 0; i < armsPar.ninit; ++i)
         xinit[i] = xinit0[i];
 
-    dataS *mydata = (dataS *)malloc(sizeof (dataS));
+    // dataS *mydata = (dataS *)malloc(sizeof (dataS));
+    auto mydata = std::make_unique<dataS>(); // modern and safe memory allocation
     mydata->currentPars = currentPars.memptr();
     mydata->p = p;
     mydata->L = L;
@@ -56,7 +57,7 @@ void ARMS_Gibbs::arms_gibbs_xi(
         double xsamp = currentPars[j];
         slice_sample(
             EvalFunction::log_dens_xis,
-            mydata,
+            mydata.get(),
             xsamp,
             10,
             1.0,
@@ -67,7 +68,7 @@ void ARMS_Gibbs::arms_gibbs_xi(
         // free(xsamp);
     }
 
-    free(mydata);
+    // free(mydata);
 }
 
 
@@ -112,7 +113,8 @@ void ARMS_Gibbs::arms_gibbs_beta(
     for (unsigned int i = 0; i < armsPar.ninit; ++i)
         xinit[i] = xinit0[i];  
 
-    dataS *mydata = (dataS *)malloc(sizeof (dataS));
+    // dataS *mydata = (dataS *)malloc(sizeof (dataS));
+    auto mydata = std::make_unique<dataS>(); // modern and safe memory allocation
 
     gammas = arma::join_cols(arma::ones<arma::urowvec>(L), gammas);
     mydata->gammaIndicator = gammas.memptr();
@@ -149,8 +151,8 @@ void ARMS_Gibbs::arms_gibbs_beta(
                 if (j > 0) 
                 {
                     // currentPars(j, l) = R::rnorm(0., std::sqrt(tauSq[l]));
-                    if( augVar == 0. ) augVar = tauSq[l];
-                    currentPars(j, l) = R::rnorm(0., std::sqrt(augVar));
+                    double inactive_var = (augVar == 0.0) ? tauSq[l] : augVar;
+                    currentPars(j, l) = R::rnorm(0.0, std::sqrt(inactive_var));
                 }
             }
             else
@@ -172,7 +174,7 @@ void ARMS_Gibbs::arms_gibbs_beta(
                 double convex = armsPar.convex;
                     err = ARMS::arms (
                               xinit.data(), armsPar.ninit, &minD, &maxD,
-                              EvalFunction::log_dens_betas, mydata,
+                              EvalFunction::log_dens_betas, mydata.get(),
                               &convex, armsPar.npoint,
                               armsPar.metropolis, &xprev, xsamp.data(),
                               armsPar.nsamp, qcent, xcent, ncent, &neval);
@@ -216,12 +218,12 @@ void ARMS_Gibbs::arms_gibbs_beta(
         }
     }
 
-    free(mydata);
+    // free(mydata);
 }
 
 
 // Multivariate ARMS via Gibbs sampler for betaK; used for M-H sampling for gammas update
-// NOTE: ARMS_Gibbs::arms_gibbs_zetaK() is not used!!!
+// NOTE: ARMS_Gibbs::arms_gibbs_betaK() is not used!!!
 /*
 void ARMS_Gibbs::arms_gibbs_betaK(
     const unsigned int k,
@@ -326,7 +328,7 @@ void ARMS_Gibbs::arms_gibbs_betaK(
         }
     }
 
-    free(mydata);
+    // free(mydata);
 }
 */
 
@@ -362,7 +364,8 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
         xinit[i] = xinit0[i];  
 
     // reallocate struct variables
-    dataS *mydata = (dataS *)malloc(sizeof (dataS));
+    // dataS *mydata = (dataS *)malloc(sizeof (dataS));
+    auto mydata = std::make_unique<dataS>(); // modern and safe memory allocation
 
     mydata->currentPars = currentPars.memptr();
     mydata->p = p;
@@ -405,7 +408,7 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
             double convex = armsPar.convex;
                 err = ARMS::arms (
                             xinit.data(), armsPar.ninit, &minD, &maxD,
-                            EvalFunction::log_dens_betasFull, mydata,
+                            EvalFunction::log_dens_betasFull, mydata.get(),
                             &convex, armsPar.npoint,
                             armsPar.metropolis, &xprev, xsamp.data(),
                             armsPar.nsamp, qcent, xcent, ncent, &neval);
@@ -440,7 +443,7 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
         }
     }
 
-    free(mydata);
+    // free(mydata);
 }
 
 
@@ -495,7 +498,8 @@ void ARMS_Gibbs::arms_gibbs_zeta(
     if (!dirichlet)
         Rprintf("Warning: In arms_gibbs_zeta(), Dirichlet modeling with logit/alr-link is not implement!\n");
 
-    dataS *mydata = (dataS *)malloc(sizeof (dataS));
+    // dataS *mydata = (dataS *)malloc(sizeof (dataS));
+    auto mydata = std::make_unique<dataS>(); // modern and safe memory allocation
 
     etas = arma::join_cols(arma::ones<arma::urowvec>(L), etas);
     mydata->gammaIndicator = etas.memptr();
@@ -527,8 +531,8 @@ void ARMS_Gibbs::arms_gibbs_zeta(
                 if (j > 0)
                 {
                     // currentPars(j, l) = R::rnorm(0., std::sqrt(wSq[l]));
-                    if( augVar == 0. ) augVar = wSq[l];
-                    currentPars(j, l) = R::rnorm(0., std::sqrt(augVar));
+                    double inactive_var = (augVar == 0.0) ? wSq[l] : augVar;
+                    currentPars(j, l) = R::rnorm(0.0, std::sqrt(inactive_var));
                 }
             }
             else
@@ -546,7 +550,7 @@ void ARMS_Gibbs::arms_gibbs_zeta(
                 double convex = armsPar.convex;
                 err = ARMS::arms (
                               xinit.data(), armsPar.ninit, &minD, &maxD,
-                              EvalFunction::log_dens_zetas, mydata,
+                              EvalFunction::log_dens_zetas, mydata.get(),
                               &convex, armsPar.npoint,
                               armsPar.metropolis, &xprev, xsamp.data(),
                               armsPar.nsamp, qcent, xcent, ncent, &neval);
@@ -566,7 +570,7 @@ void ARMS_Gibbs::arms_gibbs_zeta(
         }
     }
 
-    free(mydata);
+    // free(mydata);
 }
 
 // Multivariate ARMS via Gibbs sampler for betaK; used for M-H sampling for gammas update
@@ -665,7 +669,7 @@ void ARMS_Gibbs::arms_gibbs_zetaK(
         }
     }
 
-    free(mydata);
+    // free(mydata);
 }
 */
 
@@ -711,7 +715,8 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
         Rprintf("Warning: In arms_gibbs_zetaFull(), Dirichlet modeling with logit/alr-link is not implemented!\n");
     }
 
-    dataS* mydata = static_cast<dataS*>(malloc(sizeof(dataS)));
+    // dataS* mydata = static_cast<dataS*>(malloc(sizeof(dataS)));
+    auto mydata = std::make_unique<dataS>(); // modern and safe memory allocation
 
     mydata->currentPars = currentPars.memptr();
     mydata->p = p;
@@ -804,7 +809,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
                 &minD,
                 &maxD,
                 EvalFunction::log_dens_zetasFull,
-                mydata,
+                mydata.get(),
                 &convex,
                 armsPar.npoint,
                 armsPar.metropolis,
@@ -878,7 +883,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
         }
     }
 
-    free(mydata);
+    // free(mydata);
 }
 
 //' Univariate ARMS for kappa
@@ -915,7 +920,9 @@ void ARMS_Gibbs::arms_kappa(
     for (unsigned int i = 0; i < armsPar.ninit; ++i)
         xinit[i] = xinit0[i];
 
-    dataS *mydata = (dataS *)malloc(sizeof (dataS));
+    // dataS *mydata = (dataS *)malloc(sizeof (dataS)); // Rcpp::stop() may case memory leakage with malloc()
+    auto mydata = std::make_unique<dataS>(); // modern and safe memory allocation
+
     mydata->L = L;
     mydata->N = N;
     mydata->kappaA = kappaA;
@@ -929,7 +936,7 @@ void ARMS_Gibbs::arms_kappa(
 
     slice_sample (
         EvalFunction::log_dens_kappa,
-        mydata,
+        mydata.get(),
         currentPars,
         10,
         1.0,
@@ -937,7 +944,7 @@ void ARMS_Gibbs::arms_kappa(
         maxD
     );
     
-    free(mydata);
+    // free(mydata);
 }
 
 void ARMS_Gibbs::slice_sample(

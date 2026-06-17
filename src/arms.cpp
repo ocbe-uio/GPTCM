@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <vector>
+#include <memory>  /* Included for std::unique_ptr */
 
 #include "arms.h"
 
@@ -135,14 +136,24 @@ int arms (double *xinit, int ninit, double *xl, double *xr,
 /* *xcent       : to store requested centiles */
 /* ncent        : number of centiles requested */
 /* *neval       : on exit, the number of function evaluations performed */
-
 {
+    // Safe, automatic allocation via std::unique_ptr instead of malloc
+    auto env_owner = std::make_unique<ENVELOPE>();
+    auto metrop_owner = std::make_unique<METROPOLIS>();
 
-    ENVELOPE *env;      /* rejection envelope */
+    if(!env_owner || !metrop_owner)
+    {
+        /* insufficient space */
+        return 1006;
+    }
+
+    // Keep the original objects in the rest of the code
+    ENVELOPE *env = env_owner.get();
+    METROPOLIS *metrop = metrop_owner.get();
+
     POINT pwork;        /* a working point, not yet incorporated in envelope */
     int msamp=0;        /* the number of x-values currently sampled */
     FUNBAG lpdf;        /* to hold density function and its data */
-    METROPOLIS *metrop; /* to hold bits for metropolis step */
     int i,err;
 
     /* check requested envelope centiles */
@@ -159,28 +170,14 @@ int arms (double *xinit, int ninit, double *xl, double *xr,
     lpdf.mydata = mydata;
     lpdf.myfunc = myfunc;
 
-    /* set up space required for envelope */
-    env = (ENVELOPE *)malloc(sizeof(ENVELOPE));
-    if(env == NULL)
-    {
-        /* insufficient space */
-        return 1006;
-    }
     env->error = 0;
-
-    /* start setting up metropolis struct */
-    metrop = (METROPOLIS *)malloc(sizeof(METROPOLIS));
-    if(metrop == NULL)
-    {
-        /* insufficient space */
-        return 1006;
-    }
     metrop->on = dometrop;
 
     /* set up initial envelope */
     err = initial(xinit,ninit,*xl,*xr,npoint,&lpdf,env,convex,
                   neval,metrop);
-    if(err)return err;
+    /* If initial() returns a fail, env og metrop will be freed automaticaly */
+    if(err) return err;
 
     /* finish setting up metropolis struct (can only do this after */
     /* setting up env) */
@@ -228,12 +225,13 @@ int arms (double *xinit, int ninit, double *xl, double *xr,
     }
 
     /* free space */
-    free(env->p);
-    free(env);
-    free(metrop);
+    free(env->p); // must be kept when env->p be allocated with malloc/calloc in initial()
+    
+    // free(env) and free(metrop) are removed. std::unique_ptr deals with them now!
 
     return 0;
 }
+
 
 /* *********************************************************************** */
 

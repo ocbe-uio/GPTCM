@@ -96,13 +96,13 @@ public:
     static void loglikelihood_noBVS(
         double kappa,
         bool proportion_model,
-        arma::mat& alphas,
-        arma::mat& updateProportions,
-        arma::mat& weibullS,
-        arma::mat& weibullLambda,
-        arma::vec& logTheta,
-        arma::vec& datTheta,
-        const DataClass &dataclass,
+        const arma::mat& alphas,
+        const arma::mat& updateProportions,
+        const arma::mat& weibullS,
+        const arma::mat& weibullLambda,
+        const arma::vec& logTheta,
+        const arma::vec& datTheta,
+        const DataClass& dataclass,
         arma::vec& loglik
     );
 
@@ -156,7 +156,7 @@ public:
         const arma::vec& xi_,
         double kappa_,
         double w0Sq_,
-        arma::vec wSq_,
+        const arma::vec& wSq_,
         const arma::vec& rho,
         arma::vec& logZ_eta,
         bool dirichlet,
@@ -171,6 +171,15 @@ public:
 private:
     // HyperparData hyperpar_;
     DataClass dataclass_;
+
+    static double mrfEdgeRatio(
+        const arma::umat& proposed,
+        const arma::umat& current,
+        const arma::umat& edges,
+        const arma::vec& weights,
+        const arma::uvec& updated_global_idx,
+        double mrfB
+    );
 
     static double logPbetaK(
         const unsigned int k,
@@ -221,19 +230,21 @@ private:
     static double logAugBetaPriorColumn(
         const arma::vec& beta_col_nonintercept,
         const arma::uvec& gamma_col,
-        double slab_var
+        double slab_var,
+        double pseudo_var
     );
 
     static double logAugZetaPriorColumn(
         const arma::vec& zeta_col_nonintercept,
         const arma::uvec& eta_col,
-        double slab_var
+        double slab_var,
+        double pseudo_var
     );
 
     static double gammaMC3Proposal(
         unsigned int p,
         arma::umat& mutantGammas,
-        const arma::umat gammas_,
+        const arma::umat& gammas_,
         arma::uvec& updateIdx,
         unsigned int componentUpdateIdx_
     );

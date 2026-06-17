@@ -8,8 +8,7 @@
 #include "drive.h"
 
 // #ifdef _OPENMP
-//  extern omp_lock_t RNGlock; /*defined in global.h*/
-//  #include <omp.h>
+// omp_lock_t RNGlock; // already in global.cpp
 // #endif
 
 #include <Rcpp.h>
@@ -110,7 +109,15 @@ Rcpp::List run_mcmc(
                           Rcpp::as<double>(rangeList["betaMax"]));
 
     // hyperparameters
-    hyperparS *hyperpar = (hyperparS *)malloc(sizeof (hyperparS));
+    // hyperparS *hyperpar = (hyperparS *)malloc(sizeof (hyperparS));
+    // // use RAII instead of malloc(); std::unique_ptr with free deleter
+    auto hyperpar = std::make_unique<hyperparS>();
+    // std::unique_ptr<hyperparS, decltype(&std::free)> hyperpar(
+    //     static_cast<hyperparS*>(std::malloc(sizeof(hyperparS))), &std::free);
+    if (!hyperpar) {
+        Rcpp::stop("Failed to allocate hyperparS.");
+    }
+
 
     arma::umat mrfG;
     arma::vec mrfG_weights;
@@ -538,7 +545,7 @@ Rcpp::List run_mcmc(
                         etaBanditAlpha,
                         etaBanditBeta,
                         armsPar,
-                        hyperpar,
+                        hyperpar.get(),
                         zetas,
                         betas,
                         gammas,
@@ -645,7 +652,7 @@ Rcpp::List run_mcmc(
                 gammaBanditAlpha,
                 gammaBanditBeta,
                 armsPar,
-                hyperpar,
+                hyperpar.get(),
                 xi,
                 zetas,
                 etas,
@@ -970,7 +977,7 @@ Rcpp::List run_mcmc(
         }
     }
 
-    free(hyperpar);
+    // free(hyperpar);
 
     Rcpp::Rcout << "\n";
 

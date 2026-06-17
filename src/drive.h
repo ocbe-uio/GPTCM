@@ -8,6 +8,7 @@
 
 #ifdef _OPENMP
 #include <omp.h>
+extern omp_lock_t RNGlock;
 
 class OmpRngLockGuard {
 public:
