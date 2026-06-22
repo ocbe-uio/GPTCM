@@ -205,7 +205,8 @@ void ARMS_Gibbs::arms_gibbs_beta(
                     logMu_l += dataclass.datX.slice(l).col(j - 1) * accepted_delta;
                 }    
 
-                logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+                // logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+                logMu_l = arma::min(logMu_l, arma::vec(N).fill(upperbound)); 
                 datMu.col(l) = arma::exp( logMu_l );
                 // arma::vec lambdas = datMu.col(l) / std::tgamma(1. + 1./kappa);
                 // weibullS.col(l) = arma::exp( -arma::pow(datTime / lambdas, kappa) );
@@ -436,7 +437,8 @@ void ARMS_Gibbs::arms_gibbs_betaFull(
             } else {        
                 logMu_l += dataclass.datX.slice(l).col(j - 1) * accepted_delta;
             }    
-            logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);    
+            // logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);    
+            logMu_l = arma::min(logMu_l, arma::vec(N).fill(upperbound)); 
             datMu.col(l) = arma::exp(logMu_l);   
             weibullLambda.col(l) = datMu.col(l) / std::tgamma(1. + 1./kappa);
             weibullS.col(l) = arma::exp(        
@@ -740,31 +742,35 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     // Compute current full alpha matrix once.
     // ------------------------------------------------------------------
     // arma::mat alphas(N, L, arma::fill::zeros);
-
+    arma::vec logAlpha_ll(N);
     for (unsigned int ll = 0; ll < L; ++ll)
     {
-        arma::vec logAlpha_ll =
-            currentPars(0, ll) +
+        logAlpha_ll = currentPars(0, ll) +
             dataclass.datX.slice(ll) * currentPars.submat(1, ll, p, ll);
 
-        logAlpha_ll.elem(arma::find(logAlpha_ll > upperbound3)).fill(upperbound3);
-        logAlpha_ll.elem(arma::find(logAlpha_ll < std::log(lowerbound))).fill(std::log(lowerbound));
+        // logAlpha_ll.elem(arma::find(logAlpha_ll > upperbound3)).fill(upperbound3);
+        logAlpha_ll = arma::min(logAlpha_ll, arma::vec(N).fill(upperbound3)); // faster alternative
+        // logAlpha_ll.elem(arma::find(logAlpha_ll < std::log(lowerbound))).fill(std::log(lowerbound));
 
         alphas.col(ll) = arma::exp(logAlpha_ll);
     }
 
-    alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
-    alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+    // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
+    // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+    alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound3)); // faster alternative
+    alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
 
     arma::vec alphaRowsum = arma::sum(alphas, 1);
-    alphaRowsum.elem(arma::find(alphaRowsum < lowerbound)).fill(lowerbound);
+    // alphaRowsum.elem(arma::find(alphaRowsum < lowerbound)).fill(lowerbound);
+    alphaRowsum = arma::max(alphaRowsum, arma::vec(N).fill(lowerbound)); // faster alternative
 
     mydata->alphas = alphas.memptr();
     mydata->alphaRowsum = alphaRowsum.memptr();
 
     // Work vectors for current cell type l.
-    arma::vec logAlpha_l(N, arma::fill::zeros);
-    arma::vec alpha_l(N, arma::fill::zeros);
+    arma::vec logAlpha_l(N);
+    arma::vec alpha_l(N);
+    arma::vec old_alpha_l(N);
 
     for (unsigned int l = 0; l < L; ++l)
     {
@@ -778,17 +784,21 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
             currentPars(0, l) +
             dataclass.datX.slice(l) * currentPars.submat(1, l, p, l);
 
-        logAlpha_l.elem(arma::find(logAlpha_l > upperbound3)).fill(upperbound3);
-        logAlpha_l.elem(arma::find(logAlpha_l < std::log(lowerbound))).fill(std::log(lowerbound));
+        // logAlpha_l.elem(arma::find(logAlpha_l > upperbound3)).fill(upperbound3);
+        logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(upperbound3)); // faster alternative
+        // logAlpha_l.elem(arma::find(logAlpha_l < std::log(lowerbound))).fill(std::log(lowerbound));
 
         alpha_l = arma::exp(logAlpha_l);
-        alpha_l.elem(arma::find(alpha_l > upperbound3)).fill(upperbound3);
-        alpha_l.elem(arma::find(alpha_l < lowerbound)).fill(lowerbound);
+        // alpha_l.elem(arma::find(alpha_l > upperbound3)).fill(upperbound3);
+        // alpha_l.elem(arma::find(alpha_l < lowerbound)).fill(lowerbound);
+        alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound3)); // faster alternative
+        alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
 
         // Keep full alpha matrix consistent.
         alphas.col(l) = alpha_l;
         alphaRowsum = arma::sum(alphas, 1);
-        alphaRowsum.elem(arma::find(alphaRowsum < lowerbound)).fill(lowerbound);
+        // alphaRowsum.elem(arma::find(alphaRowsum < lowerbound)).fill(lowerbound);
+        alphaRowsum = arma::max(alphaRowsum, arma::vec(N).fill(lowerbound)); // faster alternative
 
         mydata->logAlpha_l = logAlpha_l.memptr();
         mydata->alpha_l = alpha_l.memptr();
@@ -858,7 +868,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
             // ----------------------------------------------------------
             double accepted_delta = new_par - old_par;
 
-            arma::vec old_alpha_l = alpha_l;
+            old_alpha_l = alpha_l;
 
             if (j == 0)
             {
@@ -869,15 +879,19 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
                 logAlpha_l += dataclass.datX.slice(l).col(j - 1) * accepted_delta;
             }
 
-            logAlpha_l.elem(arma::find(logAlpha_l > upperbound3)).fill(upperbound3);
-            logAlpha_l.elem(arma::find(logAlpha_l < std::log(lowerbound))).fill(std::log(lowerbound));
+            // logAlpha_l.elem(arma::find(logAlpha_l > upperbound3)).fill(upperbound3);
+            logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(upperbound3)); // faster alternative
+            // logAlpha_l.elem(arma::find(logAlpha_l < std::log(lowerbound))).fill(std::log(lowerbound));
 
             alpha_l = arma::exp(logAlpha_l);
-            alpha_l.elem(arma::find(alpha_l > upperbound3)).fill(upperbound3);
-            alpha_l.elem(arma::find(alpha_l < lowerbound)).fill(lowerbound);
+            // alpha_l.elem(arma::find(alpha_l > upperbound3)).fill(upperbound3);
+            // alpha_l.elem(arma::find(alpha_l < lowerbound)).fill(lowerbound);
+            alpha_l = arma::min(alpha_l, arma::vec(N).fill(upperbound3)); // faster alternative
+            alpha_l = arma::max(alpha_l, arma::vec(N).fill(lowerbound)); 
 
             alphaRowsum = alphaRowsum - old_alpha_l + alpha_l;
-            alphaRowsum.elem(arma::find(alphaRowsum < lowerbound)).fill(lowerbound);
+            // alphaRowsum.elem(arma::find(alphaRowsum < lowerbound)).fill(lowerbound);
+            alphaRowsum = arma::max(alphaRowsum, arma::vec(N).fill(lowerbound)); // faster alternative
 
             alphas.col(l) = alpha_l;
 

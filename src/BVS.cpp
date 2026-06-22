@@ -93,7 +93,7 @@ void BVS_Sampler::loglikelihood(
     unsigned int p = dataclass.datX.n_cols;
     unsigned int L = dataclass.datX.n_slices;
 
-    arma::mat datProportion = dataclass.datProportionConst;
+    arma::mat datProportion;
     arma::mat alphas = arma::zeros<arma::mat>(N, L);
     arma::vec alphas_Rowsum;
     if(proportion_model)
@@ -105,33 +105,54 @@ void BVS_Sampler::loglikelihood(
         for(unsigned int l=0; l<L; ++l)
         {
             arma::vec zetaMask_l = zetas.submat(1, l, p, l);
-            zetaMask_l.elem(arma::find(etas.col(l) == 0)).fill(0.0);
+            // zetaMask_l.elem(arma::find(etas.col(l) == 0)).fill(0.0);
+            for (arma::uword j = 0; j < p; ++j) { if (etas(j,l) == 0) zetaMask_l[j] = 0.0; }
             alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l );
         }
-        alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
-        alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+        // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
+        // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+        alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound3)); // faster alternative
+        alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
         alphas_Rowsum = arma::sum(alphas, 1);
-        datProportion = alphas / arma::repmat(alphas_Rowsum, 1, L);
+        // datProportion = alphas / arma::repmat(alphas_Rowsum, 1, L);
+        datProportion = alphas.each_col() / alphas_Rowsum; // faster alternative to above
+    }
+    else
+    {
+        datProportion = dataclass.datProportionConst;
     }
 
     arma::vec logTheta = dataclass.datX0 * xi;
-    logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+    // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+    logTheta = arma::min(logTheta, arma::vec(N).fill(upperbound)); 
     arma::vec thetas = arma::exp( logTheta );
 
     arma::vec f = arma::zeros<arma::vec>(N);
     arma::vec survival_pop = arma::zeros<arma::vec>(N);
+    
+    arma::vec betaMask_l(p);
+    arma::vec mu_l(N);
+    arma::vec weibull_lambdas_l(N);
+    arma::vec weibullS_l(N);
+    arma::vec weibull_pdf(N);
+    double gamma_const = std::tgamma(1. + 1./kappa);
 
     for(unsigned int l=0; l<L; ++l)
     {
-        arma::vec betaMask_l = betas.submat(1, l, p, l);
-        betaMask_l.elem(arma::find(gammas.col(l) == 0)).fill(0.0);
-        arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
-        logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
-        arma::vec mu_l = arma::exp(logMu_l);
+        betaMask_l = betas.submat(1, l, p, l);
+        // betaMask_l.elem(arma::find(gammas.col(l) == 0)).fill(0.0);
+        // // faster alternative to above
+        // betaMask_l %= arma::conv_to<arma::vec>::from(gammas.col(l)); 
+        // betaMask_l %= arma::vec(gammas.col(l));
+        for (arma::uword j = 0; j < p; ++j) { if (gammas(j,l) == 0) betaMask_l[j] = 0.0; }
+        mu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
+        // mu_l.elem(arma::find(mu_l > upperbound)).fill(upperbound);
+        mu_l = arma::min(mu_l, arma::vec(N).fill(upperbound)); 
+        mu_l = arma::exp(mu_l);
 
-        arma::vec weibull_lambdas_l = mu_l / std::tgamma(1. + 1./kappa);
-        arma::vec weibullS_l = arma::exp( - arma::pow( dataclass.datTime / weibull_lambdas_l, kappa) );
-        arma::vec weibull_pdf = arma::exp(-kappa * arma::log(weibull_lambdas_l) - arma::pow(dataclass.datTime/weibull_lambdas_l, kappa));
+        weibull_lambdas_l = mu_l / gamma_const;
+        weibullS_l = arma::exp( - arma::pow( dataclass.datTime / weibull_lambdas_l, kappa) );
+        weibull_pdf = arma::exp(-kappa * arma::log(weibull_lambdas_l) - arma::pow(dataclass.datTime/weibull_lambdas_l, kappa));
 
         survival_pop += datProportion.col(l) % weibullS_l;
 
@@ -140,7 +161,8 @@ void BVS_Sampler::loglikelihood(
 
     // summarize density of the Weibull's survival part
     arma::vec log_survival_pop = - thetas % (1. - survival_pop);
-    f.elem(arma::find(f < lowerbound)).fill(lowerbound);
+    // f.elem(arma::find(f < lowerbound)).fill(lowerbound);
+    f = arma::max(f, arma::vec(N).fill(lowerbound)); // faster alternative
     arma::vec log_f_pop = logTheta + arma::log(f) + log_survival_pop;
 
     // summarize density of the Dirichlet part
@@ -152,8 +174,16 @@ void BVS_Sampler::loglikelihood(
             arma::sum( (alphas - 1.0) % arma::log(dataclass.datProportionConst), 1 );
     }
 
-    log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
-    log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
+    // log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
+    // log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
+    for (arma::uword i = 0; i < N; ++i) 
+    { 
+        if (!dataclass.datEvent[i])
+        {
+            log_f_pop[i] = 0.;
+            log_survival_pop[i] = 0.;
+        }
+    }
     loglik = log_f_pop + log_survival_pop + log_dirichlet;
 }
 
@@ -181,31 +211,42 @@ void BVS_Sampler::loglikelihood_noBVS(
 
     arma::vec f = arma::zeros<arma::vec>(N);
     arma::vec survival_pop = arma::zeros<arma::vec>(N);
+    arma::vec weibull_pdf(N);
 
     for(unsigned int l=0; l<L; ++l)
     {
-        arma::vec weibull_pdf = arma::exp(-kappa * arma::log(weibullLambda.col(l)) - arma::pow(dataclass.datTime/weibullLambda.col(l), kappa));
+        weibull_pdf = arma::exp(-kappa * arma::log(weibullLambda.col(l)) - arma::pow(dataclass.datTime/weibullLambda.col(l), kappa));
         survival_pop += datProportion.col(l) % weibullS.col(l);
         f += kappa * arma::pow(dataclass.datTime, kappa - 1.0) % datProportion.col(l) % weibull_pdf;
     }
 
     // summarize density of the Weibull's survival part
     arma::vec log_survival_pop = - datTheta % (1. - survival_pop);
-    f.elem(arma::find(f < lowerbound)).fill(lowerbound);
+    // f.elem(arma::find(f < lowerbound)).fill(lowerbound);
+    f = arma::max(f, arma::vec(N).fill(lowerbound)); 
     arma::vec log_f_pop = logTheta + arma::log(f) + log_survival_pop;
 
     // summarize density of the Dirichlet part
     arma::vec log_dirichlet = arma::zeros<arma::vec>(N);
     if (proportion_model)
     {
-        arma::vec alphas_Rowsum = arma::sum(alphas, 1);
+        // arma::vec alphas_Rowsum = arma::sum(alphas, 1);
         log_dirichlet =
-            arma::lgamma(alphas_Rowsum) - arma::sum(arma::lgamma(alphas), 1) +
+            arma::lgamma(arma::sum(alphas, 1)) - 
+            arma::sum(arma::lgamma(alphas), 1) +
             arma::sum( (alphas - 1.0) % arma::log(dataclass.datProportionConst), 1 );
     }
 
-    log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
-    log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
+    // log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
+    // log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
+    for (arma::uword i = 0; i < N; ++i) 
+    { 
+        if (!dataclass.datEvent[i])
+        {
+            log_f_pop[i] = 0.;
+            log_survival_pop[i] = 0.;
+        }
+    }
     loglik = log_f_pop + log_survival_pop + log_dirichlet;
 }
 
@@ -255,6 +296,7 @@ void BVS_Sampler::sampleGamma(
 
     double logProposalRatio = 0;
 
+    unsigned int N = log_likelihood_.n_elem;
     unsigned int p = gammas_.n_rows;
     unsigned int L = gammas_.n_cols;
 
@@ -412,7 +454,8 @@ void BVS_Sampler::sampleGamma(
         // update quantities needed for ARMS_Gibbs::arms_gibbs_beta() in the main MCMC-loop in drive.cpp
         arma::vec logMu_k = betas_(0, componentUpdateIdx) + dataclass.datX.slice(componentUpdateIdx) * 
             (betas_.submat(1, componentUpdateIdx, p, componentUpdateIdx) % gammas_.col(componentUpdateIdx)) ;
-        logMu_k.elem(arma::find(logMu_k > upperbound)).fill(upperbound);
+        // logMu_k.elem(arma::find(logMu_k > upperbound)).fill(upperbound);
+        logMu_k = arma::min(logMu_k, arma::vec(N).fill(upperbound)); 
         datMu.col(componentUpdateIdx) = arma::exp( logMu_k );
         weibullLambda.col(componentUpdateIdx) = datMu.col(componentUpdateIdx) / std::tgamma(1. + 1./kappa);
         // weibullLambda.elem(arma::find(lambdas > upperbound)).fill(upperbound);
@@ -434,7 +477,7 @@ void BVS_Sampler::sampleGamma(
 
     if( gamma_sampler == Gamma_Sampler_Type::bandit )
     {
-        double banditLimit = (double)(dataclass.datTime.n_elem);
+        double banditLimit = (double)(N);
         double banditIncrement = 1.;
 
         for(auto iter: updateIdx)
@@ -510,6 +553,7 @@ void BVS_Sampler::sampleEta(
 
     double logProposalRatio = 0;
 
+    unsigned int N = log_likelihood_.n_elem;
     unsigned int p = etas_.n_rows;
     unsigned int L = etas_.n_cols;
 
@@ -678,7 +722,7 @@ void BVS_Sampler::sampleEta(
 
     if( eta_sampler == Eta_Sampler_Type::bandit )
     {
-        double banditLimit = (double)(dataclass.datTime.n_elem);
+        double banditLimit = (double)(N);
         double banditIncrement = 1.;
 
         for(auto iter: updateIdx)
@@ -762,9 +806,10 @@ double BVS_Sampler::gammaBanditProposal(
                 : (1.0 - banditPi(j));
     }
 
-    const double eps = 1e-12;
+    double eps = 1e-12;
     mismatch.elem(arma::find_nonfinite(mismatch)).fill(0.0);
-    mismatch.elem(arma::find(mismatch < eps)).fill(eps);
+    // mismatch.elem(arma::find(mismatch < eps)).fill(eps);
+    mismatch = arma::max(mismatch, arma::vec(p).fill(eps)); 
 
     normalised_mismatch = mismatch / arma::sum(mismatch);
 
@@ -799,9 +844,10 @@ double BVS_Sampler::gammaBanditProposal(
         normalised_mismatch_backwards(idx) =
             1.0 - normalised_mismatch_backwards(idx);
 
-        normalised_mismatch_backwards.elem(
-            arma::find(normalised_mismatch_backwards < eps)
-        ).fill(eps);
+        // normalised_mismatch_backwards.elem(
+        //     arma::find(normalised_mismatch_backwards < eps)
+        // ).fill(eps);
+        normalised_mismatch_backwards = arma::max(normalised_mismatch_backwards, arma::vec(p).fill(eps)); 
 
         normalised_mismatch_backwards =
             normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
@@ -849,9 +895,10 @@ double BVS_Sampler::gammaBanditProposal(
                 1.0 - normalised_mismatch_backwards(idx);
         }
 
-        normalised_mismatch_backwards.elem(
-            arma::find(normalised_mismatch_backwards < eps)
-        ).fill(eps);
+        // normalised_mismatch_backwards.elem(
+        //     arma::find(normalised_mismatch_backwards < eps)
+        // ).fill(eps);
+        normalised_mismatch_backwards = arma::max(normalised_mismatch_backwards, arma::vec(p).fill(eps)); 
 
         normalised_mismatch_backwards =
             normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
@@ -924,9 +971,10 @@ double BVS_Sampler::etaBanditProposal(
                 : (1.0 - banditPi(j));
     }
 
-    const double eps = 1e-12;
+    double eps = 1e-12;
     mismatch.elem(arma::find_nonfinite(mismatch)).fill(0.0);
-    mismatch.elem(arma::find(mismatch < eps)).fill(eps);
+    // mismatch.elem(arma::find(mismatch < eps)).fill(eps);
+    mismatch = arma::max(mismatch, arma::vec(p).fill(eps)); 
 
     normalised_mismatch = mismatch / arma::sum(mismatch);
 
@@ -961,9 +1009,10 @@ double BVS_Sampler::etaBanditProposal(
         normalised_mismatch_backwards(idx) =
             1.0 - normalised_mismatch_backwards(idx);
 
-        normalised_mismatch_backwards.elem(
-            arma::find(normalised_mismatch_backwards < eps)
-        ).fill(eps);
+        // normalised_mismatch_backwards.elem(
+        //     arma::find(normalised_mismatch_backwards < eps)
+        // ).fill(eps);
+        normalised_mismatch_backwards = arma::max(normalised_mismatch_backwards, arma::vec(p).fill(eps)); 
 
         normalised_mismatch_backwards =
             normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
@@ -1011,9 +1060,10 @@ double BVS_Sampler::etaBanditProposal(
                 1.0 - normalised_mismatch_backwards(idx);
         }
 
-        normalised_mismatch_backwards.elem(
-            arma::find(normalised_mismatch_backwards < eps)
-        ).fill(eps);
+        // normalised_mismatch_backwards.elem(
+        //     arma::find(normalised_mismatch_backwards < eps)
+        // ).fill(eps);
+        normalised_mismatch_backwards = arma::max(normalised_mismatch_backwards, arma::vec(p).fill(eps)); 
 
         normalised_mismatch_backwards =
             normalised_mismatch_backwards / arma::sum(normalised_mismatch_backwards);
@@ -1096,7 +1146,7 @@ double BVS_Sampler::mrfEdgeRatio(
 }
 
 
-
+/*
 double BVS_Sampler::logPbetaK(
     const unsigned int k,
     const arma::mat& betas,
@@ -1197,7 +1247,7 @@ double BVS_Sampler::logPzetaK(
 
     return logP;
 }
-
+*/
 
 // subfunctions used for bandit proposal
 
@@ -1213,9 +1263,10 @@ arma::uvec BVS_Sampler::randWeightedIndexSampleWithoutReplacement(
 
     arma::vec safe_weights = weights;
 
-    const double eps = 1e-12;
+    double eps = 1e-12;
     safe_weights.elem(arma::find_nonfinite(safe_weights)).fill(0.0);
-    safe_weights.elem(arma::find(safe_weights < eps)).fill(eps);
+    // safe_weights.elem(arma::find(safe_weights < eps)).fill(eps);
+    safe_weights = arma::max(safe_weights, arma::vec(weights.n_elem).fill(eps)); 
 
     arma::vec u = Rcpp::runif(populationSize);
 
@@ -1238,7 +1289,8 @@ unsigned int BVS_Sampler::randWeightedIndexSampleWithoutReplacement(
 
     arma::vec safe_weights = weights;
     safe_weights.elem(arma::find_nonfinite(safe_weights)).fill(0.0);
-    safe_weights.elem(arma::find(safe_weights < 0.0)).fill(0.0);
+    // safe_weights.elem(arma::find(safe_weights < 0.0)).fill(0.0);
+    safe_weights = arma::max(safe_weights, arma::vec(weights.n_elem).fill(0.0)); 
 
     double total = arma::accu(safe_weights);
 
@@ -1279,9 +1331,10 @@ double BVS_Sampler::logPDFWeightedIndexSampleWithoutReplacement(
     arma::vec safe_weights = weights;
 
     // Numerical protection.
-    const double eps = 1e-12;
+    double eps = 1e-12;
     safe_weights.elem(arma::find_nonfinite(safe_weights)).fill(0.0);
-    safe_weights.elem(arma::find(safe_weights < eps)).fill(eps);
+    // safe_weights.elem(arma::find(safe_weights < eps)).fill(eps);
+    safe_weights = arma::max(safe_weights, arma::vec(weights.n_elem).fill(eps)); 
 
     double total_weight = arma::accu(safe_weights);
 

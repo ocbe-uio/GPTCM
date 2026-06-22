@@ -389,17 +389,20 @@ Rcpp::List run_mcmc(
     // quantity 1
     arma::vec datTheta = arma::zeros<arma::vec>(N);
     arma::vec logTheta = dataclass.datX0 * xi;
-    logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+    // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+    logTheta = arma::min(logTheta, arma::vec(N).fill(upperbound)); 
     datTheta = arma::exp( logTheta );
 
     // quantity 2
     arma::mat datMu = arma::zeros<arma::mat>(N, L);
     arma::mat weibullS = arma::zeros<arma::mat>(N, L);
     arma::mat weibullLambda = arma::zeros<arma::mat>(N, L);
+    arma::vec logMu_l(N);
     for(unsigned int l=0; l<L; ++l)
     {
-        arma::vec logMu_l = betas(0, l) + dataclass.datX.slice(l) * betas.submat(1, l, p, l);
-        logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+        logMu_l = betas(0, l) + dataclass.datX.slice(l) * betas.submat(1, l, p, l);
+        // logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
+        logMu_l = arma::min(logMu_l, arma::vec(N).fill(upperbound)); 
         datMu.col(l) = arma::exp( logMu_l );
 
         weibullLambda.col(l) = datMu.col(l) / std::tgamma(1. + 1./kappa);
@@ -411,6 +414,7 @@ Rcpp::List run_mcmc(
     // quantity 3
     arma::mat datProportion = dataclass.datProportionConst;
     arma::mat alphas = arma::zeros<arma::mat>(N, L);
+    arma::vec alphas_Rowsum(N);
     if(proportion_model)
     {
         for(unsigned int l=0; l<L; ++l)
@@ -418,9 +422,13 @@ Rcpp::List run_mcmc(
             alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetas.submat(1, l, p, l) );
         }
 
-        alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
-        alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-        datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
+        // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
+        // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+        alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound3)); // faster alternative
+        alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
+        // datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
+        alphas_Rowsum = arma::sum(alphas, 1);
+        datProportion = alphas.each_col() / alphas_Rowsum;
     }
 
     // quantities for multi-armed bandit algorithm
@@ -470,6 +478,8 @@ Rcpp::List run_mcmc(
 
     if (BVS)
     {
+        arma::mat betaMask(p, L);
+        arma::mat zetaMask(p, L);
         for (unsigned int m=0; m<nIter; ++m)
         {
             if ((m+1) % cTotalLength == 0) {
@@ -509,7 +519,8 @@ Rcpp::List run_mcmc(
 
             // update cure rate based on new xi
             logTheta = dataclass.datX0 * xi;
-            logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+            // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+            logTheta = arma::min(logTheta, arma::vec(N).fill(upperbound)); 
             datTheta = arma::exp( logTheta );
 
             // update parameters in the proportion model
@@ -600,16 +611,22 @@ Rcpp::List run_mcmc(
 
                     // update Dirichlet concentrations and proportions based on new zetas
                     // TODO: pass componentUpdateIdx to here, then no need for-loop for 1:L
+                    arma::vec zetaMask_l(p);
                     for(unsigned int l=0; l<L; ++l)
                     {
-                        arma::vec zetaMask_l = zetas.submat(1, l, p, l);
-                        zetaMask_l.elem(arma::find(etas.col(l) == 0)).fill(0.0);
+                        zetaMask_l = zetas.submat(1, l, p, l);
+                        // zetaMask_l.elem(arma::find(etas.col(l) == 0)).fill(0.0);
+                        for (arma::uword j = 0; j < p; ++j) { if (etas(j,l) == 0) zetaMask_l[j] = 0.0; }
                         alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l );
                     }
 
-                    alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
-                    alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-                    datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
+                    // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
+                    // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
+                    alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound3)); // faster alternative
+                    alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
+                    // datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
+                    alphas_Rowsum = arma::sum(alphas, 1);
+                    datProportion = alphas.each_col() / alphas_Rowsum;
                 }
                 else
                 {
@@ -769,8 +786,8 @@ Rcpp::List run_mcmc(
                 tauSq_mcmc[1+nIter_thin_count] = tauSq[0];
                 vSq_mcmc[1+nIter_thin_count] = vSq;
 
-                arma::mat betaMask = betas;
-                arma::mat zetaMask = zetas;
+                betaMask = betas;
+                zetaMask = zetas;
 
                 betaMask = betas % arma::join_cols(arma::ones<arma::urowvec>(L), gammas);
                 gamma_mcmc.row(1+nIter_thin_count) = arma::vectorise(gammas).t();
@@ -852,7 +869,8 @@ Rcpp::List run_mcmc(
 
             // update cure rate based on new xi
             logTheta = dataclass.datX0 * xi;
-            logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+            // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
+            logTheta = arma::min(logTheta, arma::vec(N).fill(upperbound)); 
             datTheta = arma::exp( logTheta );
 
             // update parameters in the proportion model
@@ -896,7 +914,9 @@ Rcpp::List run_mcmc(
 
                     // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
                     // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-                    datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
+                    alphas_Rowsum = arma::sum(alphas, 1);
+                    datProportion = alphas.each_col() / alphas_Rowsum;
+                    // datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
                 }
                 else
                 {
