@@ -390,7 +390,8 @@ Rcpp::List run_mcmc(
     arma::vec datTheta = arma::zeros<arma::vec>(N);
     arma::vec logTheta = dataclass.datX0 * xi;
     // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
-    logTheta = arma::min(logTheta, arma::vec(N).fill(log_lp_max)); 
+    // logTheta = arma::min(logTheta, arma::vec(N).fill(log_lp_max)); 
+    GPTCM::Numeric::clamp_upper_inplace(logTheta, log_lp_max);
     datTheta = arma::exp( logTheta );
 
     // quantity 2
@@ -402,8 +403,9 @@ Rcpp::List run_mcmc(
     {
         logMu_l = betas(0, l) + dataclass.datX.slice(l) * betas.submat(1, l, p, l);
         // logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
-        logMu_l = arma::min(logMu_l, arma::vec(N).fill(log_lp_max)); 
-        logMu_l = arma::max(logMu_l, arma::vec(N).fill(log_lp_min)); 
+        // logMu_l = arma::min(logMu_l, arma::vec(N).fill(log_lp_max)); 
+        // logMu_l = arma::max(logMu_l, arma::vec(N).fill(log_lp_min)); 
+        GPTCM::Numeric::clamp_inplace(logMu_l, log_lp_min, log_lp_max);
         datMu.col(l) = arma::exp( logMu_l );
 
         weibullLambda.col(l) = datMu.col(l) / std::tgamma(1. + 1./kappa);
@@ -422,8 +424,9 @@ Rcpp::List run_mcmc(
         for(unsigned int l=0; l<L; ++l)
         {
             lp_tmp = zetas(0, l) + dataclass.datX.slice(l) * zetas.submat(1, l, p, l);
-            lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_lp_max)); // faster alternative
-            lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_lp_min)); 
+            // lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_alpha_max)); // faster alternative
+            // lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_alpha_min)); 
+            GPTCM::Numeric::clamp_inplace(lp_tmp, log_alpha_min, log_alpha_max);
             alphas.col(l) = arma::exp( lp_tmp );
         }
 
@@ -523,7 +526,8 @@ Rcpp::List run_mcmc(
             // update cure rate based on new xi
             logTheta = dataclass.datX0 * xi;
             // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
-            logTheta = arma::min(logTheta, arma::vec(N).fill(log_lp_max)); 
+            // logTheta = arma::min(logTheta, arma::vec(N).fill(log_lp_max)); 
+            GPTCM::Numeric::clamp_upper_inplace(logTheta, log_lp_max);
             datTheta = arma::exp( logTheta );
 
             // update parameters in the proportion model
@@ -621,8 +625,9 @@ Rcpp::List run_mcmc(
                         // zetaMask_l.elem(arma::find(etas.col(l) == 0)).fill(0.0);
                         for (arma::uword j = 0; j < p; ++j) { if (etas(j,l) == 0) zetaMask_l[j] = 0.0; }
                         lp_tmp = zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l;
-                        lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_lp_max)); 
-                        lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_lp_min)); 
+                        // lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_lp_max)); 
+                        // lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_lp_min)); 
+                        GPTCM::Numeric::clamp_inplace(lp_tmp, log_alpha_min, log_alpha_max);
                         alphas.col(l) = arma::exp( lp_tmp );
                     }
 
@@ -875,7 +880,8 @@ Rcpp::List run_mcmc(
             // update cure rate based on new xi
             logTheta = dataclass.datX0 * xi;
             // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
-            logTheta = arma::min(logTheta, arma::vec(N).fill(log_lp_max)); 
+            // logTheta = arma::min(logTheta, arma::vec(N).fill(log_lp_max)); 
+            GPTCM::Numeric::clamp_upper_inplace(logTheta, log_lp_max);
             datTheta = arma::exp( logTheta );
 
             // update parameters in the proportion model

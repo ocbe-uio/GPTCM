@@ -14,12 +14,12 @@
 // Define constants for bounds
 // constexpr double UPPER_BOUND = 1000.0;
 // constexpr double UPPER_BOUND_3 = 170.0; // 270 here and 1.0e-20 below resulted in slightly worse \zetas. Check to use Log-Sum-Exp trick
-constexpr double LOWER_BOUND = 1.0e-50; // 1.0e-10;
+constexpr double LOWER_BOUND = 1.0e-30; // sensitive if using 1.0e-20
 
-constexpr double LOG_LP_MIN = -30.0; // log linear predictor lower bound
-constexpr double LOG_LP_MAX =  30.0; // log linear predictor upper bound
-constexpr double LOG_ALPHA_MIN = -13.0;
-constexpr double LOG_ALPHA_MAX =  13.0;
+constexpr double LOG_LP_MIN = -30.0; // log linear predictor lower bound; stable results with -300 
+constexpr double LOG_LP_MAX =  30.0; // log linear predictor upper bound; stable results with 300 
+constexpr double LOG_ALPHA_MIN = -13.0; // Dirichlet log linear predictor lower bound; stable results with -130 
+constexpr double LOG_ALPHA_MAX =  13.0; // Dirichlet log linear predictor upper bound; stable results with 130 
 
 // Using the constants inline where necessary
 // inline double upperbound = UPPER_BOUND;
@@ -32,6 +32,75 @@ inline double log_lp_min = LOG_LP_MIN;
 inline double log_lp_max = LOG_LP_MAX;
 inline double log_alpha_min = LOG_ALPHA_MIN;
 inline double log_alpha_max = LOG_ALPHA_MAX;
+
+
+namespace GPTCM {
+namespace Numeric {
+
+inline void clamp_upper_inplace(
+    arma::vec& x,
+    const double upper,
+    const double nan_value = 0.0
+)
+{
+    for (double& v : x)
+    {
+        if (std::isnan(v))
+        {
+            v = nan_value;
+        }
+        else if (v > upper)
+        {
+            v = upper;
+        }
+    }
+}
+
+inline void clamp_lower_inplace(
+    arma::vec& x,
+    const double lower,
+    const double nan_value = 0.0
+)
+{
+    for (double& v : x)
+    {
+        if (std::isnan(v))
+        {
+            v = nan_value;
+        }
+        else if (v < lower)
+        {
+            v = lower;
+        }
+    }
+}
+
+inline void clamp_inplace(
+    arma::vec& x,
+    const double lower,
+    const double upper,
+    const double nan_value = 0.0
+)
+{
+    for (double& v : x)
+    {
+        if (std::isnan(v))
+        {
+            v = nan_value;
+        }
+        else if (v > upper)
+        {
+            v = upper;
+        }
+        else if (v < lower)
+        {
+            v = lower;
+        }
+    }
+}
+
+} // namespace Numeric
+} // namespace GPTCM
 
 
 class DataClass
