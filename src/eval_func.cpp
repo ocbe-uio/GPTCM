@@ -51,7 +51,7 @@ double EvalFunction::log_dens_xis(
     double logpost_first = 0.; // arma::sum( logTheta.elem(arma::find(datEvent)) );
     // // faster below
     for (arma::uword i = 0; i < mydata_parm->N; ++i) {
-        if (datEvent[i]) logpost_first += std::log(logTheta[i]);
+        if (datEvent[i]) logpost_first += logTheta[i];
     }
     arma::vec logpost_second = arma::zeros<arma::vec>(mydata_parm->N);
     arma::mat datProportion(mydata_parm->datProportion, mydata_parm->N, mydata_parm->L, false);
@@ -441,7 +441,7 @@ double EvalFunction::log_dens_zetasFull(
     // logAlpha_l_candidate.elem(
     //     arma::find(logAlpha_l_candidate > upperbound3)
     // ).fill(upperbound3);
-    logAlpha_l_candidate = arma::min(logAlpha_l_candidate, arma::vec(mydata_parm->N).fill(upperbound3)); 
+    // logAlpha_l_candidate = arma::min(logAlpha_l_candidate, arma::vec(mydata_parm->N).fill(upperbound3)); 
 
     // logAlpha_l_candidate.elem(
     //     arma::find(logAlpha_l_candidate < std::log(lowerbound))

@@ -785,14 +785,14 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
             dataclass.datX.slice(l) * currentPars.submat(1, l, p, l);
 
         // logAlpha_l.elem(arma::find(logAlpha_l > upperbound3)).fill(upperbound3);
-        logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(upperbound3)); // faster alternative
+        // logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(upperbound3)); // faster alternative
         // logAlpha_l.elem(arma::find(logAlpha_l < std::log(lowerbound))).fill(std::log(lowerbound));
 
         alpha_l = arma::exp(logAlpha_l);
         // alpha_l.elem(arma::find(alpha_l > upperbound3)).fill(upperbound3);
         // alpha_l.elem(arma::find(alpha_l < lowerbound)).fill(lowerbound);
-        alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound3)); // faster alternative
-        alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
+        alpha_l = arma::min(alpha_l, arma::vec(N).fill(upperbound3)); // faster alternative
+        alpha_l = arma::max(alpha_l, arma::vec(N).fill(lowerbound)); 
 
         // Keep full alpha matrix consistent.
         alphas.col(l) = alpha_l;
@@ -880,7 +880,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
             }
 
             // logAlpha_l.elem(arma::find(logAlpha_l > upperbound3)).fill(upperbound3);
-            logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(upperbound3)); // faster alternative
+            // logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(upperbound3)); // faster alternative
             // logAlpha_l.elem(arma::find(logAlpha_l < std::log(lowerbound))).fill(std::log(lowerbound));
 
             alpha_l = arma::exp(logAlpha_l);

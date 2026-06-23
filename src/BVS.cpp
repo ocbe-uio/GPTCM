@@ -176,15 +176,16 @@ void BVS_Sampler::loglikelihood(
 
     // log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
     // log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
+    loglik = log_dirichlet;
     for (arma::uword i = 0; i < N; ++i) 
     { 
-        if (!dataclass.datEvent[i])
+        if (dataclass.datEvent[i])
         {
-            log_f_pop[i] = 0.;
-            log_survival_pop[i] = 0.;
-        }
+            loglik[i] += log_f_pop[i];
+            loglik[i] += log_survival_pop[i];
+        } 
     }
-    loglik = log_f_pop + log_survival_pop + log_dirichlet;
+    // loglik = log_f_pop + log_survival_pop + log_dirichlet;
 }
 
 // loglikelihood given all relevant quantities
@@ -239,15 +240,16 @@ void BVS_Sampler::loglikelihood_noBVS(
 
     // log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
     // log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
+    loglik = log_dirichlet;
     for (arma::uword i = 0; i < N; ++i) 
     { 
-        if (!dataclass.datEvent[i])
+        if (dataclass.datEvent[i])
         {
-            log_f_pop[i] = 0.;
-            log_survival_pop[i] = 0.;
-        }
+            loglik[i] += log_f_pop[i];
+            loglik[i] += log_survival_pop[i];
+        } 
     }
-    loglik = log_f_pop + log_survival_pop + log_dirichlet;
+    // loglik = log_f_pop + log_survival_pop + log_dirichlet;
 }
 
 
