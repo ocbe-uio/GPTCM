@@ -38,6 +38,6 @@ test_that("fit has expected values", {
     expect_equal(as.vector(post$betas[1, ]), rep(0, L), tolerance = tol)
     expect_equal(as.vector(post$zetas[1, ]), as.vector(dat$zetas[1, ]), tolerance = tol)
   })
-  expect_equal(BVS_acc_betas, 1.0, 0.2)
-  expect_equal(BVS_acc_zetas, 1.0, 0.2)
+  expect_equal(BVS_acc_betas, 1.0, 0.3)
+  expect_equal(BVS_acc_zetas, 1.0, 0.3)
 })

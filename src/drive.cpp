@@ -424,7 +424,7 @@ Rcpp::List run_mcmc(
 
         // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
         // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-        alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound3)); // faster alternative
+        alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound)); // faster alternative
         alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
         // datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
         alphas_Rowsum = arma::sum(alphas, 1);
@@ -622,7 +622,7 @@ Rcpp::List run_mcmc(
 
                     // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
                     // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-                    alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound3)); // faster alternative
+                    alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound)); // faster alternative
                     alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
                     // datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
                     alphas_Rowsum = arma::sum(alphas, 1);
@@ -646,11 +646,12 @@ Rcpp::List run_mcmc(
                 datProportion,
                 dataclass
             );
+            double GammaFuncKappa = std::tgamma(1.0+1.0/kappa);
 
             // update Weibull quantities based on new kappa
             for(unsigned int l=0; l<L; ++l)
             {
-                weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
+                weibullLambda.col(l) = datMu.col(l) / GammaFuncKappa;
                 weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
             }
 
@@ -937,11 +938,12 @@ Rcpp::List run_mcmc(
                 datProportion,
                 dataclass
             );
+            double GammaFuncKappa = std::tgamma(1.0+1.0/kappa);
 
             // update Weibull quantities based on new kappa
             for(unsigned int l=0; l<L; ++l)
             {
-                weibullLambda.col(l) = datMu.col(l) / std::tgamma(1.0+1.0/kappa);
+                weibullLambda.col(l) = datMu.col(l) / GammaFuncKappa;
                 weibullS.col(l) = arma::exp(- arma::pow( dataclass.datTime/weibullLambda.col(l), kappa));
             }
 

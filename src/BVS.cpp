@@ -111,7 +111,7 @@ void BVS_Sampler::loglikelihood(
         }
         // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
         // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-        alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound3)); // faster alternative
+        alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound)); // faster alternative
         alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
         alphas_Rowsum = arma::sum(alphas, 1);
         // datProportion = alphas / arma::repmat(alphas_Rowsum, 1, L);
@@ -135,7 +135,7 @@ void BVS_Sampler::loglikelihood(
     arma::vec weibull_lambdas_l(N);
     arma::vec weibullS_l(N);
     arma::vec weibull_pdf(N);
-    double gamma_const = std::tgamma(1. + 1./kappa);
+    double GammaFuncKappa = std::tgamma(1. + 1./kappa);
 
     for(unsigned int l=0; l<L; ++l)
     {
@@ -147,10 +147,11 @@ void BVS_Sampler::loglikelihood(
         for (arma::uword j = 0; j < p; ++j) { if (gammas(j,l) == 0) betaMask_l[j] = 0.0; }
         mu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
         // mu_l.elem(arma::find(mu_l > upperbound)).fill(upperbound);
-        mu_l = arma::min(mu_l, arma::vec(N).fill(upperbound)); 
         mu_l = arma::exp(mu_l);
+        mu_l = arma::min(mu_l, arma::vec(N).fill(upperbound)); 
+        mu_l = arma::max(mu_l, arma::vec(N).fill(lowerbound)); 
 
-        weibull_lambdas_l = mu_l / gamma_const;
+        weibull_lambdas_l = mu_l / GammaFuncKappa;
         weibullS_l = arma::exp( - arma::pow( dataclass.datTime / weibull_lambdas_l, kappa) );
         weibull_pdf = arma::exp(-kappa * arma::log(weibull_lambdas_l) - arma::pow(dataclass.datTime/weibull_lambdas_l, kappa));
 
