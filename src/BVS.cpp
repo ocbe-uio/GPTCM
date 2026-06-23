@@ -95,7 +95,7 @@ void BVS_Sampler::loglikelihood(
 
     arma::mat datProportion;
     arma::mat alphas = arma::zeros<arma::mat>(N, L);
-    arma::vec alphas_Rowsum;
+    arma::vec alphaRowsum;
     if(proportion_model)
     {
         #ifdef _OPENMP
@@ -113,9 +113,9 @@ void BVS_Sampler::loglikelihood(
         // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
         alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound)); // faster alternative
         alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
-        alphas_Rowsum = arma::sum(alphas, 1);
-        // datProportion = alphas / arma::repmat(alphas_Rowsum, 1, L);
-        datProportion = alphas.each_col() / alphas_Rowsum; // faster alternative to above
+        alphaRowsum = arma::sum(alphas, 1);
+        // datProportion = alphas / arma::repmat(alphaRowsum, 1, L);
+        datProportion = alphas.each_col() / alphaRowsum; // faster alternative to above
     }
     else
     {
@@ -171,7 +171,7 @@ void BVS_Sampler::loglikelihood(
     if (proportion_model)
     {
         log_dirichlet =
-            arma::lgamma(alphas_Rowsum) - arma::sum(arma::lgamma(alphas), 1) +
+            arma::lgamma(alphaRowsum) - arma::sum(arma::lgamma(alphas), 1) +
             arma::sum( (alphas - 1.0) % arma::log(dataclass.datProportionConst), 1 );
     }
 
@@ -232,7 +232,7 @@ void BVS_Sampler::loglikelihood_noBVS(
     arma::vec log_dirichlet = arma::zeros<arma::vec>(N);
     if (proportion_model)
     {
-        // arma::vec alphas_Rowsum = arma::sum(alphas, 1);
+        // arma::vec alphaRowsum = arma::sum(alphas, 1);
         log_dirichlet =
             arma::lgamma(arma::sum(alphas, 1)) - 
             arma::sum(arma::lgamma(alphas), 1) +
@@ -1223,7 +1223,7 @@ double BVS_Sampler::logPzetaK(
     }
     alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
     alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-    arma::vec alphas_Rowsum = arma::sum(alphas, 1);
+    arma::vec alphaRowsum = arma::sum(alphas, 1);
 
     double logprior = - (arma::accu(zetas.submat(1, k, p, k) % zetas.submat(1, k, p, k))) / wSq / 2.;
 
@@ -1232,7 +1232,7 @@ double BVS_Sampler::logPzetaK(
 
     for(unsigned int l=0; l<L; ++l)
     {
-        arma::vec tmp = alphas.col(l) / alphas_Rowsum %  weibullS.col(l);
+        arma::vec tmp = alphas.col(l) / alphaRowsum %  weibullS.col(l);
         logpost_first += arma::pow(weibullLambda.col(l), - kappa) % tmp;
         logpost_second += tmp;
     }
@@ -1242,7 +1242,7 @@ double BVS_Sampler::logPzetaK(
     double logpost_second_sum = arma::sum(datTheta % logpost_second);
 
     double log_dirichlet_sum = arma::sum(
-        arma::lgamma(alphas_Rowsum) - arma::sum(arma::lgamma(alphas), 1) +
+        arma::lgamma(alphaRowsum) - arma::sum(arma::lgamma(alphas), 1) +
         arma::sum( (alphas - 1.0) % arma::log(dataclass.datProportionConst), 1 )
     );
 

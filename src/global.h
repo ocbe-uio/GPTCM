@@ -14,7 +14,7 @@
 // Define constants for bounds
 constexpr double UPPER_BOUND = 700.0;
 constexpr double UPPER_BOUND_3 = 170.0; // 270 here and 1.0e-20 below resulted in slightly worse \zetas. Check to use Log-Sum-Exp trick
-constexpr double LOWER_BOUND = 1.0e-10;
+constexpr double LOWER_BOUND = 1.0e-50; // 1.0e-10;
 
 // Using the constants inline where necessary
 inline double upperbound = UPPER_BOUND;

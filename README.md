@@ -61,8 +61,8 @@ concentration parameters
 $\boldsymbol\alpha_{l}= \exp(\zeta_{0l} + \mathbf X_{l} \boldsymbol \zeta_l)$,
 $l\in \\{1,...,L\\}$. We use latent indicator variables for Bayesian
 variable selection,
-i.e. $\boldsymbol\gamma_l = 1\\{\boldsymbol\beta_l\ne 0\\}$ and
-$\boldsymbol\eta_l = 1\\{\boldsymbol\zeta_l\ne 0\\}$. Censoring is
+i.e. $\boldsymbol \gamma_l = 1\\{\boldsymbol \beta_l\ne 0\\}$ and
+$\boldsymbol \eta_l = 1\\{\boldsymbol \zeta_l\ne 0\\}$. Censoring is
 generated through an exponential distribution with censoring rate
 $20\%$. The Kaplan–Meier survival curve is as follows. See more details
 in [Zhao et al. (2025)](https://doi.org/10.48550/arXiv.2509.01001).
@@ -126,17 +126,16 @@ hyperpar <- list(
 set.seed(123)
 fit <- GPTCM(dat, hyperpar = hyperpar, nIter = 2000, burnin = 1000)
 #> Running MCMC iterations ...
-#>  Running iteration 500 ... Acc Rate: ~ gamma: 0.074 ... ~ eta: 0.056
-#>  Running iteration 1000 ... Acc Rate: ~ gamma: 0.059 ... ~ eta: 0.057
-#>  Running iteration 1500 ... Acc Rate: ~ gamma: 0.052 ... ~ eta: 0.058
-#>  Running iteration 2000 ... Acc Rate: ~ gamma: 0.049 ... ~ eta: 0.056
+#>  Running iteration 500 ... Acc Rate: ~ gamma: 0.072 ... ~ eta: 0.054
+#>  Running iteration 1000 ... Acc Rate: ~ gamma: 0.073 ... ~ eta: 0.047
+#>  Running iteration 1500 ... Acc Rate: ~ gamma: 0.067 ... ~ eta: 0.043
+#>  Running iteration 2000 ... Acc Rate: ~ gamma: 0.061 ... ~ eta: 0.04
 
 ## draw time-dependent Brier scores
 plotBrier(dat, datMCMC = fit, 
           time.star = 3, 
           xlab = "Evalutation time points",
           ylab = "Prediction error")
-#> Processed 167 groups out of 200. 84% done. Time elapsed: 3s. ETA: 0s.Processed 200 groups out of 200. 100% done. Time elapsed: 3s. ETA: 0s.
 ```
 
 ![](man/figures/fig_brier-1.png)<!-- -->

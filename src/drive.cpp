@@ -414,7 +414,7 @@ Rcpp::List run_mcmc(
     // quantity 3
     arma::mat datProportion = dataclass.datProportionConst;
     arma::mat alphas = arma::zeros<arma::mat>(N, L);
-    arma::vec alphas_Rowsum(N);
+    arma::vec alphaRowsum(N);
     if(proportion_model)
     {
         for(unsigned int l=0; l<L; ++l)
@@ -427,8 +427,8 @@ Rcpp::List run_mcmc(
         alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound)); // faster alternative
         alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
         // datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
-        alphas_Rowsum = arma::sum(alphas, 1);
-        datProportion = alphas.each_col() / alphas_Rowsum;
+        alphaRowsum = arma::sum(alphas, 1);
+        datProportion = alphas.each_col() / alphaRowsum;
     }
 
     // quantities for multi-armed bandit algorithm
@@ -625,8 +625,8 @@ Rcpp::List run_mcmc(
                     alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound)); // faster alternative
                     alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
                     // datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
-                    alphas_Rowsum = arma::sum(alphas, 1);
-                    datProportion = alphas.each_col() / alphas_Rowsum;
+                    alphaRowsum = arma::sum(alphas, 1);
+                    datProportion = alphas.each_col() / alphaRowsum;
                 }
                 else
                 {
@@ -915,8 +915,8 @@ Rcpp::List run_mcmc(
 
                     // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
                     // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-                    alphas_Rowsum = arma::sum(alphas, 1);
-                    datProportion = alphas.each_col() / alphas_Rowsum;
+                    alphaRowsum = arma::sum(alphas, 1);
+                    datProportion = alphas.each_col() / alphaRowsum;
                     // datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
                 }
                 else

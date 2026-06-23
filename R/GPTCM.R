@@ -315,7 +315,7 @@ GPTCM <- function(dat,
   if (pilot.run && BVS && !CMH) {
     
     ## Pilot run MCMC 
-    message("\u2713 Pilot run to determine Carlin-Chib pseudo priors:")
+    message("\n\u2713 Pilot run (to determine Carlin-Chib pseudo priors):")
     fit0 <- run_mcmc(
       nIter0,
       burnin0,
@@ -350,14 +350,15 @@ GPTCM <- function(dat,
     min_active <- 50
     min_var <- 1e-6
     
-    betas_active <- fit0$betas[-c(1:burnin0), ]
+    intercept_idx <- seq(1, ((p + 1) * L), by = p + 1)
+    betas_active <- fit0$betas[-c(1:burnin0), -intercept_idx]
     betas_active[fit0$gammas[-c(1:burnin0), ] == 0] <- NA
-    #pseudoMeanBeta <- matrix(apply(betas_active, 2, mean, na.rm=T), ncol = L)[-1,]
+    #pseudoMeanBeta <- matrix(apply(betas_active, 2, mean, na.rm=T), ncol = L)
     pseudoMeanBeta <- matrix(apply(betas_active, 2, function(x) {
       ifelse(sum(x != 0, na.rm=T) < min_active, NA, mean(x, na.rm=T))
-    }), ncol = L)[-1,]
+    }), ncol = L)
     pseudoMeanBeta[is.na(pseudoMeanBeta)] <- 0
-    pseudoVarBeta <- matrix(apply(betas_active, 2, var, na.rm=T), ncol = L)[-1,]
+    pseudoVarBeta <- matrix(apply(betas_active, 2, var, na.rm=T), ncol = L)
     pseudoVarBeta[pseudoMeanBeta == 0] <- NA
     pseudoVarBeta[pseudoVarBeta < min_var] <- NA
     pseudoVarBeta <- sapply(1:L, function(l) {
@@ -370,13 +371,13 @@ GPTCM <- function(dat,
     hyperpar$pseudoVarBeta <- pseudoVarBeta
     
     if (dirichlet && proportion.model) {
-      zetas_active <- fit0$zetas[-c(1:burnin0), ]
+      zetas_active <- fit0$zetas[-c(1:burnin0), -intercept_idx]
       zetas_active[fit0$etas[-c(1:burnin0), ] == 0] <- NA
       pseudoMeanZeta <- matrix(apply(zetas_active, 2, function(x) {
         ifelse(sum(x != 0, na.rm=T) < min_active, NA, mean(x, na.rm=T))
-      }), ncol = L)[-1,]
+      }), ncol = L)
       pseudoMeanZeta[is.na(pseudoMeanZeta)] <- 0
-      pseudoVarZeta <- matrix(apply(zetas_active, 2, var, na.rm=T), ncol = L)[-1,]
+      pseudoVarZeta <- matrix(apply(zetas_active, 2, var, na.rm=T), ncol = L)
       pseudoVarZeta[pseudoMeanZeta == 0] <- NA
       pseudoVarZeta[pseudoVarZeta < min_var] <- NA
       pseudoVarZeta <- sapply(1:L, function(l) {

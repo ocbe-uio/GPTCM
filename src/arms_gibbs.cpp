@@ -755,6 +755,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     // Compute current full alpha matrix once.
     // ------------------------------------------------------------------
     // arma::mat alphas(N, L, arma::fill::zeros);
+    /*
     arma::vec logAlpha_ll(N);
     for (unsigned int ll = 0; ll < L; ++ll)
     {
@@ -772,10 +773,11 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
     // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
     alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound)); // faster alternative
     alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
+    */
 
     arma::vec alphaRowsum = arma::sum(alphas, 1);
     // alphaRowsum.elem(arma::find(alphaRowsum < lowerbound)).fill(lowerbound);
-    alphaRowsum = arma::max(alphaRowsum, arma::vec(N).fill(lowerbound)); // faster alternative
+    // alphaRowsum = arma::max(alphaRowsum, arma::vec(N).fill(lowerbound)); // faster alternative
 
     mydata->alphas = alphas.memptr();
     mydata->alphaRowsum = alphaRowsum.memptr();
@@ -814,7 +816,7 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
         // alphaRowsum = arma::max(alphaRowsum, arma::vec(N).fill(lowerbound)); // faster alternative
 
         mydata->logAlpha_l = logAlpha_l.memptr();
-        mydata->alpha_l = alpha_l.memptr();
+        // mydata->alpha_l = alpha_l.memptr();
         mydata->alphas = alphas.memptr();
         mydata->alphaRowsum = alphaRowsum.memptr();
 

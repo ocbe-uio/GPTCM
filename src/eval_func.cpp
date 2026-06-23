@@ -463,14 +463,14 @@ double EvalFunction::log_dens_zetasFull(
     // alpha_l_candidate.elem(
     //     arma::find(alpha_l_candidate > upperbound3)
     // ).fill(upperbound3);
-    alpha_l_candidate = arma::min(alpha_l_candidate, arma::vec(mydata_parm->N).fill(upperbound)); 
+    alpha_l_candidate = arma::min(alpha_l_candidate, arma::vec(N).fill(upperbound)); 
 
     // alpha_l_candidate.elem(
     //     arma::find(alpha_l_candidate < lowerbound)
     // ).fill(lowerbound);
 
     arma::vec alphaRowsum_candidate =
-        alphaRowsum_base - alpha_l_base + alpha_l_candidate;
+        alphaRowsum_base - alphas_base.col(l) + alpha_l_candidate;
 
     // alphaRowsum_candidate.elem(
     //     arma::find(alphaRowsum_candidate < lowerbound)
@@ -518,11 +518,11 @@ double EvalFunction::log_dens_zetasFull(
 
         logpost_second += prop_ll;
     }
-    logpost_first = arma::max(logpost_first, arma::vec(mydata_parm->N).fill(lowerbound)); 
+    logpost_first = arma::max(logpost_first, arma::vec(N).fill(lowerbound)); 
 
     double logpost_first_sum = 0.; //arma::sum( arma::log(logpost_first.elem(arma::find(datEvent))));
     // // faster below
-    for (arma::uword i = 0; i < mydata_parm->N; ++i) {
+    for (arma::uword i = 0; i < N; ++i) {
         if (datEvent[i]) logpost_first_sum += std::log(logpost_first[i]);
     }
 
@@ -603,6 +603,7 @@ double EvalFunction::log_dens_kappa(
     for(unsigned int ll=0; ll<(mydata_parm->L); ++ll)
     {
         weibull_lambdas_tmp = datMu.col(ll) / GammaFuncKappa;
+        // weibull_lambdas_tmp = arma::max(weibull_lambdas_tmp, arma::vec(mydata_parm->N).fill(lowerbound)); 
         ratio = datTime / weibull_lambdas_tmp;
         // ratio = arma::min(ratio, arma::vec(mydata_parm->N).fill(upperbound)); 
         lambdas_tmp = arma::pow(ratio, par);
