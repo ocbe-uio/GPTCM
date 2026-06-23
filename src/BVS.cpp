@@ -107,12 +107,14 @@ void BVS_Sampler::loglikelihood(
             arma::vec zetaMask_l = zetas.submat(1, l, p, l);
             // zetaMask_l.elem(arma::find(etas.col(l) == 0)).fill(0.0);
             for (arma::uword j = 0; j < p; ++j) { if (etas(j,l) == 0) zetaMask_l[j] = 0.0; }
-            alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l );
+
+            arma::vec lp_tmp = zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l;
+            lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_alpha_max)); 
+            lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_alpha_min)); 
+            alphas.col(l) = arma::exp( lp_tmp );
         }
         // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
         // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-        alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound)); // faster alternative
-        alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
         alphaRowsum = arma::sum(alphas, 1);
         // datProportion = alphas / arma::repmat(alphaRowsum, 1, L);
         datProportion = alphas.each_col() / alphaRowsum; // faster alternative to above
@@ -124,7 +126,7 @@ void BVS_Sampler::loglikelihood(
 
     arma::vec logTheta = dataclass.datX0 * xi;
     // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
-    logTheta = arma::min(logTheta, arma::vec(N).fill(upperbound)); 
+    logTheta = arma::min(logTheta, arma::vec(N).fill(log_lp_max)); 
     arma::vec thetas = arma::exp( logTheta );
 
     arma::vec f = arma::zeros<arma::vec>(N);
@@ -147,9 +149,9 @@ void BVS_Sampler::loglikelihood(
         for (arma::uword j = 0; j < p; ++j) { if (gammas(j,l) == 0) betaMask_l[j] = 0.0; }
         mu_l = betas(0, l) + dataclass.datX.slice(l) * betaMask_l;
         // mu_l.elem(arma::find(mu_l > upperbound)).fill(upperbound);
+        mu_l = arma::min(mu_l, arma::vec(N).fill(log_lp_max)); 
+        mu_l = arma::max(mu_l, arma::vec(N).fill(log_lp_min)); 
         mu_l = arma::exp(mu_l);
-        mu_l = arma::min(mu_l, arma::vec(N).fill(upperbound)); 
-        mu_l = arma::max(mu_l, arma::vec(N).fill(lowerbound)); 
 
         weibull_lambdas_l = mu_l / GammaFuncKappa;
         weibullS_l = arma::exp( - arma::pow( dataclass.datTime / weibull_lambdas_l, kappa) );
@@ -178,13 +180,16 @@ void BVS_Sampler::loglikelihood(
     // log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
     // log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
     loglik = log_dirichlet;
-    for (arma::uword i = 0; i < N; ++i) 
-    { 
+    for (arma::uword i = 0; i < N; ++i)
+    {
         if (dataclass.datEvent[i])
         {
             loglik[i] += log_f_pop[i];
+        }
+        else
+        {
             loglik[i] += log_survival_pop[i];
-        } 
+        }
     }
     // loglik = log_f_pop + log_survival_pop + log_dirichlet;
 }
@@ -242,13 +247,16 @@ void BVS_Sampler::loglikelihood_noBVS(
     // log_f_pop.elem(arma::find(dataclass.datEvent == 0)).fill(0.);
     // log_survival_pop.elem(arma::find(dataclass.datEvent)).fill(0.);
     loglik = log_dirichlet;
-    for (arma::uword i = 0; i < N; ++i) 
-    { 
+    for (arma::uword i = 0; i < N; ++i)
+    {
         if (dataclass.datEvent[i])
         {
             loglik[i] += log_f_pop[i];
+        }
+        else
+        {
             loglik[i] += log_survival_pop[i];
-        } 
+        }
     }
     // loglik = log_f_pop + log_survival_pop + log_dirichlet;
 }
@@ -458,7 +466,8 @@ void BVS_Sampler::sampleGamma(
         arma::vec logMu_k = betas_(0, componentUpdateIdx) + dataclass.datX.slice(componentUpdateIdx) * 
             (betas_.submat(1, componentUpdateIdx, p, componentUpdateIdx) % gammas_.col(componentUpdateIdx)) ;
         // logMu_k.elem(arma::find(logMu_k > upperbound)).fill(upperbound);
-        logMu_k = arma::min(logMu_k, arma::vec(N).fill(upperbound)); 
+        logMu_k = arma::min(logMu_k, arma::vec(N).fill(log_lp_max)); 
+        logMu_k = arma::max(logMu_k, arma::vec(N).fill(log_lp_min)); 
         datMu.col(componentUpdateIdx) = arma::exp( logMu_k );
         weibullLambda.col(componentUpdateIdx) = datMu.col(componentUpdateIdx) / std::tgamma(1. + 1./kappa);
         // weibullLambda.elem(arma::find(lambdas > upperbound)).fill(upperbound);

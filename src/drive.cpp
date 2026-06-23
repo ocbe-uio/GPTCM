@@ -390,7 +390,7 @@ Rcpp::List run_mcmc(
     arma::vec datTheta = arma::zeros<arma::vec>(N);
     arma::vec logTheta = dataclass.datX0 * xi;
     // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
-    logTheta = arma::min(logTheta, arma::vec(N).fill(upperbound)); 
+    logTheta = arma::min(logTheta, arma::vec(N).fill(log_lp_max)); 
     datTheta = arma::exp( logTheta );
 
     // quantity 2
@@ -402,7 +402,8 @@ Rcpp::List run_mcmc(
     {
         logMu_l = betas(0, l) + dataclass.datX.slice(l) * betas.submat(1, l, p, l);
         // logMu_l.elem(arma::find(logMu_l > upperbound)).fill(upperbound);
-        logMu_l = arma::min(logMu_l, arma::vec(N).fill(upperbound)); 
+        logMu_l = arma::min(logMu_l, arma::vec(N).fill(log_lp_max)); 
+        logMu_l = arma::max(logMu_l, arma::vec(N).fill(log_lp_min)); 
         datMu.col(l) = arma::exp( logMu_l );
 
         weibullLambda.col(l) = datMu.col(l) / std::tgamma(1. + 1./kappa);
@@ -415,17 +416,19 @@ Rcpp::List run_mcmc(
     arma::mat datProportion = dataclass.datProportionConst;
     arma::mat alphas = arma::zeros<arma::mat>(N, L);
     arma::vec alphaRowsum(N);
+    arma::vec lp_tmp(N);
     if(proportion_model)
     {
         for(unsigned int l=0; l<L; ++l)
         {
-            alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetas.submat(1, l, p, l) );
+            lp_tmp = zetas(0, l) + dataclass.datX.slice(l) * zetas.submat(1, l, p, l);
+            lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_lp_max)); // faster alternative
+            lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_lp_min)); 
+            alphas.col(l) = arma::exp( lp_tmp );
         }
 
         // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
         // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-        alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound)); // faster alternative
-        alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
         // datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
         alphaRowsum = arma::sum(alphas, 1);
         datProportion = alphas.each_col() / alphaRowsum;
@@ -520,7 +523,7 @@ Rcpp::List run_mcmc(
             // update cure rate based on new xi
             logTheta = dataclass.datX0 * xi;
             // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
-            logTheta = arma::min(logTheta, arma::vec(N).fill(upperbound)); 
+            logTheta = arma::min(logTheta, arma::vec(N).fill(log_lp_max)); 
             datTheta = arma::exp( logTheta );
 
             // update parameters in the proportion model
@@ -617,13 +620,14 @@ Rcpp::List run_mcmc(
                         zetaMask_l = zetas.submat(1, l, p, l);
                         // zetaMask_l.elem(arma::find(etas.col(l) == 0)).fill(0.0);
                         for (arma::uword j = 0; j < p; ++j) { if (etas(j,l) == 0) zetaMask_l[j] = 0.0; }
-                        alphas.col(l) = arma::exp( zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l );
+                        lp_tmp = zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l;
+                        lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_lp_max)); 
+                        lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_lp_min)); 
+                        alphas.col(l) = arma::exp( lp_tmp );
                     }
 
                     // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);
                     // alphas.elem(arma::find(alphas < lowerbound)).fill(lowerbound);
-                    alphas = arma::min(alphas, arma::mat(N,L).fill(upperbound)); // faster alternative
-                    alphas = arma::max(alphas, arma::mat(N,L).fill(lowerbound)); 
                     // datProportion = alphas / arma::repmat(arma::sum(alphas, 1), 1, L);
                     alphaRowsum = arma::sum(alphas, 1);
                     datProportion = alphas.each_col() / alphaRowsum;
@@ -871,7 +875,7 @@ Rcpp::List run_mcmc(
             // update cure rate based on new xi
             logTheta = dataclass.datX0 * xi;
             // logTheta.elem(arma::find(logTheta > upperbound)).fill(upperbound);
-            logTheta = arma::min(logTheta, arma::vec(N).fill(upperbound)); 
+            logTheta = arma::min(logTheta, arma::vec(N).fill(log_lp_max)); 
             datTheta = arma::exp( logTheta );
 
             // update parameters in the proportion model

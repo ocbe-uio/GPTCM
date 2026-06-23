@@ -12,16 +12,26 @@
 #include <RcppArmadillo.h>
 
 // Define constants for bounds
-constexpr double UPPER_BOUND = 700.0;
-constexpr double UPPER_BOUND_3 = 170.0; // 270 here and 1.0e-20 below resulted in slightly worse \zetas. Check to use Log-Sum-Exp trick
+// constexpr double UPPER_BOUND = 1000.0;
+// constexpr double UPPER_BOUND_3 = 170.0; // 270 here and 1.0e-20 below resulted in slightly worse \zetas. Check to use Log-Sum-Exp trick
 constexpr double LOWER_BOUND = 1.0e-50; // 1.0e-10;
 
+constexpr double LOG_LP_MIN = -30.0; // log linear predictor lower bound
+constexpr double LOG_LP_MAX =  30.0; // log linear predictor upper bound
+constexpr double LOG_ALPHA_MIN = -13.0;
+constexpr double LOG_ALPHA_MAX =  13.0;
+
 // Using the constants inline where necessary
-inline double upperbound = UPPER_BOUND;
-inline double upperbound3 = UPPER_BOUND_3;
+// inline double upperbound = UPPER_BOUND;
+// inline double upperbound3 = UPPER_BOUND_3;
 // inline double upperbound3 = 700.; // not improve results when n=2000
 inline double lowerbound = LOWER_BOUND;
 // inline double lowerbound = 1.0e-100; // not improve results when n=2000
+
+inline double log_lp_min = LOG_LP_MIN;
+inline double log_lp_max = LOG_LP_MAX;
+inline double log_alpha_min = LOG_ALPHA_MIN;
+inline double log_alpha_max = LOG_ALPHA_MAX;
 
 
 class DataClass
