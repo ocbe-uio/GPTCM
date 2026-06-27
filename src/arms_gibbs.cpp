@@ -804,9 +804,9 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
         // logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(upperbound3)); // faster alternative
         // logAlpha_l.elem(arma::find(logAlpha_l < std::log(lowerbound))).fill(std::log(lowerbound));
 
-        // logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(log_alpha_max)); 
-        // logAlpha_l = arma::max(logAlpha_l, arma::vec(N).fill(log_alpha_min)); 
-        GPTCM::Numeric::clamp_inplace(logAlpha_l, log_alpha_min, log_alpha_max);
+        // logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(log_lp_max)); 
+        // logAlpha_l = arma::max(logAlpha_l, arma::vec(N).fill(log_lp_min)); 
+        GPTCM::Numeric::clamp_inplace(logAlpha_l, log_lp_min, log_lp_max);
         alpha_l = arma::exp(logAlpha_l);
         // alpha_l.elem(arma::find(alpha_l > upperbound3)).fill(upperbound3);
         // alpha_l.elem(arma::find(alpha_l < lowerbound)).fill(lowerbound);
@@ -900,9 +900,9 @@ void ARMS_Gibbs::arms_gibbs_zetaFull(
             // logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(upperbound3)); // faster alternative
             // logAlpha_l.elem(arma::find(logAlpha_l < std::log(lowerbound))).fill(std::log(lowerbound));
 
-            // logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(log_alpha_max)); 
-            // logAlpha_l = arma::max(logAlpha_l, arma::vec(N).fill(log_alpha_min)); 
-            GPTCM::Numeric::clamp_inplace(logAlpha_l, log_alpha_min, log_alpha_max);
+            // logAlpha_l = arma::min(logAlpha_l, arma::vec(N).fill(log_lp_max)); 
+            // logAlpha_l = arma::max(logAlpha_l, arma::vec(N).fill(log_lp_min)); 
+            GPTCM::Numeric::clamp_inplace(logAlpha_l, log_lp_min, log_lp_max);
 
             alpha_l = arma::exp(logAlpha_l);
             // alpha_l.elem(arma::find(alpha_l > upperbound3)).fill(upperbound3);

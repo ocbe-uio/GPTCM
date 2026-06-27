@@ -424,9 +424,9 @@ Rcpp::List run_mcmc(
         for(unsigned int l=0; l<L; ++l)
         {
             lp_tmp = zetas(0, l) + dataclass.datX.slice(l) * zetas.submat(1, l, p, l);
-            // lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_alpha_max)); // faster alternative
-            // lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_alpha_min)); 
-            GPTCM::Numeric::clamp_inplace(lp_tmp, log_alpha_min, log_alpha_max);
+            // lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_lp_max)); // faster alternative
+            // lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_lp_min)); 
+            GPTCM::Numeric::clamp_inplace(lp_tmp, log_lp_min, log_lp_max);
             alphas.col(l) = arma::exp( lp_tmp );
         }
 
@@ -627,7 +627,7 @@ Rcpp::List run_mcmc(
                         lp_tmp = zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l;
                         // lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_lp_max)); 
                         // lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_lp_min)); 
-                        GPTCM::Numeric::clamp_inplace(lp_tmp, log_alpha_min, log_alpha_max);
+                        GPTCM::Numeric::clamp_inplace(lp_tmp, log_lp_min, log_lp_max);
                         alphas.col(l) = arma::exp( lp_tmp );
                     }
 

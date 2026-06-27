@@ -1,10 +1,11 @@
 <div style="text-align: left;">
 
-### GPTCM 2.0.3 (2026-06-17)
+### GPTCM 2.1.0 (2026-06-24)
 
-* enable both conditional MH sampling and Carlin-Chib augmented MH for BVS
-* add testthat 
-* TODO: improve `BVS_Sampler::loglikelihood()` like `BVS_Sampler::loglikelihood_noBVS()`
+* Enable both conditional MH sampling and Carlin-Chib augmented MH for BVS
+* Add testthat 
+* Add pilot run for choosing Carlin-Chib pseudo-priors in main R function `GPTCM()`
+* Improve numerical stability by bounding linear predictors as exponents
 
 ### GPTCM 2.0.2 (2026-06-16)
 

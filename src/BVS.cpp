@@ -109,9 +109,9 @@ void BVS_Sampler::loglikelihood(
             for (arma::uword j = 0; j < p; ++j) { if (etas(j,l) == 0) zetaMask_l[j] = 0.0; }
 
             arma::vec lp_tmp = zetas(0, l) + dataclass.datX.slice(l) * zetaMask_l;
-            // lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_alpha_max)); 
-            // lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_alpha_min)); 
-            GPTCM::Numeric::clamp_inplace(lp_tmp, log_alpha_min, log_alpha_max);
+            // lp_tmp = arma::min(lp_tmp, arma::vec(N).fill(log_lp_max)); 
+            // lp_tmp = arma::max(lp_tmp, arma::vec(N).fill(log_lp_min)); 
+            GPTCM::Numeric::clamp_inplace(lp_tmp, log_lp_min, log_lp_max);
             alphas.col(l) = arma::exp( lp_tmp );
         }
         // alphas.elem(arma::find(alphas > upperbound3)).fill(upperbound3);

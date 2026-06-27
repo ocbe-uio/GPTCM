@@ -16,10 +16,10 @@
 // constexpr double UPPER_BOUND_3 = 170.0; // 270 here and 1.0e-20 below resulted in slightly worse \zetas. Check to use Log-Sum-Exp trick
 constexpr double LOWER_BOUND = 1.0e-30; // sensitive if using 1.0e-20
 
-constexpr double LOG_LP_MIN = -30.0; // log linear predictor lower bound; stable results with -300 
-constexpr double LOG_LP_MAX =  30.0; // log linear predictor upper bound; stable results with 300 
-constexpr double LOG_ALPHA_MIN = -13.0; // Dirichlet log linear predictor lower bound; stable results with -130 
-constexpr double LOG_ALPHA_MAX =  13.0; // Dirichlet log linear predictor upper bound; stable results with 130 
+constexpr double LOG_LP_MIN = -100.0; // log linear predictor lower bound; stable results with -30
+constexpr double LOG_LP_MAX =  100.0; // log linear predictor upper bound; stable results with 30 
+// constexpr double LOG_ALPHA_MIN = -100.0; // Dirichlet log linear predictor lower bound; stable results with -13
+// constexpr double LOG_ALPHA_MAX =  100.0; // Dirichlet log linear predictor upper bound; stable results with 13 
 
 // Using the constants inline where necessary
 // inline double upperbound = UPPER_BOUND;
@@ -30,8 +30,8 @@ inline double lowerbound = LOWER_BOUND;
 
 inline double log_lp_min = LOG_LP_MIN;
 inline double log_lp_max = LOG_LP_MAX;
-inline double log_alpha_min = LOG_ALPHA_MIN;
-inline double log_alpha_max = LOG_ALPHA_MAX;
+// inline double log_alpha_min = LOG_ALPHA_MIN;
+// inline double log_alpha_max = LOG_ALPHA_MAX;
 
 
 namespace GPTCM {
