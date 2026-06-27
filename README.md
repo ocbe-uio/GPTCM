@@ -126,10 +126,10 @@ hyperpar <- list(
 set.seed(123)
 fit <- GPTCM(dat, hyperpar = hyperpar, nIter = 2000, burnin = 1000)
 #> Running MCMC iterations ...
-#>  Running iteration 500 ... Acc Rate: ~ gamma: 0.072 ... ~ eta: 0.054
-#>  Running iteration 1000 ... Acc Rate: ~ gamma: 0.073 ... ~ eta: 0.047
-#>  Running iteration 1500 ... Acc Rate: ~ gamma: 0.067 ... ~ eta: 0.043
-#>  Running iteration 2000 ... Acc Rate: ~ gamma: 0.061 ... ~ eta: 0.04
+#>  Running iteration 500 ... Acc Rate: ~ gamma: 0.06 ... ~ eta: 0.03
+#>  Running iteration 1000 ... Acc Rate: ~ gamma: 0.081 ... ~ eta: 0.027
+#>  Running iteration 1500 ... Acc Rate: ~ gamma: 0.075 ... ~ eta: 0.033
+#>  Running iteration 2000 ... Acc Rate: ~ gamma: 0.069 ... ~ eta: 0.031
 
 ## draw time-dependent Brier scores
 plotBrier(dat, datMCMC = fit, 
